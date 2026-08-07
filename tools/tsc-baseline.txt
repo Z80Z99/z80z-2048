@@ -1,0 +1,4 @@
+﻿core/events.ts(196,23): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+store/gameStore.ts(496,83): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+utils/storage.ts(35,5): error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.

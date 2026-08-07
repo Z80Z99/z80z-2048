@@ -1,0 +1,1832 @@
+{
+  "mode": "before",
+  "numSeeds": 200,
+  "summary": {
+    "gold": {
+      "mean": 44.265,
+      "std": 26.753967462789515
+    },
+    "xp": {
+      "mean": 15.95,
+      "std": 9.474043487339506
+    },
+    "level": {
+      "mean": 1.62,
+      "std": 0.6128621378417823
+    },
+    "stagesCleared": {
+      "mean": 0,
+      "std": 0
+    },
+    "battleRounds": {
+      "mean": 6.925,
+      "std": 3.8857914251796886
+    },
+    "kills": {
+      "mean": 2.635,
+      "std": 1.5400568171337061
+    }
+  },
+  "results": [
+    {
+      "seed": 1,
+      "gold": 40,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 2,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 3,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 4,
+      "gold": 83,
+      "xp": 17,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 5,
+      "gold": 45,
+      "xp": 10,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 3
+    },
+    {
+      "seed": 6,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 7,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 8,
+      "gold": 60,
+      "xp": 25,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 4
+    },
+    {
+      "seed": 9,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 10,
+      "gold": 75,
+      "xp": 7,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 11,
+      "gold": 60,
+      "xp": 15,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 12,
+      "gold": 45,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 3
+    },
+    {
+      "seed": 13,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 14,
+      "gold": 42,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 15,
+      "gold": 60,
+      "xp": 28,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 16,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 17,
+      "gold": 45,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 3
+    },
+    {
+      "seed": 18,
+      "gold": 30,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 2
+    },
+    {
+      "seed": 19,
+      "gold": 30,
+      "xp": 20,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 2
+    },
+    {
+      "seed": 20,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 21,
+      "gold": 30,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 22,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 23,
+      "gold": 45,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 24,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 25,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 26,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 27,
+      "gold": 45,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 28,
+      "gold": 75,
+      "xp": 33,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 13,
+      "kills": 4
+    },
+    {
+      "seed": 29,
+      "gold": 90,
+      "xp": 12,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 14,
+      "kills": 5
+    },
+    {
+      "seed": 30,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 1
+    },
+    {
+      "seed": 31,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 32,
+      "gold": 61,
+      "xp": 8,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 3
+    },
+    {
+      "seed": 33,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 34,
+      "gold": 60,
+      "xp": 23,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 35,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 1
+    },
+    {
+      "seed": 36,
+      "gold": 60,
+      "xp": 24,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 37,
+      "gold": 77,
+      "xp": 28,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 38,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 39,
+      "gold": 60,
+      "xp": 26,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 4
+    },
+    {
+      "seed": 40,
+      "gold": 45,
+      "xp": 13,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 3
+    },
+    {
+      "seed": 41,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 42,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 43,
+      "gold": 90,
+      "xp": 15,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 15,
+      "kills": 6
+    },
+    {
+      "seed": 44,
+      "gold": 30,
+      "xp": 1,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 45,
+      "gold": 30,
+      "xp": 2,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 2
+    },
+    {
+      "seed": 46,
+      "gold": 30,
+      "xp": 3,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 47,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 48,
+      "gold": 75,
+      "xp": 31,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 13,
+      "kills": 5
+    },
+    {
+      "seed": 49,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 50,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 51,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 52,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 53,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 54,
+      "gold": 60,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 55,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 56,
+      "gold": 80,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 57,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 58,
+      "gold": 60,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 59,
+      "gold": 65,
+      "xp": 8,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 60,
+      "gold": 45,
+      "xp": 13,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 61,
+      "gold": 30,
+      "xp": 0,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 62,
+      "gold": 45,
+      "xp": 5,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 3
+    },
+    {
+      "seed": 63,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 64,
+      "gold": 79,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 65,
+      "gold": 99,
+      "xp": 33,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    },
+    {
+      "seed": 66,
+      "gold": 60,
+      "xp": 22,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 67,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 68,
+      "gold": 60,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 69,
+      "gold": 60,
+      "xp": 15,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 70,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 71,
+      "gold": 64,
+      "xp": 17,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 3
+    },
+    {
+      "seed": 72,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 73,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 74,
+      "gold": 41,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 75,
+      "gold": 60,
+      "xp": 25,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 76,
+      "gold": 60,
+      "xp": 27,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 4
+    },
+    {
+      "seed": 77,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 78,
+      "gold": 60,
+      "xp": 31,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 79,
+      "gold": 45,
+      "xp": 16,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 3
+    },
+    {
+      "seed": 80,
+      "gold": 60,
+      "xp": 15,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 4
+    },
+    {
+      "seed": 81,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 82,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 1
+    },
+    {
+      "seed": 83,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 84,
+      "gold": 15,
+      "xp": 13,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 85,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 86,
+      "gold": 17,
+      "xp": 13,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 87,
+      "gold": 15,
+      "xp": 13,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 88,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 89,
+      "gold": 79,
+      "xp": 35,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 4
+    },
+    {
+      "seed": 90,
+      "gold": 74,
+      "xp": 17,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 91,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 92,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 93,
+      "gold": 59,
+      "xp": 8,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 94,
+      "gold": 75,
+      "xp": 31,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 95,
+      "gold": 95,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 3
+    },
+    {
+      "seed": 96,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 97,
+      "gold": 45,
+      "xp": 5,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 3
+    },
+    {
+      "seed": 98,
+      "gold": 89,
+      "xp": 31,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 14,
+      "kills": 5
+    },
+    {
+      "seed": 99,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 100,
+      "gold": 44,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 101,
+      "gold": 28,
+      "xp": 13,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 102,
+      "gold": 59,
+      "xp": 16,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 3
+    },
+    {
+      "seed": 103,
+      "gold": 75,
+      "xp": 0,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 5
+    },
+    {
+      "seed": 104,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 105,
+      "gold": 45,
+      "xp": 10,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 3
+    },
+    {
+      "seed": 106,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 107,
+      "gold": 75,
+      "xp": 35,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 108,
+      "gold": 75,
+      "xp": 29,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    },
+    {
+      "seed": 109,
+      "gold": 45,
+      "xp": 11,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 3
+    },
+    {
+      "seed": 110,
+      "gold": 45,
+      "xp": 10,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 3
+    },
+    {
+      "seed": 111,
+      "gold": 75,
+      "xp": 32,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 15,
+      "kills": 5
+    },
+    {
+      "seed": 112,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 113,
+      "gold": 80,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 2
+    },
+    {
+      "seed": 114,
+      "gold": 30,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 115,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 116,
+      "gold": 15,
+      "xp": 12,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 117,
+      "gold": 47,
+      "xp": 15,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 118,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 119,
+      "gold": 46,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 120,
+      "gold": 60,
+      "xp": 24,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 121,
+      "gold": 60,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 122,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 123,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 124,
+      "gold": 75,
+      "xp": 33,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 125,
+      "gold": 75,
+      "xp": 0,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 5
+    },
+    {
+      "seed": 126,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 127,
+      "gold": 64,
+      "xp": 28,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 128,
+      "gold": 75,
+      "xp": 9,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 129,
+      "gold": 45,
+      "xp": 10,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 3
+    },
+    {
+      "seed": 130,
+      "gold": 45,
+      "xp": 17,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 131,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 132,
+      "gold": 75,
+      "xp": 2,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    },
+    {
+      "seed": 133,
+      "gold": 84,
+      "xp": 34,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 4
+    },
+    {
+      "seed": 134,
+      "gold": 30,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 135,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 136,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 137,
+      "gold": 51,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 138,
+      "gold": 30,
+      "xp": 24,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 2
+    },
+    {
+      "seed": 139,
+      "gold": 99,
+      "xp": 35,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 140,
+      "gold": 90,
+      "xp": 5,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 15,
+      "kills": 6
+    },
+    {
+      "seed": 141,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 142,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 1
+    },
+    {
+      "seed": 143,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 144,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 145,
+      "gold": 75,
+      "xp": 1,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 13,
+      "kills": 5
+    },
+    {
+      "seed": 146,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 147,
+      "gold": 60,
+      "xp": 19,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 148,
+      "gold": 30,
+      "xp": 21,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 149,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 150,
+      "gold": 75,
+      "xp": 29,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    },
+    {
+      "seed": 151,
+      "gold": 60,
+      "xp": 27,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 152,
+      "gold": 74,
+      "xp": 27,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 4
+    },
+    {
+      "seed": 153,
+      "gold": 85,
+      "xp": 27,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 154,
+      "gold": 60,
+      "xp": 29,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 155,
+      "gold": 45,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 3
+    },
+    {
+      "seed": 156,
+      "gold": 49,
+      "xp": 10,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 157,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 5,
+      "kills": 2
+    },
+    {
+      "seed": 158,
+      "gold": 62,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 159,
+      "gold": 75,
+      "xp": 34,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 4
+    },
+    {
+      "seed": 160,
+      "gold": 90,
+      "xp": 10,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 14,
+      "kills": 6
+    },
+    {
+      "seed": 161,
+      "gold": 45,
+      "xp": 9,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 162,
+      "gold": 90,
+      "xp": 21,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    },
+    {
+      "seed": 163,
+      "gold": 45,
+      "xp": 1,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 2
+    },
+    {
+      "seed": 164,
+      "gold": 90,
+      "xp": 16,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 10,
+      "kills": 5
+    },
+    {
+      "seed": 165,
+      "gold": 60,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 3
+    },
+    {
+      "seed": 166,
+      "gold": 30,
+      "xp": 20,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 2
+    },
+    {
+      "seed": 167,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 168,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 169,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 2
+    },
+    {
+      "seed": 170,
+      "gold": 60,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 4
+    },
+    {
+      "seed": 171,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 172,
+      "gold": 110,
+      "xp": 16,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 15,
+      "kills": 6
+    },
+    {
+      "seed": 173,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 174,
+      "gold": 60,
+      "xp": 25,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 175,
+      "gold": 60,
+      "xp": 21,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 176,
+      "gold": 0,
+      "xp": 0,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 0,
+      "kills": 0
+    },
+    {
+      "seed": 177,
+      "gold": 75,
+      "xp": 31,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    },
+    {
+      "seed": 178,
+      "gold": 76,
+      "xp": 25,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 179,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 1
+    },
+    {
+      "seed": 180,
+      "gold": 60,
+      "xp": 27,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 181,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 182,
+      "gold": 45,
+      "xp": 10,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 8,
+      "kills": 3
+    },
+    {
+      "seed": 183,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 184,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 1
+    },
+    {
+      "seed": 185,
+      "gold": 45,
+      "xp": 5,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 3
+    },
+    {
+      "seed": 186,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 187,
+      "gold": 15,
+      "xp": 11,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 188,
+      "gold": 60,
+      "xp": 17,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 189,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 190,
+      "gold": 75,
+      "xp": 32,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 13,
+      "kills": 5
+    },
+    {
+      "seed": 191,
+      "gold": 75,
+      "xp": 5,
+      "level": 3,
+      "stagesCleared": 0,
+      "battleRounds": 14,
+      "kills": 5
+    },
+    {
+      "seed": 192,
+      "gold": 40,
+      "xp": 0,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 7,
+      "kills": 2
+    },
+    {
+      "seed": 193,
+      "gold": 30,
+      "xp": 22,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 4,
+      "kills": 2
+    },
+    {
+      "seed": 194,
+      "gold": 70,
+      "xp": 16,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 9,
+      "kills": 4
+    },
+    {
+      "seed": 195,
+      "gold": 75,
+      "xp": 29,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 196,
+      "gold": 15,
+      "xp": 10,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 2,
+      "kills": 1
+    },
+    {
+      "seed": 197,
+      "gold": 30,
+      "xp": 23,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 6,
+      "kills": 2
+    },
+    {
+      "seed": 198,
+      "gold": 15,
+      "xp": 13,
+      "level": 1,
+      "stagesCleared": 0,
+      "battleRounds": 3,
+      "kills": 1
+    },
+    {
+      "seed": 199,
+      "gold": 76,
+      "xp": 22,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 11,
+      "kills": 4
+    },
+    {
+      "seed": 200,
+      "gold": 75,
+      "xp": 35,
+      "level": 2,
+      "stagesCleared": 0,
+      "battleRounds": 12,
+      "kills": 5
+    }
+  ]
+}

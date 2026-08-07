@@ -1,0 +1,30 @@
+{
+  "seed": 12345,
+  "stagesCleared": 0,
+  "screen": "gameover",
+  "player": {
+    "hp": 0,
+    "maxHp": 100,
+    "gold": 45,
+    "xp": 14,
+    "level": 2
+  },
+  "upgradeIds": [
+    "heal_1"
+  ],
+  "meta": {
+    "totalGold": 24,
+    "totalRuns": 1,
+    "unlockedEnemies": 3,
+    "enemyKills": {
+      "rat": 1,
+      "slime": 1,
+      "bat": 1
+    }
+  },
+  "battleStats": {
+    "rounds": 8,
+    "kills": 3,
+    "turns": 18
+  }
+}

@@ -1,0 +1,21 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "Z80Z",
+				"navigationBarBackgroundColor": "#1a1a2e",
+				"navigationBarTextStyle": "white",
+				"disableScroll": true
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarBackgroundColor": "#1a1a2e",
+		"navigationBarTextStyle": "white",
+		"backgroundColor": "#0d0d1a"
+	},
+	"easycom": {
+		"autoscan": true
+	}
+}

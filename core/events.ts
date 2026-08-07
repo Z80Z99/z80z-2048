@@ -1,0 +1,244 @@
+import { ALL_EQUIPMENT, makeEquipId } from './equipment'
+import type { EventEffectMap } from '../types'
+
+export interface EventChoice {
+  label: string
+  tooltip?: string
+  effect: EventEffect
+}
+
+export interface EventEffect extends EventEffectMap {
+  type: string
+}
+
+export interface GameEvent {
+  id: string
+  title: string
+  icon: string
+  desc: string
+  stageMin: number
+  choices: EventChoice[]
+}
+
+// Roll a value that may be a fixed number or a { min, max } range
+function rollNumber(value: number | { min: number; max: number } | undefined, rng: () => number): number {
+  if (value && typeof value === 'object') {
+    return value.min + Math.floor(rng() * (value.max - value.min + 1))
+  }
+  return typeof value === 'number' ? value : 0
+}
+
+const EVENTS: GameEvent[] = [
+  // ===== Stage 1+  =====
+  {
+    id: 'treasure_chest',
+    title: '宝箱',
+    icon: '📦',
+    desc: '路边发现一个发光的宝箱，里面似乎有贵重物品。',
+    stageMin: 1,
+    choices: [
+      { label: '打开宝箱', tooltip: '获得 10~25 金币', effect: { type: 'gold', value: { min: 10, max: 25 } } },
+      { label: '无视它', effect: { type: 'none' } },
+    ],
+  },
+  {
+    id: 'healing_fountain',
+    title: '治愈之泉',
+    icon: '⛲',
+    desc: '一汪冒着微光的泉水出现在你面前，散发着治愈的气息。但泉水似乎不多了——可能有副作用。',
+    stageMin: 1,
+    choices: [
+      { label: '畅饮泉水', tooltip: '回复 30% HP，但有 30% 概率损失 10% 最大生命', effect: { type: 'heal', value: 30, curse: 30, curse_hp: 10 } },
+      { label: '轻抿一口', tooltip: '回复 10% HP，无风险', effect: { type: 'heal', value: 10 } },
+      { label: '灌满水壶', tooltip: '获得 15~25 金币', effect: { type: 'gold', value: { min: 15, max: 25 } } },
+    ],
+  },
+  {
+    id: 'dark_shrine',
+    title: '暗影祭坛',
+    icon: '🏛',
+    desc: '一座古老祭坛散发着不详的气息。献上生命之力，或许能获得力量作为回报。',
+    stageMin: 1,
+    choices: [
+      { label: '献上 20% 生命', tooltip: '当前生命 -20%，永久获得 +8% 攻击', effect: { type: 'hp_reduce_pct', value: 20, atk_mult: 0.08 } },
+      { label: '献上 15% 最大生命', tooltip: '最大生命 -15%，永久获得 +12% 防御', effect: { type: 'maxhp_down_pct', value: 15, def_mult: 0.12 } },
+      { label: '离开', effect: { type: 'none' } },
+    ],
+  },
+  {
+    id: 'fallen_warrior',
+    title: '陨落战士',
+    icon: '⚰',
+    desc: '一具白骨躺在路边，旁边的剑依然锋利。他腰间有个鼓鼓的布袋。',
+    stageMin: 1,
+    choices: [
+      { label: '拾取武器', tooltip: '随机获得 1 件装备（普通品质）', effect: { type: 'drop_equip', rarity: 'common' } },
+      { label: '搜刮钱袋', tooltip: '获得 20~35 金币', effect: { type: 'gold', value: { min: 20, max: 35 } } },
+    ],
+  },
+  // ===== Stage 2+  =====
+  {
+    id: 'gambler',
+    title: '赌徒的邀约',
+    icon: '🎲',
+    desc: '一个嬉皮笑脸的赌徒堵住了路口：「来赌一把？赢了给你一件稀有装备，输了嘛……嘿嘿。」',
+    stageMin: 2,
+    choices: [
+      { label: '赌！(20G)', tooltip: '50% 获得稀有装备，50% 损失金币（可欠债）', effect: { type: 'gamble', cost: 20, win_rarity: 'rare', lose_gold: 20 } },
+      { label: '犹豫下注 (5G)', tooltip: '70% 获得普通装备，30% 失去 5G', effect: { type: 'gamble', cost: 5, win_rarity: 'common', lose_gold: 5 } },
+      { label: '绕道走', effect: { type: 'none' } },
+    ],
+  },
+  {
+    id: 'ancient_scroll',
+    title: '远古卷轴',
+    icon: '📜',
+    desc: '一卷尘封的卷轴躺在祭坛上，上面写着古老的咒文。读它还来得及后悔。',
+    stageMin: 2,
+    choices: [
+      { label: '诵读咒文', tooltip: '获得 30~50 XP（可能连升几级）', effect: { type: 'xp', value: { min: 30, max: 50 } } },
+      { label: '谨慎翻阅', tooltip: '获得 15 XP，无风险', effect: { type: 'xp', value: 15 } },
+      { label: '烧掉它', tooltip: '似乎有什么……消失了？获得 8~15 金币', effect: { type: 'gold', value: { min: 8, max: 15 } } },
+    ],
+  },
+  {
+    id: 'spike_trap',
+    title: '看似平静的地面',
+    icon: '⚠',
+    desc: '地面上的石板排列得异常整齐，空气中有淡淡的血腥味。你停下脚步，意识到它可能是个陷阱。',
+    stageMin: 2,
+    choices: [
+      { label: '小心绕行 (损失5步)', tooltip: '安全通过，跳过一次地图移动', effect: { type: 'none' } },
+      { label: '试着拆除', tooltip: '50% 获得 15~30 金币，50% 受伤 -15 HP', effect: { type: 'disarm', gold_win: { min: 15, max: 30 }, hp_lose: 15 } },
+      { label: '冲刺过去', tooltip: '70% 安全通过（损失 2 步），30% 受伤 -25 HP', effect: { type: 'sprint', safe: 70, safe_cost: 2, hp_dmg: 25 } },
+    ],
+  },
+  // ===== Stage 3+  =====
+  {
+    id: 'mysterious_box',
+    title: '神秘黑匣',
+    icon: '🎁',
+    desc: '路边一个黑色匣子微微发抖，上面刻着古老的封印符文。',
+    stageMin: 3,
+    choices: [
+      { label: '打破封印', tooltip: '随机获得一件稀有以上品质装备', effect: { type: 'drop_equip', rarity: 'rare' } },
+      { label: '小心探查', tooltip: '获得 20~40 金币', effect: { type: 'gold', value: { min: 20, max: 40 } } },
+      { label: '放弃', tooltip: '太危险了——获得 5~10 金币聊以安慰', effect: { type: 'gold', value: { min: 5, max: 10 } } },
+    ],
+  },
+  {
+    id: 'dying_merchant',
+    title: '垂死商人',
+    icon: '🧳',
+    desc: '一个衣衫褴褛的商贩倒在地上：「救我，我把所有东西半价卖你，或者……你可以拿走我身上的一切。」',
+    stageMin: 3,
+    choices: [
+      { label: '施以援手 (回复10% HP)', tooltip: '获得一件半价装备 + 5~10 金币。良心发现。', effect: { type: 'heal_mixed', heal: 10, cost: 0, bonus_gold: { min: 5, max: 10 } } },
+      { label: '搜刮一番', tooltip: '获得 30~50 金币 + 15~25 XP，但你心里有点愧疚。', effect: { type: 'gold_xp', gold: { min: 30, max: 50 }, xp: { min: 15, max: 25 } } },
+      { label: '一脚踢开', tooltip: '商人咒骂了一句，但你毫无好处。', effect: { type: 'none' } },
+    ],
+  },
+  {
+    id: 'ancient_anvil',
+    title: '远古锻造台',
+    icon: '🔨',
+    desc: '一个久远的铁砧仍然温热。可以选择一件装备淬火——或者拆解换取金币。',
+    stageMin: 3,
+    choices: [
+      { label: '淬火 (消耗 25G)', tooltip: '随机获得一件史诗装备', effect: { type: 'drop_equip', rarity: 'epic' } },
+      { label: '拆装置换 (消耗未装备普通装)', tooltip: '拆解一件最旧普通装备换取 15~25G 并随机替换稀有装', effect: { type: 'reforge', cost: 0, sell_price: { min: 15, max: 25 }, new_rarity: 'rare' } },
+      { label: '拜一下离开', tooltip: '获得 5~15 金币', effect: { type: 'gold', value: { min: 5, max: 15 } } },
+    ],
+  },
+]
+
+export function buildEventResult(eff: Record<string, any>): string {
+  if (eff.type === 'none') return '无事发生。你什么也没得到。'
+  if (eff.type === 'gold') {
+    if (eff.value > 0) return `获得 ${eff.value} 金币 💰`
+    return `失去 ${-eff.value} 金币 💸`
+  }
+  if (eff.type === 'heal') return `回复了 ${eff.value}% 最大生命值 ❤`
+  if (eff.type === 'hp_reduce') return `失去了 ${eff.value} 点生命值 💔`
+  if (eff.type === 'maxhp_down') return `最大生命值降低了 ${eff.value}% 💀`
+  if (eff.type === 'maxhp_up') return `最大生命值提升了 ${eff.value} 点 💪`
+  if (eff.type === 'xp') return `获得了 ${eff.value} 经验值 ✨`
+  if (eff.type === 'gold_heal') return `回复了 ${eff.heal}% HP 并获得 ${eff.gold} 金币`
+  if (eff.type === 'gold_xp') return `获得 ${eff.gold} 金币 + ${eff.xp} XP`
+  if (eff.type === 'drop_equip') return `获得了一件装备 🎁`
+  if (eff.type === 'hp_reduce_pct') {
+    let desc = `失去了 ${eff.value}% 当前生命值`
+    if (eff.atk_mult) desc += `，永久获得 +${Math.round(eff.atk_mult * 100)}% 攻击`
+    if (eff.def_mult) desc += `，永久获得 +${Math.round(eff.def_mult * 100)}% 防御`
+    return desc
+  }
+  if (eff.type === 'maxhp_down_pct') {
+    let desc = `最大生命值降低了 ${eff.value}%`
+    if (eff.atk_mult) desc += `，永久获得 +${Math.round(eff.atk_mult * 100)}% 攻击`
+    if (eff.def_mult) desc += `，永久获得 +${Math.round(eff.def_mult * 100)}% 防御`
+    return desc
+  }
+  return '发生了不可思议的事情……'
+}
+
+export function pickEvent(stage: number, rng: () => number): GameEvent {
+  const pool = EVENTS.filter(e => e.stageMin <= stage)
+  if (pool.length === 0) return EVENTS[0]
+  const idx = Math.floor(rng() * pool.length)
+  return { ...pool[idx] }
+}
+
+export function resolveEventEffect(effect: EventEffect, stage: number, rng: () => number): EventEffect {
+  const e = { ...effect }
+
+  e.value = rollNumber(e.value, rng)
+  if (e.type === 'gold_xp') {
+    e.gold = rollNumber(e.gold, rng)
+    e.xp = rollNumber(e.xp, rng)
+  }
+  if (e.bonus_gold != null) e.bonus_gold = rollNumber(e.bonus_gold, rng)
+  if (e.gold_win != null) e.gold_win = rollNumber(e.gold_win, rng)
+  if (e.sell_price != null) e.sell_price = rollNumber(e.sell_price, rng)
+
+  if (e.type === 'hp_reduce_pct') {
+    return { type: 'hp_reduce_pct', value: e.value, atk_mult: e.atk_mult || 0, def_mult: e.def_mult || 0 }
+  }
+  if (e.type === 'maxhp_down_pct') {
+    return { type: 'maxhp_down_pct', value: e.value, atk_mult: e.atk_mult || 0, def_mult: e.def_mult || 0 }
+  }
+  if (e.type === 'disarm') {
+    if (rng() < 0.5) return { type: 'gold', value: e.gold_win }
+    return { type: 'hp_reduce', value: e.hp_lose }
+  }
+  if (e.type === 'sprint') {
+    if (rng() * 100 < (e.safe || 70)) return { type: 'none' }
+    return { type: 'hp_reduce', value: e.hp_dmg }
+  }
+  if (e.type === 'gamble') {
+    if (rng() < 0.5) return resolveEventEffect({ type: 'drop_equip', rarity: e.win_rarity, cost: e.cost }, stage, rng)
+    return { type: 'gold', value: -(e.cost) }
+  }
+  if (e.type === 'heal_mixed') {
+    return { type: 'gold_heal', heal: e.heal, gold: e.bonus_gold }
+  }
+  if (e.type === 'gold_xp') {
+    return { type: 'gold_xp', gold: e.gold, xp: e.xp }
+  }
+  if (e.type === 'drop_equip') {
+    const rarity = e.rarity || 'common'
+    const pool = ALL_EQUIPMENT.filter(q => q.rarity === rarity)
+    if (pool.length === 0) return { type: 'gold', value: 15 }
+    const pick = pool[Math.floor(rng() * pool.length)]
+    const level = (stage - 1) * 2 + 1 + Math.floor(rng() * 2)
+    return { type: 'drop_equip', eqId: makeEquipId(pick.id, level), cost: e.cost }
+  }
+  if (e.type === 'heal' && e.curse) {
+    if (rng() * 100 < (e.curse)) return { type: 'maxhp_down_pct', value: e.curse_hp }
+    return { type: 'heal', value: Math.abs(e.value) }
+  }
+  if (e.type === 'reforge') {
+    return { ...e, eqId: '' }
+  }
+
+  return e
+}

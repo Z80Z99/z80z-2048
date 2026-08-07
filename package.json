@@ -1,0 +1,13 @@
+{
+  "name": "z80z-roguelike",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "pinia": "^2.1.7",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "sass": "^1.69.5",
+    "typescript": "^5.3.0"
+  }
+}
