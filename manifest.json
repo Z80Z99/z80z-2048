@@ -1,6 +1,6 @@
 {
 	"name": "Z80Z Roguelike",
-	"appid": "wx05070b046692700f",
+	"appid": "touristappid",
 	"description": "2048-based roguelike game",
 	"versionName": "1.0.0",
 	"versionCode": "100",
@@ -10,7 +10,7 @@
 		"compilerVersion": 3
 	},
 	"mp-weixin": {
-		"appid": "wx05070b046692700f",
+		"appid": "touristappid",
 		"setting": {
 			"urlCheck": false,
 			"es6": true,
