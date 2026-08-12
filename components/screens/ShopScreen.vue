@@ -119,7 +119,7 @@ const showRemove2 = ref(false)
 </template>
 
 <style lang="scss">
-.sv2 { background: #0d0d1a; min-height:100vh; padding:24rpx 20rpx 140rpx; display:flex; flex-direction:column; }
+.sv2 { background: #0d0d1a; min-height:100vh; padding:24rpx 20rpx 220rpx; display:flex; flex-direction:column; }
 .sv2-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:24rpx; }
 .sv2-title { font-size:40rpx; font-weight:900; color:#f1c40f; }
 .sv2-gold { display:flex; align-items:center; gap:6rpx; background:rgba(241,196,15,0.1); border:1px solid rgba(241,196,15,0.2); border-radius:24rpx; padding:10rpx 24rpx; }
@@ -146,7 +146,7 @@ const showRemove2 = ref(false)
 .sv2-card-stats { overflow:hidden; max-height:56rpx; } .sv2-card-stats-txt { font-size:22rpx; color:#888; line-height:28rpx; display:block; white-space:normal; word-break:break-all; }
 .sv2-card-price { font-size:26rpx; font-weight:900; color:#f1c40f; align-self:flex-end; flex-shrink:0; margin-top:auto; } .sv2-nope { color:#e74c3c; }
 .sv2-sold-txt { font-size:20rpx; color:#888; }
-.sv2-leave { text-align:center; padding:18rpx; background:rgba(255,255,255,0.03); border-radius:12rpx; position:fixed; bottom:20rpx; left:20rpx; right:20rpx; }
+.sv2-leave { text-align:center; padding:18rpx; background:rgba(255,255,255,0.03); border-radius:12rpx; position:fixed; bottom:110rpx; left:20rpx; right:20rpx; }
 .sv2-leave-txt { font-size:26rpx; color:#888; }
 .sv2-rm-overlay { position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:200; }
 .sv2-rm-panel { background:#1a1a2e; border-radius:16rpx; padding:24rpx; width:300px; max-height:60vh; }
