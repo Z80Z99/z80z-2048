@@ -7,6 +7,12 @@ import { ALL_EQUIPMENT, equipCost, getEquipStats } from '../../core/equipment'
 const store = useGameStore()
 
 const showRemove2 = ref(false)
+
+// shopEquipment holds compound ids (baseId:level:fluct) — resolve the definition
+// by base id (matching gameStore BUY_SHOP_EQUIP semantics)
+function equipOf(eid: string) {
+  return ALL_EQUIPMENT.find(e => e.id === eid.split(':')[0])
+}
 </script>
 
 <template>
@@ -36,7 +42,7 @@ const showRemove2 = ref(false)
               <view class="sv2-card-desc">
                 <text class="sv2-card-desc-txt">{{ UPGRADE_POOL.find(u => u.id === uid)?.description }}</text>
               </view>
-              <text :class="['sv2-card-price', store.player.gold >= upgradeCost(UPGRADE_POOL.find(u => u.id === uid)!) ? '' : 'sv2-nope']">{{ upgradeCost(UPGRADE_POOL.find(u => u.id === uid)!) }}G</text>
+              <text :class="['sv2-card-price', store.player.gold >= upgradeCost(UPGRADE_POOL.find(u => u.id === uid)) ? '' : 'sv2-nope']">{{ upgradeCost(UPGRADE_POOL.find(u => u.id === uid)) }}G</text>
             </template>
             <text v-else class="sv2-sold-txt">— 已售 —</text>
           </view>
@@ -50,13 +56,13 @@ const showRemove2 = ref(false)
             <view v-if="!eid" class="sv2-card sv2-card-sold">
               <text class="sv2-sold-txt">— 已售 —</text>
             </view>
-            <view v-else :class="['sv2-card', 'sv2-card-rarity-' + (ALL_EQUIPMENT.find(e => e.id === eid)?.rarity ?? 'common')]" @click="store.BUY_SHOP_EQUIP(i)">
-              <text class="sv2-card-tag">{{ rarityText(ALL_EQUIPMENT.find(e => e.id === eid)?.rarity ?? 'common') }}</text>
-              <text class="sv2-card-name">{{ ALL_EQUIPMENT.find(e => e.id === eid)?.name }}</text>
+            <view v-else :class="['sv2-card', 'sv2-card-rarity-' + (equipOf(eid)?.rarity ?? 'common')]" @click="store.BUY_SHOP_EQUIP(i)">
+              <text class="sv2-card-tag">{{ rarityText(equipOf(eid)?.rarity ?? 'common') }}</text>
+              <text class="sv2-card-name">{{ equipOf(eid)?.name }}</text>
               <view class="sv2-card-desc sv2-card-stats">
                 <text class="sv2-card-stats-txt">{{ Object.entries(getEquipStats(eid)).map(([k, v]) => k === 'atk' ? `攻击+${v}%` : k === 'def' ? `防御+${v}%` : k === 'spd' ? `速度+${v}` : k === 'hp' ? `生命+${v}%` : k === 'gold' ? `金币+${v}%` : '').filter(Boolean).join(' ') }}</text>
               </view>
-              <text :class="['sv2-card-price', store.player.gold >= equipCost(ALL_EQUIPMENT.find(e => e.id === eid)!) ? '' : 'sv2-nope']">{{ equipCost(ALL_EQUIPMENT.find(e => e.id === eid)!) }}G</text>
+              <text :class="['sv2-card-price', store.player.gold >= equipCost(equipOf(eid)) ? '' : 'sv2-nope']">{{ equipCost(equipOf(eid)) }}G</text>
             </view>
           </template>
         </view>

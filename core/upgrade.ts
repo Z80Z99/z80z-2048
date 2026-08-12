@@ -119,9 +119,9 @@ export function pickUpgrades(
   return picked;
 }
 
-export function upgradeCost(def: { rarity: string }): number {
+export function upgradeCost(def: { rarity: string } | undefined): number {
   const costs: Record<string, number> = { common: 20, rare: 50, epic: 80 };
-  return costs[def.rarity] ?? 20;
+  return costs[def?.rarity ?? 'common'] ?? 20;
 }
 
 export function rarityText(rarity: string): string {

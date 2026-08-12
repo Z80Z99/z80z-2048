@@ -107,9 +107,9 @@ for (const item of NO_SET_ITEMS) {
 
 export function getSetData(setId: string): SetData | undefined { return SETS[setId]; }
 
-export function equipCost(eq: { rarity: string }): number {
+export function equipCost(eq: { rarity: string } | undefined): number {
   const costs: Record<string, number> = { common: 30, rare: 70, epic: 120 };
-  return costs[eq.rarity] ?? 30;
+  return costs[eq?.rarity ?? 'common'] ?? 30;
 }
 
 export function computeEquipBonuses(equipped: Record<string, string | undefined>) {
