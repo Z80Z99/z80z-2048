@@ -32,7 +32,7 @@ const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; f
 <style lang="scss">
 .bestiary-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 85; display: flex; align-items: flex-end; }
 .bestiary-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
-.bestiary-panel { position: relative; width: 100%; max-height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; }
+.bestiary-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; }
 .bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .bs-header-left { display: flex; align-items: center; gap: 12rpx; }
 .bs-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; }
@@ -47,7 +47,7 @@ const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; f
 .bs-claim-label { font-size: 18rpx; color: #2ecc71; font-weight: bold; display: block; } .bs-claim-bonus { font-size: 16rpx; color: #2ecc71; }
 .bs-progress { height: 6rpx; background: rgba(255,255,255,0.06); border-radius: 3rpx; overflow: hidden; } .bs-progress-sm { margin: 4rpx 0; }
 .bs-progress-gold { background: linear-gradient(90deg, #f1c40f, #e67e22); } .bs-progress-fill { height: 100%; border-radius: 3rpx; }
-.bs-body { flex: 1; } .bs-tier { margin-bottom: 16rpx; } .bs-tier-header { display: flex; align-items: center; gap: 8rpx; margin-bottom: 8rpx; }
+.bs-body { flex: 1; height: 0; } .bs-tier { margin-bottom: 16rpx; } .bs-tier-header { display: flex; align-items: center; gap: 8rpx; margin-bottom: 8rpx; }
 .bs-tier-dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; } .bs-tier-name { font-size: 22rpx; font-weight: bold; }
 .bs-card { display: flex; align-items: center; justify-content: space-between; padding: 12rpx; border-radius: 10rpx; background: rgba(255,255,255,0.02); margin-bottom: 6rpx; }
 .bs-card-locked { opacity: 0.3; } .bs-card-main { flex: 1; } .bs-card-name { font-size: 24rpx; font-weight: bold; color: #ccc; display: block; margin-bottom: 6rpx; }

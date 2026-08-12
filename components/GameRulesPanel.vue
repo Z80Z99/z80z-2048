@@ -102,10 +102,10 @@ function parseText(text: string) {
 </template>
 <style lang="scss">
 .rules-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 80; }
-.rules-panel { width: 100%; max-height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; }
+.rules-panel { width: 100%; height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; }
 .rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .rules-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; } .rules-close { padding: 8rpx; color: #888; font-size: 28rpx; }
-.rules-body { flex: 1; } .rules-section { margin-bottom: 20rpx; }
+.rules-body { flex: 1; height: 0; } .rules-section { margin-bottom: 20rpx; }
 .rules-section-title { font-size: 24rpx; font-weight: bold; color: #ccc; display: block; margin-bottom: 8rpx; }
 .rules-item { display: flex; gap: 8rpx; padding: 6rpx 0; } .rules-dot { font-size: 22rpx; color: #f1c40f; width: 24rpx; flex-shrink: 0; }
 .rules-text { font-size: 22rpx; color: #888; line-height: 34rpx; }

@@ -30,10 +30,10 @@ const hpInput = ref('50')
 <style lang="scss">
 .dbg-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90; display: flex; align-items: flex-end; }
 .dbg-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
-.dbg-panel { position: relative; width: 100%; max-height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; }
+.dbg-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; }
 .dbg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .dbg-title { font-size: 24rpx; font-weight: bold; color: #f1c40f; } .dbg-close { padding: 8rpx; font-size: 24rpx; color: #888; }
-.dbg-body { flex: 1; } .dbg-section { margin-bottom: 16rpx; }
+.dbg-body { flex: 1; height: 0; } .dbg-section { margin-bottom: 16rpx; }
 .dbg-label { font-size: 20rpx; color: #888; display: block; margin-bottom: 6rpx; }
 .dbg-row { display: flex; gap: 8rpx; } .dbg-wrap { flex-wrap: wrap; }
 .dbg-btn { background: rgba(255,255,255,0.08); border-radius: 8rpx; padding: 10rpx 18rpx; font-size: 22rpx; } .dbg-btn .dbg-txt { color: #ccc; }
