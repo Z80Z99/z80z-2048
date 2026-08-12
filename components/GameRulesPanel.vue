@@ -102,7 +102,7 @@ const lines: RuleLine[] = sections.flatMap(sec => [
       <scroll-view class="rules-body" scroll-y>
         <view v-for="(line, i) in lines" :key="i" :class="['rules-line', line.kind === 'title' ? 'rules-line-title' : '']">
           <text v-if="line.kind === 'title'" class="rules-section-title">{{ line.title }}</text>
-          <view v-else class="rules-item"><text class="rules-dot">•</text><text class="rules-text"><template v-for="(p, k) in line.parts" :key="k"><text v-if="p.style" :class="p.style">{{ p.text }}</text><text v-else>{{ p.text }}</text></template></text></view>
+          <view v-else class="rules-item"><text class="rules-dot">•</text><text class="rules-text"><text v-for="(p, k) in line.parts" :key="k" :class="p.style || ''">{{ p.text }}</text></text></view>
         </view>
       </scroll-view>
       <view class="rules-footer"><text class="rules-footer-text">点击空白处关闭</text></view>
