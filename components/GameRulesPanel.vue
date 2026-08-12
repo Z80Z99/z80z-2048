@@ -6,14 +6,16 @@ const sections: RuleSection[] = [
     '棋盘为 **4×4** 网格，向**上下左右**滑动操作',
     '相同数字碰撞后合并：**2+2→4**、**4+4→8**、**8+8→16**，以此类推',
     '每次滑动后，空格随机生成新方块（!!90% 为 2，10% 为 4!!）',
-    '棋盘满且无相邻相同数字时，游戏进入困境',
+    '棋盘满且无法合并时无法滑动，只能!!提前结束!!本回合',
   ]},
   { title: '战斗系统', items: [
-    '每回合有 !!6 步!! 操作机会，用完或手动进入 !!结算!!',
+    '每回合基础 !!6 步!! 操作机会（强化/装备可增加），用完或手动进入 !!结算!!',
     '**每次合并产生的数值** 累积为 !!攻击值!!（合并大了才疼）',
     '**棋盘所有方块数值之和** 为 !!防御值!!（保留高方块=防高）',
     '**空格数** 决定 !!速度!!（空格多=快=先手，基础 3 + 装备速度）',
     '博弈核心：!!合并!! 清空格 → 攻↑ 防↓ 速↑ / !!保留!! → 攻↓ 防↑ 速↓',
+    '!!回合结算后：棋盘所有方块减半!!（向下取整、最小为 2）——下回合从减半棋盘继续',
+    '提前结束回合：剩余步数 ×2 的 !!金币奖励!!，并立即结算本回合',
     '结算伤害公式：',
     '　**攻击值** × 攻击倍率 − 敌人防御 + !!固定攻击!! = ++对敌伤害++',
     '　敌攻击 − !!防御值!! − !!固定防御!! = ++自身受伤++（防御值 = 盘面总和 × 防御倍率 × (1+减伤%) / 6）',
@@ -28,27 +30,31 @@ const sections: RuleSection[] = [
     '非套装装备（15 款）：!!随机属性!!，品质越高属性条越多',
     '　普通 1~2 条 / 稀有 2~3 条 / 史诗 3~4 条',
     '所有装备数值有 **±30% 波动**，同一装备可能爆出不同数值',
-    '装备属性：!!攻击!! !!防御!!（百分比加成）、速度（固定值）、生命（固定值）',
+    '装备属性：!!攻击!! !!防御!!（百分比加成）、速度/生命（固定值）、金币/经验（加成）',
     '装备等级随地图阶段提升，等级越高基础值越大',
     '背包可随时整理：按品质→部位→等级排序',
   ]},
   { title: '敌人与奖励', items: [
     '敌人分三阶段专属池，阶段越高越强，每回合敌人属性 !!上涨!!',
+    '第 2 阶段起，敌人会随机携带 !!强化卡!!，属性全面提升',
     '击败敌人获得 !!经验值!! 和 **金币**，并有概率掉落装备',
+    '精英/Boss 的金币与经验有 !!倍数加成!!（精英 ×2 / Boss ×3）',
     '敌人品质越高（精英/Boss），掉落装备稀有度越高',
     '击杀解锁 !!图鉴!!，每 5 杀可领取金币奖励，全图鉴额外奖励生命和攻击',
   ]},
   { title: '等级与强化', items: [
     '升级后从 3 个随机强化中选择 1 个',
-    '强化包括：攻击提升、生命上限增加、每回合回血、暴击、额外步数等',
+    '强化包括：攻击/防御倍率提升、恢复生命、生命上限增加、额外步数、开局高价值方块、生成减伤、削弱敌人、金币加成等',
+    '强化卡分 !!普通/稀有/史诗!! 三档：史诗效果更强，叠加上限更低',
+    '生命值低于一半时，奖励池会 !!优先出现治疗卡!!',
     '开局可从 3 个初始强化中选择 1 个',
     '强化可叠加——选择同一强化的次数越多效果越强',
   ]},
   { title: '商店系统', items: [
     '路线地图中的 **⬟ 商店节点** 可用金币购买 !!强化!! 和 !!装备!!',
-    '商品定价：普通 20G / 稀有 50G / 史诗 80G',
+    '强化卡定价：普通 20G / 稀有 50G / 史诗 80G；装备定价：普通 30G / 稀有 70G / 史诗 120G',
     '可花费金币刷新商品（10G 起），或移除不想要的强化（30G）',
-    '商店也有概率出现 ``恢复药水``，直接回复生命',
+    '商店固定提供 1 个 ``恢复药水``（按回复量 ×1.5 定价），直接回复生命',
   ]},
   { title: '地图与阶段', items: [
     '每阶段 **10 层**，由下往上攀登',
@@ -61,7 +67,7 @@ const sections: RuleSection[] = [
   ]},
   { title: '永久升级', items: [
     '冒险结束获得``灵魂碎片``，在主菜单``永久升级``中消费',
-    '永久强化包括：初始血量、初始攻击倍率、初始防御倍率等',
+    '永久强化包括：初始生命、初始攻击倍率，以及开局多一次强化选择',
     '永久升级对所有新冒险生效',
   ]},
 ]
@@ -79,15 +85,18 @@ function parseText(text: string) {
   }
   return parts
 }
+
+// 静态文本预解析一次，避免每次渲染重复解析
+const parsedSections = sections.map(sec => ({ title: sec.title, items: sec.items.map(parseText) }))
 </script>
 <template>
   <view class="rules-overlay" @click="$emit('close')">
     <view class="rules-panel" @click.stop>
       <view class="rules-header"><text class="rules-title">游戏规则</text><view class="rules-close" @click="$emit('close')"><text>✕</text></view></view>
       <scroll-view class="rules-body" scroll-y>
-        <view v-for="(sec, i) in sections" :key="i" class="rules-section">
+        <view v-for="(sec, i) in parsedSections" :key="i" class="rules-section">
           <text class="rules-section-title">{{ sec.title }}</text>
-          <view v-for="(item, j) in sec.items" :key="j" class="rules-item"><text class="rules-dot">•</text><text class="rules-text"><template v-for="(p, k) in parseText(item)" :key="k"><text v-if="p.style" :class="p.style">{{ p.text }}</text><text v-else>{{ p.text }}</text></template></text></view>
+          <view v-for="(item, j) in sec.items" :key="j" class="rules-item"><text class="rules-dot">•</text><text class="rules-text"><template v-for="(p, k) in item" :key="k"><text v-if="p.style" :class="p.style">{{ p.text }}</text><text v-else>{{ p.text }}</text></template></text></view>
         </view>
       </scroll-view>
       <view class="rules-footer"><text class="rules-footer-text">点击空白处关闭</text></view>
