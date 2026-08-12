@@ -87,16 +87,22 @@ function parseText(text: string) {
 }
 
 // 静态文本预解析一次，避免每次渲染重复解析
-const parsedSections = sections.map(sec => ({ title: sec.title, items: sec.items.map(parseText) }))
+// 注意：微信 mp 渲染器 v-for 嵌套超过 2 层会报 FLOW_DEPTH 错误，
+// 因此把 sections 扁平化为单层 lines（标题行 + 内容行），模板只保留两层 v-for。
+interface RuleLine { kind: 'title' | 'item'; title?: string; parts: { text: string; style?: string }[] }
+const lines: RuleLine[] = sections.flatMap(sec => [
+  { kind: 'title', title: sec.title, parts: [] },
+  ...sec.items.map(t => ({ kind: 'item', parts: parseText(t) })),
+])
 </script>
 <template>
   <view class="rules-overlay" @click="$emit('close')">
     <view class="rules-panel" @click.stop>
       <view class="rules-header"><text class="rules-title">游戏规则</text><view class="rules-close" @click="$emit('close')"><text>✕</text></view></view>
       <scroll-view class="rules-body" scroll-y>
-        <view v-for="(sec, i) in parsedSections" :key="i" class="rules-section">
-          <text class="rules-section-title">{{ sec.title }}</text>
-          <view v-for="(item, j) in sec.items" :key="j" class="rules-item"><text class="rules-dot">•</text><text class="rules-text"><template v-for="(p, k) in item" :key="k"><text v-if="p.style" :class="p.style">{{ p.text }}</text><text v-else>{{ p.text }}</text></template></text></view>
+        <view v-for="(line, i) in lines" :key="i" :class="['rules-line', line.kind === 'title' ? 'rules-line-title' : '']">
+          <text v-if="line.kind === 'title'" class="rules-section-title">{{ line.title }}</text>
+          <view v-else class="rules-item"><text class="rules-dot">•</text><text class="rules-text"><template v-for="(p, k) in line.parts" :key="k"><text v-if="p.style" :class="p.style">{{ p.text }}</text><text v-else>{{ p.text }}</text></template></text></view>
         </view>
       </scroll-view>
       <view class="rules-footer"><text class="rules-footer-text">点击空白处关闭</text></view>
@@ -108,7 +114,7 @@ const parsedSections = sections.map(sec => ({ title: sec.title, items: sec.items
 .rules-panel { width: 100%; max-height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; }
 .rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .rules-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; } .rules-close { padding: 8rpx; color: #888; font-size: 28rpx; }
-.rules-body { flex: 1; } .rules-section { margin-bottom: 20rpx; }
+.rules-body { flex: 1; } .rules-line-title { margin-top: 20rpx; } .rules-line-title:first-child { margin-top: 0; }
 .rules-section-title { font-size: 24rpx; font-weight: bold; color: #ccc; display: block; margin-bottom: 8rpx; }
 .rules-item { display: flex; gap: 8rpx; padding: 6rpx 0; } .rules-dot { font-size: 22rpx; color: #f1c40f; width: 24rpx; flex-shrink: 0; }
 .rules-text { font-size: 22rpx; color: #888; line-height: 34rpx; }
