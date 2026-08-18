@@ -33,7 +33,7 @@ function equipOf(eid: string) {
           </view>
         </view>
         <view class="sv2-row">
-          <view v-for="(uid, i) in store.shopUpgrades" :key="i"
+          <view v-for="(uid, i) in store.shopUpgrades" :key="`${store.shopRefreshCost}-${i}`"
             :class="['sv2-card', uid ? 'sv2-card-rarity-' + (UPGRADE_POOL.find(u => u.id === uid)?.rarity ?? 'common') : 'sv2-card-sold']"
             @click="store.BUY_SHOP_UPGRADE(i)">
             <template v-if="uid">
@@ -52,7 +52,7 @@ function equipOf(eid: string) {
       <view class="sv2-sec">
         <text class="sv2-sec-title">— 装备 —</text>
         <view class="sv2-row">
-          <template v-for="(eid, i) in store.shopEquipment" :key="i">
+          <template v-for="(eid, i) in store.shopEquipment" :key="`${store.shopRefreshCost}-${i}`">
             <view v-if="!eid" class="sv2-card sv2-card-sold">
               <text class="sv2-sold-txt">— 已售 —</text>
             </view>
@@ -72,7 +72,7 @@ function equipOf(eid: string) {
         <view class="sv2-split">
           <view class="sv2-split-half">
             <text class="sv2-sec-title">— 回复 —</text>
-            <template v-for="(hid, i) in store.shopHeals" :key="i">
+            <template v-for="(hid, i) in store.shopHeals" :key="`${store.shopRefreshCost}-${i}`">
               <view v-if="!hid" class="sv2-card sv2-card-sold" style="height:150rpx">
                 <text class="sv2-sold-txt">— 已售 —</text>
               </view>
