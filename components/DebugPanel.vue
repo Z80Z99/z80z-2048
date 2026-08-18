@@ -3,24 +3,16 @@ import { ref } from 'vue'
 import { useGameStore } from '../store/gameStore'
 import { UPGRADE_POOL } from '../core/upgrade'
 import { ALL_EQUIPMENT } from '../core/equipment'
-const emit = defineEmits<{ close: [] }>()
-// 关闭动画：先播滑出，250ms 后再真正关闭
-const closing = ref(false)
-let closeTimer: any = null
-function close() {
-  if (closing.value) return
-  closing.value = true
-  closeTimer = setTimeout(() => emit('close'), 250)
-}
+defineEmits<{ close: [] }>()
 const store = useGameStore()
 const goldInput = ref('100')
 const hpInput = ref('50')
 </script>
 <template>
   <view class="dbg-overlay">
-    <view class="dbg-blur" :class="{ closing }" @click="close()" />
-    <view class="dbg-panel" :class="{ closing }">
-      <view class="dbg-header"><text class="dbg-title">调试面板</text><view class="dbg-close" @click="close()"><text class="dbg-txt">×</text></view></view>
+    <view class="dbg-blur" @click="$emit('close')" />
+    <view class="dbg-panel">
+      <view class="dbg-header"><text class="dbg-title">调试面板</text><view class="dbg-close" @click="$emit('close')"><text class="dbg-txt">×</text></view></view>
       <scroll-view class="dbg-body" scroll-y>
         <view class="dbg-section"><text class="dbg-label">快捷跳转</text><view class="dbg-row dbg-wrap"><view class="dbg-btn" @click="store.DEBUG_GO_SHOP()"><text class="dbg-txt">进商店</text></view><view class="dbg-btn" @click="store.DEBUG_GO_REST()"><text class="dbg-txt">进休息</text></view><view class="dbg-btn" @click="store.DEBUG_GO_BOSS()"><text class="dbg-txt">进Boss选择</text></view></view></view>
         <view class="dbg-section"><text class="dbg-label">装备操作</text><view class="dbg-row dbg-wrap"><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_INVENTORY([...store.player.inventory, ALL_EQUIPMENT[Math.floor(Math.random() * ALL_EQUIPMENT.length)].id])"><text class="dbg-txt">随机掉落装备</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_DROP_10_EQUIP()"><text class="dbg-txt">掉落10件</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_INVENTORY([])"><text class="dbg-txt">清空背包</text></view></view></view>
@@ -49,10 +41,4 @@ const hpInput = ref('50')
 .dbg-input { width: 100rpx; height: 48rpx; background: rgba(255,255,255,0.06); border-radius: 6rpx; padding: 4rpx 8rpx; font-size: 22rpx; color: #fff; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
-.dbg-blur.closing { animation: fade-out 0.25s ease-in forwards; }
-.dbg-panel.closing { animation: panel-exit 0.25s ease-in forwards; }
-@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes panel-exit { from { transform: translateY(0); opacity: 1; } to { transform: translateY(50%); opacity: 0.6; } }
 </style>
