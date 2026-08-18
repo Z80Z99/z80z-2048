@@ -3,16 +3,24 @@ import { ref } from 'vue'
 import { useGameStore } from '../store/gameStore'
 import { UPGRADE_POOL } from '../core/upgrade'
 import { ALL_EQUIPMENT } from '../core/equipment'
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
+// 关闭动画：先播滑出（CSS transition），250ms 后再真正关闭
+const closing = ref(false)
+let closeTimer: any = null
+function close() {
+  if (closing.value) return
+  closing.value = true
+  closeTimer = setTimeout(() => emit('close'), 250)
+}
 const store = useGameStore()
 const goldInput = ref('100')
 const hpInput = ref('50')
 </script>
 <template>
   <view class="dbg-overlay">
-    <view class="dbg-blur" @click="$emit('close')" />
-    <view class="dbg-panel">
-      <view class="dbg-header"><text class="dbg-title">调试面板</text><view class="dbg-close" @click="$emit('close')"><text class="dbg-txt">×</text></view></view>
+    <view class="dbg-blur" :class="{ 'closing': closing }" @click="close()" />
+    <view class="dbg-panel" :class="{ 'closing': closing }">
+      <view class="dbg-header"><text class="dbg-title">调试面板</text><view class="dbg-close" @click="close()"><text class="dbg-txt">×</text></view></view>
       <scroll-view class="dbg-body" scroll-y>
         <view class="dbg-section"><text class="dbg-label">快捷跳转</text><view class="dbg-row dbg-wrap"><view class="dbg-btn" @click="store.DEBUG_GO_SHOP()"><text class="dbg-txt">进商店</text></view><view class="dbg-btn" @click="store.DEBUG_GO_REST()"><text class="dbg-txt">进休息</text></view><view class="dbg-btn" @click="store.DEBUG_GO_BOSS()"><text class="dbg-txt">进Boss选择</text></view></view></view>
         <view class="dbg-section"><text class="dbg-label">装备操作</text><view class="dbg-row dbg-wrap"><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_INVENTORY([...store.player.inventory, ALL_EQUIPMENT[Math.floor(Math.random() * ALL_EQUIPMENT.length)].id])"><text class="dbg-txt">随机掉落装备</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_DROP_10_EQUIP()"><text class="dbg-txt">掉落10件</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_INVENTORY([])"><text class="dbg-txt">清空背包</text></view></view></view>
@@ -29,8 +37,10 @@ const hpInput = ref('50')
 </template>
 <style lang="scss">
 .dbg-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90; display: flex; align-items: flex-end; }
-.dbg-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.5); animation: fade-in 0.2s ease-out; }
-.dbg-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); }
+.dbg-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.5); animation: fade-in 0.2s ease-out; transition: opacity 0.25s ease-in; }
+.dbg-blur.closing { opacity: 0; }
+.dbg-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); transition: transform 0.25s ease-in, opacity 0.25s ease-in; }
+.dbg-panel.closing { transform: translateY(50%); opacity: 0.6; }
 .dbg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .dbg-title { font-size: 24rpx; font-weight: bold; color: #f1c40f; } .dbg-close { padding: 8rpx; font-size: 24rpx; color: #888; }
 .dbg-body { flex: 1; height: 0; } .dbg-section { margin-bottom: 16rpx; }

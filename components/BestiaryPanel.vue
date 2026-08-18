@@ -2,7 +2,15 @@
 import { computed } from 'vue'
 import { useGameStore } from '../store/gameStore'
 import { ENEMIES } from '../core/enemy'
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
+// 关闭动画：先播滑出（CSS transition），250ms 后再真正关闭
+const closing = ref(false)
+let closeTimer: any = null
+function close() {
+  if (closing.value) return
+  closing.value = true
+  closeTimer = setTimeout(() => emit('close'), 250)
+}
 const store = useGameStore()
 const m = computed(() => store.meta)
 const found = computed(() => m.value.unlockedEnemies.length)
@@ -13,9 +21,9 @@ const tierInfo: Record<number, { name: string; color: string; glow: string }> = 
 const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; for (const e of ENEMIES) { if (!g[e.tier]) g[e.tier] = []; g[e.tier].push(e) } return g })
 </script>
 <template>
-  <view class="bestiary-overlay"><view class="bestiary-blur" @click="$emit('close')" />
-    <view class="bestiary-panel">
-      <view class="bs-header"><view class="bs-header-left"><text class="bs-title">怪物图鉴</text><view class="bs-count-badge"><text class="bs-count-text">{{ found }}/{{ ENEMIES.length }}</text></view></view><view class="bs-close" @click="$emit('close')"><text class="bs-close-x">×</text></view></view>
+  <view class="bestiary-overlay"><view class="bestiary-blur" :class="{ 'closing': closing }" @click="close()" />
+    <view class="bestiary-panel" :class="{ 'closing': closing }">
+      <view class="bs-header"><view class="bs-header-left"><text class="bs-title">怪物图鉴</text><view class="bs-count-badge"><text class="bs-count-text">{{ found }}/{{ ENEMIES.length }}</text></view></view><view class="bs-close" @click="close()"><text class="bs-close-x">×</text></view></view>
       <view class="bs-global-card"><view class="bs-global-top"><view class="bs-global-info"><text class="bs-global-icon">◈</text><view><text class="bs-global-title">探索进度 · 下一奖励</text><text class="bs-global-nums">{{ totalDisc }}<text class="bs-global-div"> / {{ nextGlobal }}</text></text></view></view><view v-if="canClaimGlobal" class="bs-claim" @click="store.CLAIM_BESTIARY_REWARD('global')"><text class="bs-claim-label">领取</text><text class="bs-claim-bonus">+10碎片 +3生命</text></view><text v-else class="bs-global-remain">距下次 {{ nextGlobal - totalDisc }} 次</text></view><view class="bs-progress"><view class="bs-progress-fill bs-progress-gold" :style="{ width: `${Math.min(100, totalDisc / nextGlobal * 100)}%` }" /></view></view>
       <scroll-view class="bs-body" scroll-y>
         <view v-for="tier in [1,2,3,4]" :key="tier"><template v-if="grouped[tier]?.length"><view class="bs-tier"><view class="bs-tier-header"><view class="bs-tier-dot" :style="{ background: tierInfo[tier].color, boxShadow: `0 0 8rpx ${tierInfo[tier].glow}` }" /><text class="bs-tier-name" :style="{ color: tierInfo[tier].color }">{{ tierInfo[tier].name }}</text></view>
@@ -31,8 +39,10 @@ const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; f
 </template>
 <style lang="scss">
 .bestiary-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 85; display: flex; align-items: flex-end; }
-.bestiary-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); animation: fade-in 0.2s ease-out; }
-.bestiary-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); }
+.bestiary-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); animation: fade-in 0.2s ease-out; transition: opacity 0.25s ease-in; }
+.bestiary-blur.closing { opacity: 0; }
+.bestiary-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); transition: transform 0.25s ease-in, opacity 0.25s ease-in; }
+.bestiary-panel.closing { transform: translateY(50%); opacity: 0.6; }
 .bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .bs-header-left { display: flex; align-items: center; gap: 12rpx; }
 .bs-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; }

@@ -1,5 +1,14 @@
 ﻿<script setup lang="ts">
-defineEmits<{ close: [] }>()
+import { ref } from 'vue'
+const emit = defineEmits<{ close: [] }>()
+// 关闭动画：先播滑出（CSS transition），250ms 后再真正关闭
+const closing = ref(false)
+let closeTimer: any = null
+function close() {
+  if (closing.value) return
+  closing.value = true
+  closeTimer = setTimeout(() => emit('close'), 250)
+}
 interface RuleSection { title: string; items: string[] }
 const sections: RuleSection[] = [
   { title: '2048 基础操作', items: [
@@ -87,9 +96,9 @@ function parseText(text: string) {
 }
 </script>
 <template>
-  <view class="rules-overlay" @click="$emit('close')">
-    <view class="rules-panel" @click.stop>
-      <view class="rules-header"><text class="rules-title">游戏规则</text><view class="rules-close" @click="$emit('close')"><text>✕</text></view></view>
+  <view class="rules-overlay" :class="{ 'closing': closing }" @click="close()">
+    <view class="rules-panel" :class="{ 'closing': closing }" @click.stop>
+      <view class="rules-header"><text class="rules-title">游戏规则</text><view class="rules-close" @click="close()"><text>✕</text></view></view>
       <scroll-view class="rules-body" scroll-y>
         <view v-for="(sec, i) in sections" :key="i" class="rules-section">
           <text class="rules-section-title">{{ sec.title }}</text>
@@ -101,8 +110,10 @@ function parseText(text: string) {
   </view>
 </template>
 <style lang="scss">
-.rules-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 80; animation: fade-in 0.2s ease-out; }
-.rules-panel { width: 100%; height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); }
+.rules-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 80; animation: fade-in 0.2s ease-out; transition: opacity 0.25s ease-in; }
+.rules-overlay.closing { opacity: 0; }
+.rules-panel { width: 100%; height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); transition: transform 0.25s ease-in, opacity 0.25s ease-in; }
+.rules-panel.closing { transform: translateY(50%); opacity: 0.6; }
 .rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .rules-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; } .rules-close { padding: 8rpx; color: #888; font-size: 28rpx; }
 .rules-body { flex: 1; height: 0; } .rules-section { margin-bottom: 20rpx; }
