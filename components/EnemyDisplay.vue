@@ -22,7 +22,7 @@ watch(() => props.currentHp, (v, old) => {
 })
 </script>
 <template>
-  <view class="enemy-card" :class="{ hit }">
+  <view class="enemy-card" :class="{ 'hit': hit }">
     <view class="enemy-top"><text class="enemy-name">{{ enemy.name }}</text><view class="enemy-tier"><text class="enemy-tier-text">S{{ enemy.tier > 3 ? 'B' : enemy.tier }}</text></view></view>
     <view class="enemy-hp-section"><view class="enemy-hp-header"><text class="enemy-hp-label">HP</text><text class="enemy-hp-num">{{ currentHp }}/{{ enemy.maxHp }}</text></view><view class="enemy-hp-track"><view class="enemy-hp-fill" :style="{ width: `${hpPercent}%`, background: hpColor }" /></view></view>
     <view class="enemy-stats">

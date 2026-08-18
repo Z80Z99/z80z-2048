@@ -33,8 +33,8 @@ function equipOf(eid: string) {
           </view>
         </view>
         <view class="sv2-row">
-          <view v-for="(uid, i) in store.shopUpgrades" :key="`${store.shopRefreshCost}-${i}`"
-            :class="['sv2-card', uid ? 'sv2-card-rarity-' + (UPGRADE_POOL.find(u => u.id === uid)?.rarity ?? 'common') : 'sv2-card-sold']"
+          <view v-for="(uid, i) in store.shopUpgrades" :key="i"
+            :class="['sv2-card', uid ? 'sv2-card-rarity-' + (UPGRADE_POOL.find(u => u.id === uid)?.rarity ?? 'common') : 'sv2-card-sold', 'sv2-anim-' + (store.shopRefreshCost % 2)]"
             @click="store.BUY_SHOP_UPGRADE(i)">
             <template v-if="uid">
               <text class="sv2-card-tag">{{ rarityText(UPGRADE_POOL.find(u => u.id === uid)?.rarity ?? 'common') }}</text>
@@ -52,11 +52,11 @@ function equipOf(eid: string) {
       <view class="sv2-sec">
         <text class="sv2-sec-title">— 装备 —</text>
         <view class="sv2-row">
-          <template v-for="(eid, i) in store.shopEquipment" :key="`${store.shopRefreshCost}-${i}`">
+          <template v-for="(eid, i) in store.shopEquipment" :key="i">
             <view v-if="!eid" class="sv2-card sv2-card-sold">
               <text class="sv2-sold-txt">— 已售 —</text>
             </view>
-            <view v-else :class="['sv2-card', 'sv2-card-rarity-' + (equipOf(eid)?.rarity ?? 'common')]" @click="store.BUY_SHOP_EQUIP(i)">
+            <view v-else :class="['sv2-card', 'sv2-card-rarity-' + (equipOf(eid)?.rarity ?? 'common'), 'sv2-anim-' + (store.shopRefreshCost % 2)]" @click="store.BUY_SHOP_EQUIP(i)">
               <text class="sv2-card-tag">{{ rarityText(equipOf(eid)?.rarity ?? 'common') }}</text>
               <text class="sv2-card-name">{{ equipOf(eid)?.name }}</text>
               <view class="sv2-card-desc sv2-card-stats">
@@ -72,11 +72,11 @@ function equipOf(eid: string) {
         <view class="sv2-split">
           <view class="sv2-split-half">
             <text class="sv2-sec-title">— 回复 —</text>
-            <template v-for="(hid, i) in store.shopHeals" :key="`${store.shopRefreshCost}-${i}`">
+            <template v-for="(hid, i) in store.shopHeals" :key="i">
               <view v-if="!hid" class="sv2-card sv2-card-sold" style="height:150rpx">
                 <text class="sv2-sold-txt">— 已售 —</text>
               </view>
-              <view v-else class="sv2-card sv2-card-heal" style="height:150rpx" @click="store.BUY_SHOP_HEAL(i)">
+              <view v-else :class="['sv2-card', 'sv2-card-heal', 'sv2-anim-' + (store.shopRefreshCost % 2)]" style="height:150rpx" @click="store.BUY_SHOP_HEAL(i)">
                 <text class="sv2-card-tag" style="color:#2ecc71">回复</text>
                 <text class="sv2-card-name">{{ UPGRADE_POOL.find(u => u.id === hid)?.name }}</text>
                 <view class="sv2-card-desc">
@@ -144,6 +144,11 @@ function equipOf(eid: string) {
 .sv2-card-rarity-common { border-color:#7f8c8d; background:rgba(127,140,141,0.08); }
 .sv2-card-rarity-rare { border-color:#3498db; background:rgba(52,152,219,0.1); }
 .sv2-card-rarity-epic { border-color:#e67e22; background:rgba(230,126,34,0.12); }
+/* 刷新动画：shopRefreshCost 每次 +10，%2 翻转触发 animation-name 切换 -> 卡片重播入场 */
+.sv2-anim-0 { animation: sv2-refresh-0 0.35s ease-out both; }
+.sv2-anim-1 { animation: sv2-refresh-1 0.35s ease-out both; }
+@keyframes sv2-refresh-0 { 0% { opacity: 0; transform: translateY(30rpx) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes sv2-refresh-1 { 0% { opacity: 0; transform: translateY(30rpx) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 .sv2-card-sold { border-color:rgba(255,255,255,0.04); border-style:dashed; background:rgba(255,255,255,0.01); justify-content:center; align-items:center; }
 .sv2-card-heal { border-color:#2ecc71; background:rgba(46,204,113,0.08); }
 .sv2-card-tag { font-size:20rpx; color:#888; flex-shrink:0; }
