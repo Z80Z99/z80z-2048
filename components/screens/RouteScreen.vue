@@ -62,7 +62,7 @@ function onMapTouchEnd() { touching.value = false }
 
 <template>
   <view class="route-page">
-    <view v-if="showPanel" class="route-panel-fixed">
+    <view :class="['route-panel-fixed', { 'panel-hidden': !showPanel }]">
       <view class="rp-row1">
         <view class="rp-hp-card">
           <view class="rp-hp-top">
@@ -198,7 +198,8 @@ function onMapTouchEnd() { touching.value = false }
 
 <style lang="scss">
 .route-page { min-height: 100vh; background: linear-gradient(180deg, #0a0a1a 0%, #12122a 50%, #0a0a1a 100%); }
-.route-panel-fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 30; background: #0c0c20; border-bottom: 2px solid rgba(255,255,255,0.06); padding: 20rpx 16rpx 20rpx; }
+.route-panel-fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 30; background: #0c0c20; border-bottom: 2px solid rgba(255,255,255,0.06); padding: 20rpx 16rpx 20rpx; animation: panel-slide-in 0.3s ease-out; }
+.route-panel-fixed.panel-hidden { animation: panel-slide-out 0.3s ease-in forwards; transform: translateY(-100%); }
 .route-toggle-fab { position: fixed; top: 12rpx; left: 50%; transform: translateX(-50%); z-index: 31; background: rgba(20,20,40,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 20rpx; padding: 8rpx 28rpx; }
 .route-toggle-text { font-size: 22rpx; color: #888; }
 

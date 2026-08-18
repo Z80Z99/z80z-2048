@@ -1,5 +1,14 @@
 ﻿<script setup lang="ts">
-defineEmits<{ close: [] }>()
+import { ref } from 'vue'
+const emit = defineEmits<{ close: [] }>()
+// 关闭动画：先播滑出，250ms 后再真正关闭
+const closing = ref(false)
+let closeTimer: any = null
+function close() {
+  if (closing.value) return
+  closing.value = true
+  closeTimer = setTimeout(() => emit('close'), 250)
+}
 interface RuleSection { title: string; items: string[] }
 const sections: RuleSection[] = [
   { title: '2048 基础操作', items: [
@@ -87,9 +96,9 @@ function parseText(text: string) {
 }
 </script>
 <template>
-  <view class="rules-overlay" @click="$emit('close')">
-    <view class="rules-panel" @click.stop>
-      <view class="rules-header"><text class="rules-title">游戏规则</text><view class="rules-close" @click="$emit('close')"><text>✕</text></view></view>
+  <view class="rules-overlay" :class="{ closing }" @click="close()">
+    <view class="rules-panel" :class="{ closing }" @click.stop>
+      <view class="rules-header"><text class="rules-title">游戏规则</text><view class="rules-close" @click="close()"><text>✕</text></view></view>
       <scroll-view class="rules-body" scroll-y>
         <view v-for="(sec, i) in sections" :key="i" class="rules-section">
           <text class="rules-section-title">{{ sec.title }}</text>
@@ -113,4 +122,8 @@ function parseText(text: string) {
 .rules-footer { margin-top: 20rpx; text-align: center; } .rules-footer-text { font-size: 20rpx; color: #555; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+.rules-overlay.closing { animation: fade-out 0.25s ease-in forwards; }
+.rules-panel.closing { animation: panel-exit 0.25s ease-in forwards; }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes panel-exit { from { transform: translateY(0); opacity: 1; } to { transform: translateY(50%); opacity: 0.6; } }
 </style>
