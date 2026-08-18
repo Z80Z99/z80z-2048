@@ -29,8 +29,8 @@ const hpInput = ref('50')
 </template>
 <style lang="scss">
 .dbg-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90; display: flex; align-items: flex-end; }
-.dbg-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
-.dbg-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; }
+.dbg-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.5); animation: fade-in 0.2s ease-out; }
+.dbg-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); }
 .dbg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .dbg-title { font-size: 24rpx; font-weight: bold; color: #f1c40f; } .dbg-close { padding: 8rpx; font-size: 24rpx; color: #888; }
 .dbg-body { flex: 1; height: 0; } .dbg-section { margin-bottom: 16rpx; }
@@ -39,4 +39,6 @@ const hpInput = ref('50')
 .dbg-btn { background: rgba(255,255,255,0.08); border-radius: 8rpx; padding: 10rpx 18rpx; font-size: 22rpx; } .dbg-btn .dbg-txt { color: #ccc; }
 .dbg-btn-sm { padding: 8rpx 14rpx; } .dbg-btn-red { background: rgba(231,76,60,0.2); } .dbg-btn-green { background: rgba(46,204,113,0.2); }
 .dbg-input { width: 100rpx; height: 48rpx; background: rgba(255,255,255,0.06); border-radius: 6rpx; padding: 4rpx 8rpx; font-size: 22rpx; color: #fff; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
 </style>

@@ -101,8 +101,8 @@ function parseText(text: string) {
   </view>
 </template>
 <style lang="scss">
-.rules-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 80; }
-.rules-panel { width: 100%; height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; }
+.rules-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 80; animation: fade-in 0.2s ease-out; }
+.rules-panel { width: 100%; height: 75vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 40rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); }
 .rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .rules-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; } .rules-close { padding: 8rpx; color: #888; font-size: 28rpx; }
 .rules-body { flex: 1; height: 0; } .rules-section { margin-bottom: 20rpx; }
@@ -111,4 +111,6 @@ function parseText(text: string) {
 .rules-text { font-size: 22rpx; color: #888; line-height: 34rpx; }
 .rules-gold { color: #f1c40f; } .rules-red { color: #e74c3c; } .rules-blue { color: #3498db; } .rules-green { color: #2ecc71; } .rules-purple { color: #9b59b6; } .rules-cyan { color: #1abc9c; }
 .rules-footer { margin-top: 20rpx; text-align: center; } .rules-footer-text { font-size: 20rpx; color: #555; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
 </style>

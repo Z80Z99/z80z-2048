@@ -19,7 +19,7 @@ const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; f
       <view class="bs-global-card"><view class="bs-global-top"><view class="bs-global-info"><text class="bs-global-icon">◈</text><view><text class="bs-global-title">探索进度 · 下一奖励</text><text class="bs-global-nums">{{ totalDisc }}<text class="bs-global-div"> / {{ nextGlobal }}</text></text></view></view><view v-if="canClaimGlobal" class="bs-claim" @click="store.CLAIM_BESTIARY_REWARD('global')"><text class="bs-claim-label">领取</text><text class="bs-claim-bonus">+10碎片 +3生命</text></view><text v-else class="bs-global-remain">距下次 {{ nextGlobal - totalDisc }} 次</text></view><view class="bs-progress"><view class="bs-progress-fill bs-progress-gold" :style="{ width: `${Math.min(100, totalDisc / nextGlobal * 100)}%` }" /></view></view>
       <scroll-view class="bs-body" scroll-y>
         <view v-for="tier in [1,2,3,4]" :key="tier"><template v-if="grouped[tier]?.length"><view class="bs-tier"><view class="bs-tier-header"><view class="bs-tier-dot" :style="{ background: tierInfo[tier].color, boxShadow: `0 0 8rpx ${tierInfo[tier].glow}` }" /><text class="bs-tier-name" :style="{ color: tierInfo[tier].color }">{{ tierInfo[tier].name }}</text></view>
-          <view v-for="e in grouped[tier]" :key="e.id" :class="['bs-card', { 'bs-card-locked': !m.unlockedEnemies.includes(e.id) }]">
+          <view v-for="(e, i) in grouped[tier]" :key="e.id" :class="['bs-card', { 'bs-card-locked': !m.unlockedEnemies.includes(e.id) }]" :style="{ animationDelay: (i % 12) * 40 + 'ms' }">
             <view class="bs-card-main"><text class="bs-card-name">{{ m.unlockedEnemies.includes(e.id) ? e.name : '???' }}</text>
               <view v-if="m.unlockedEnemies.includes(e.id)" class="bs-card-stats"><view class="bs-stat"><text class="bs-stat-icon">❤</text><text class="bs-stat-val">{{ e.hp }}</text></view><view class="bs-stat"><text class="bs-stat-icon">⚔</text><text class="bs-stat-val">{{ e.attack }}</text></view><view class="bs-stat"><text class="bs-stat-icon">🛡</text><text class="bs-stat-val">{{ e.defense }}</text></view><view class="bs-stat"><text class="bs-stat-icon">⚡</text><text class="bs-stat-val">{{ e.speed }}</text></view></view>
               <text v-else class="bs-unknown">击败后解锁</text></view>
@@ -31,8 +31,8 @@ const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; f
 </template>
 <style lang="scss">
 .bestiary-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 85; display: flex; align-items: flex-end; }
-.bestiary-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
-.bestiary-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; }
+.bestiary-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); animation: fade-in 0.2s ease-out; }
+.bestiary-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); }
 .bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .bs-header-left { display: flex; align-items: center; gap: 12rpx; }
 .bs-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; }
@@ -49,9 +49,12 @@ const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; f
 .bs-progress-gold { background: linear-gradient(90deg, #f1c40f, #e67e22); } .bs-progress-fill { height: 100%; border-radius: 3rpx; }
 .bs-body { flex: 1; height: 0; } .bs-tier { margin-bottom: 16rpx; } .bs-tier-header { display: flex; align-items: center; gap: 8rpx; margin-bottom: 8rpx; }
 .bs-tier-dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; } .bs-tier-name { font-size: 22rpx; font-weight: bold; }
-.bs-card { display: flex; align-items: center; justify-content: space-between; padding: 12rpx; border-radius: 10rpx; background: rgba(255,255,255,0.02); margin-bottom: 6rpx; }
+.bs-card { display: flex; align-items: center; justify-content: space-between; padding: 12rpx; border-radius: 10rpx; background: rgba(255,255,255,0.02); margin-bottom: 6rpx; animation: bs-card-in 0.4s ease-out both; }
 .bs-card-locked { opacity: 0.3; } .bs-card-main { flex: 1; } .bs-card-name { font-size: 24rpx; font-weight: bold; color: #ccc; display: block; margin-bottom: 6rpx; }
 .bs-card-stats { display: flex; gap: 14rpx; } .bs-stat { display: flex; align-items: center; gap: 2rpx; } .bs-stat-icon { font-size: 18rpx; } .bs-stat-val { font-size: 20rpx; color: #888; }
 .bs-unknown { font-size: 20rpx; color: #555; } .bs-card-side { display: flex; flex-direction: column; align-items: flex-end; min-width: 80rpx; }
 .bs-side-count { font-size: 18rpx; color: #888; } .bs-side-disc { font-size: 20rpx; color: #f1c40f; font-weight: bold; } .bs-claim-sm { padding: 4rpx 12rpx; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+@keyframes bs-card-in { from { opacity: 0; transform: translateY(20rpx); } to { opacity: 1; transform: translateY(0); } }
 </style>
