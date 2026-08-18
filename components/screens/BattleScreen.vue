@@ -87,10 +87,6 @@ const statusProps = computed(() => {
               </view>
             </template>
           </view>
-          <view class="round-dmg-row">
-            <text class="round-dmg round-dmg-dealt">-{{ battle.lastRoundResult.enemyDamage }}</text>
-            <text v-if="battle.lastRoundResult.playerDamage > 0" class="round-dmg round-dmg-taken">-{{ battle.lastRoundResult.playerDamage }}</text>
-          </view>
           <view class="round-hp-row">
             <view class="round-hp-item">
               <text class="round-hp-label">敌人 HP</text>
@@ -128,9 +124,4 @@ const statusProps = computed(() => {
 .round-hp-row { display: flex; justify-content: center; margin-bottom: 20rpx; } .round-hp-item { text-align: center; }
 .round-hp-label { font-size: 20rpx; color: #888; display: block; } .round-hp-val { font-size: 26rpx; font-weight: bold; color: #e74c3c; margin-top: 4rpx; }
 .round-btn { background: #f1c40f; color: #1a1a2e; border: none; border-radius: 12rpx; font-size: 16px; font-weight: bold; padding: 16rpx; width: 100%; }
-.round-dmg-row { display: flex; justify-content: center; gap: 40rpx; margin: 8rpx 0 12rpx; }
-.round-dmg { font-size: 44rpx; font-weight: 900; animation: dmg-float 0.8s ease-out forwards; }
-.round-dmg-dealt { color: #2ecc71; text-shadow: 0 0 16rpx rgba(46,204,113,0.4); }
-.round-dmg-taken { color: #e74c3c; text-shadow: 0 0 16rpx rgba(231,76,60,0.4); }
-@keyframes dmg-float { 0% { opacity: 0; transform: translateY(24rpx) scale(0.8); } 15% { opacity: 1; transform: translateY(0) scale(1.15); } 40% { transform: translateY(-6rpx) scale(1); } 100% { opacity: 0; transform: translateY(-48rpx) scale(1); } }
 </style>

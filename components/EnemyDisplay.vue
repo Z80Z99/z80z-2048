@@ -22,8 +22,9 @@ watch(() => props.currentHp, (v, old) => {
 })
 </script>
 <template>
-  <view class="enemy-card" :class="{ 'hit': hit }">
-    <view class="enemy-top"><text class="enemy-name">{{ enemy.name }}</text><view class="enemy-tier"><text class="enemy-tier-text">S{{ enemy.tier > 3 ? 'B' : enemy.tier }}</text></view></view>
+  <view class="enemy-card">
+    <view class="enemy-body" :class="{ 'hit': hit }">
+      <view class="enemy-top"><text class="enemy-name">{{ enemy.name }}</text><view class="enemy-tier"><text class="enemy-tier-text">S{{ enemy.tier > 3 ? 'B' : enemy.tier }}</text></view></view>
     <view class="enemy-hp-section"><view class="enemy-hp-header"><text class="enemy-hp-label">HP</text><text class="enemy-hp-num">{{ currentHp }}/{{ enemy.maxHp }}</text></view><view class="enemy-hp-track"><view class="enemy-hp-fill" :style="{ width: `${hpPercent}%`, background: hpColor }" /></view></view>
     <view class="enemy-stats">
       <view class="enemy-stat-box enemy-stat-atk"><text class="enemy-stat-icon">⚔</text><view class="enemy-stat-info"><text class="enemy-stat-label">攻击</text><view class="enemy-stat-values"><text class="enemy-stat-base">{{ enemy.attack }}</text><text v-if="effectiveAtkBonus !== 0" :class="effectiveAtkBonus >= 0 ? 'enemy-stat-bonus' : 'enemy-stat-nerf'">{{ effectiveAtkBonus >= 0 ? '+' : '' }}{{ effectiveAtkBonus }}</text></view></view></view>
@@ -31,11 +32,13 @@ watch(() => props.currentHp, (v, old) => {
       <view class="enemy-stat-box enemy-stat-spd"><text class="enemy-stat-icon">⚡</text><view class="enemy-stat-info"><text class="enemy-stat-label">速度</text><view class="enemy-stat-values"><text class="enemy-stat-base">{{ enemy.speed }}</text><text v-if="spdBonus > 0" class="enemy-stat-bonus">+{{ spdBonus }}</text></view></view></view>
     </view>
     <view v-if="(enemy.enemyUpgrades || []).length > 0" class="enemy-upgrades"><text v-for="(uid, i) in enemy.enemyUpgrades" :key="i" class="enemy-upgrade-tag">{{ UPGRADE_POOL.find(x => x.id === uid)?.name ?? uid }}</text></view>
+    </view>
   </view>
 </template>
 <style lang="scss">
 .enemy-card { background: linear-gradient(180deg, rgba(40,10,10,0.9), rgba(30,10,20,0.9)); border: 1px solid rgba(231,76,60,0.2); border-radius: 14rpx; padding: 14rpx 16rpx 10rpx; margin-bottom: 16rpx; animation: enemy-in 0.4s ease-out; }
-.enemy-card.hit { animation: enemy-hit 0.35s ease-out; }
+/* 受击动画在内层播放，避免 animation-name 切换导致外层入场动画重播 */
+.enemy-body.hit { animation: enemy-hit 0.35s ease-out; }
 @keyframes enemy-in { from { opacity: 0; transform: translateY(-12rpx); } to { opacity: 1; transform: translateY(0); } }
 @keyframes enemy-hit { 0% { filter: brightness(1); transform: translateX(0); } 25% { filter: brightness(2.2); transform: translateX(-8rpx); } 50% { filter: brightness(1.3); transform: translateX(8rpx); } 75% { filter: brightness(1.5); transform: translateX(-4rpx); } 100% { filter: brightness(1); transform: translateX(0); } }
 .enemy-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; }
