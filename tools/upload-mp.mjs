@@ -34,9 +34,9 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 config.appid = appid
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8')
 
-const result = spawnSync(`"${cliPath}"`, ['upload', '--project', outputDir, '--version', version, '--desc', desc], {
+// cli.bat needs cmd.exe; passing argv directly keeps paths with spaces intact.
+const result = spawnSync('cmd.exe', ['/c', cliPath, 'upload', '--project', outputDir, '--version', version, '--desc', desc], {
   stdio: 'inherit',
-  shell: true,
 })
 if (result.status !== 0) {
   console.error('[upload] failed; run tools/build.mjs build mp-weixin first if the package is over 2 MiB')
