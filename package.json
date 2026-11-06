@@ -15,7 +15,8 @@
     "dev:h5": "node tools/build.mjs dev h5",
     "build:h5": "node tools/build.mjs build h5",
     "build:mp-weixin": "node tools/build.mjs build mp-weixin",
-    "preview:h5": "node tools/build.mjs preview h5"
+    "preview:h5": "node tools/build.mjs preview h5",
+    "upload:mp-weixin": "node tools/upload-mp.mjs"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5030420261029002",
