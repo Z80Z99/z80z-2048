@@ -1,54 +1,48 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useGameStore } from '../store/gameStore'
+import { DEBUG_ENABLED } from '../store/debugActions'
 import { UPGRADE_POOL } from '../core/upgrade'
 import { ALL_EQUIPMENT } from '../core/equipment'
+
 const emit = defineEmits<{ close: [] }>()
-// 关闭动画：先播滑出（CSS transition），250ms 后再真正关闭
-const closing = ref(false)
-let closeTimer: any = null
-function close() {
-  if (closing.value) return
-  closing.value = true
-  closeTimer = setTimeout(() => emit('close'), 250)
-}
 const store = useGameStore()
 const goldInput = ref('100')
 const hpInput = ref('50')
+function addRandomEquipment() {
+  if (!DEBUG_ENABLED || store.battle) return
+  const item = ALL_EQUIPMENT[Math.floor(Math.random() * ALL_EQUIPMENT.length)]
+  store.DEBUG_SET_INVENTORY([...store.player.inventory, item.id])
+}
 </script>
+
 <template>
-  <view class="dbg-overlay">
-    <view class="dbg-blur" :class="{ 'closing': closing }" @click="close()" />
-    <view class="dbg-panel" :class="{ 'closing': closing }">
-      <view class="dbg-header"><text class="dbg-title">调试面板</text><view class="dbg-close" @click="close()"><text class="dbg-txt">×</text></view></view>
-      <scroll-view class="dbg-body" scroll-y>
-        <view class="dbg-section"><text class="dbg-label">快捷跳转</text><view class="dbg-row dbg-wrap"><view class="dbg-btn" @click="store.DEBUG_GO_SHOP()"><text class="dbg-txt">进商店</text></view><view class="dbg-btn" @click="store.DEBUG_GO_REST()"><text class="dbg-txt">进休息</text></view><view class="dbg-btn" @click="store.DEBUG_GO_BOSS()"><text class="dbg-txt">进Boss选择</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">装备操作</text><view class="dbg-row dbg-wrap"><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_INVENTORY([...store.player.inventory, ALL_EQUIPMENT[Math.floor(Math.random() * ALL_EQUIPMENT.length)].id])"><text class="dbg-txt">随机掉落装备</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_DROP_10_EQUIP()"><text class="dbg-txt">掉落10件</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_INVENTORY([])"><text class="dbg-txt">清空背包</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">金币操作</text><view class="dbg-row"><input class="dbg-input" v-model="goldInput" /><view class="dbg-btn" @click="store.DEBUG_ADD_GOLD(parseInt(goldInput) || 0)"><text class="dbg-txt">+金币</text></view><view class="dbg-btn dbg-btn-red" @click="store.DEBUG_ADD_GOLD(-(parseInt(goldInput) || 0))"><text class="dbg-txt">-金币</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">血量操作</text><view class="dbg-row"><input class="dbg-input" v-model="hpInput" /><view class="dbg-btn dbg-btn-green" @click="store.DEBUG_HEAL(parseInt(hpInput) || 0)"><text class="dbg-txt">+HP</text></view><view class="dbg-btn dbg-btn-red" @click="store.DEBUG_HEAL(-(parseInt(hpInput) || 0))"><text class="dbg-txt">-HP</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">经验 & 等级 (Lv.{{ store.player.level }} / {{ store.player.xp }}XP)</text><view class="dbg-row"><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_ADD_XP(10)"><text class="dbg-txt">+10XP</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_ADD_XP(50)"><text class="dbg-txt">+50XP</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_FORCE_LEVELUP()"><text class="dbg-txt">升级</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">强化操作</text><view class="dbg-row dbg-wrap"><view v-for="u in UPGRADE_POOL" :key="u.id" class="dbg-btn dbg-btn-sm" @click="store.DEBUG_ADD_UPGRADE(u.id)"><text class="dbg-txt">{{ u.name }}</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">图鉴操作</text><view class="dbg-row"><view class="dbg-btn" @click="store.DEBUG_UNLOCK_ALL_ENEMIES()"><text class="dbg-txt">解锁全部</text></view><view class="dbg-btn" @click="store.DEBUG_ADD_KILLS(5)"><text class="dbg-txt">全部+5杀</text></view><view class="dbg-btn dbg-btn-red" @click="store.DEBUG_CLEAR_BESTIARY()"><text class="dbg-txt">清空图鉴</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">战斗操作</text><view class="dbg-row"><view class="dbg-btn dbg-btn-red" @click="store.DEBUG_KILL_ENEMY()"><text class="dbg-txt">秒杀敌人</text></view><view class="dbg-btn" @click="store.DEBUG_FULL_TURNS()"><text class="dbg-txt">满步数</text></view></view></view>
-        <view class="dbg-section"><text class="dbg-label">地图操作</text><view class="dbg-row"><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_STAGE(1)"><text class="dbg-txt">S1</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_STAGE(2)"><text class="dbg-txt">S2</text></view><view class="dbg-btn dbg-btn-sm" @click="store.DEBUG_SET_STAGE(3)"><text class="dbg-txt">S3</text></view></view></view>
-      </scroll-view>
-    </view>
-  </view>
+  <view v-if="DEBUG_ENABLED" class="ui-overlay ui-sheet-overlay debug-overlay" @click="emit('close')"><view class="ui-sheet debug-panel" @click.stop>
+    <view class="ui-sheet-header"><view><text class="ui-kicker">仅开发构建可用</text><text class="ui-sheet-title">调试控制台</text></view><button role="button" class="ui-close" @click="emit('close')">关闭</button></view>
+    <text class="ui-note debug-note">调试会直接修改当前游戏数据。发布构建禁用所有入口与操作。</text>
+    <scroll-view class="ui-scroll" scroll-y>
+      <view class="debug-section"><text class="debug-label">快捷跳转</text><view class="debug-row"><button role="button" class="debug-btn" :disabled="Boolean(store.battle)" @click="store.DEBUG_GO_SHOP()">商店</button><button role="button" class="debug-btn" :disabled="Boolean(store.battle)" @click="store.DEBUG_GO_REST()">营地</button><button role="button" class="debug-btn" :disabled="Boolean(store.battle)" @click="store.DEBUG_GO_BOSS()">首领选择</button></view></view>
+      <view class="debug-section"><text class="debug-label">装备</text><view class="debug-row"><button role="button" class="debug-btn" :disabled="Boolean(store.battle)" @click="addRandomEquipment">掉落一件</button><button role="button" class="debug-btn" @click="store.DEBUG_DROP_10_EQUIP()">掉落十件</button><button role="button" class="debug-btn debug-danger" :disabled="Boolean(store.battle)" @click="store.DEBUG_SET_INVENTORY([])">清空背包</button></view></view>
+      <view class="debug-section"><text class="debug-label">金币 · 当前 {{ store.player.gold }}</text><view class="debug-row"><input v-model="goldInput" type="number" class="debug-input" aria-label="金币调整数量" /><button role="button" class="debug-btn" @click="store.DEBUG_ADD_GOLD(parseInt(goldInput, 10) || 0)">增加</button><button role="button" class="debug-btn debug-danger" @click="store.DEBUG_ADD_GOLD(-(parseInt(goldInput, 10) || 0))">减少</button></view></view>
+      <view class="debug-section"><text class="debug-label">生命 · {{ store.effectivePlayer.hp }}/{{ store.effectivePlayer.maxHp }}</text><view class="debug-row"><input v-model="hpInput" type="number" class="debug-input" aria-label="生命调整数量" /><button role="button" class="debug-btn" @click="store.DEBUG_HEAL(parseInt(hpInput, 10) || 0)">回复</button><button role="button" class="debug-btn debug-danger" @click="store.DEBUG_HEAL(-(parseInt(hpInput, 10) || 0))">扣除</button></view></view>
+      <view class="debug-section"><text class="debug-label">经验 · Lv.{{ store.player.level }} / {{ store.player.xp }} XP</text><view class="debug-row"><button role="button" class="debug-btn" @click="store.DEBUG_ADD_XP(10)">+10 XP</button><button role="button" class="debug-btn" @click="store.DEBUG_ADD_XP(50)">+50 XP</button><button role="button" class="debug-btn" @click="store.DEBUG_FORCE_LEVELUP()">升一级</button></view></view>
+      <view class="debug-section"><text class="debug-label">强化</text><view class="debug-row"><button role="button" v-for="upgrade in UPGRADE_POOL" :key="upgrade.id" class="debug-btn" @click="store.DEBUG_ADD_UPGRADE(upgrade.id)">{{ upgrade.name }}</button></view></view>
+      <view class="debug-section"><text class="debug-label">图鉴</text><view class="debug-row"><button role="button" class="debug-btn" @click="store.DEBUG_UNLOCK_ALL_ENEMIES()">解锁全部</button><button role="button" class="debug-btn" @click="store.DEBUG_ADD_KILLS(5)">全部 +5 杀</button><button role="button" class="debug-btn debug-danger" @click="store.DEBUG_CLEAR_BESTIARY()">清空图鉴</button></view></view>
+      <view class="debug-section"><text class="debug-label">战斗</text><view class="debug-row"><button role="button" class="debug-btn" :disabled="store.battle?.phase !== 'playing'" @click="store.DEBUG_KILL_ENEMY()">击败敌人</button><button role="button" class="debug-btn" :disabled="store.battle?.phase !== 'playing'" @click="store.DEBUG_FULL_TURNS()">重置步数</button></view></view>
+      <view class="debug-section"><text class="debug-label">阶段</text><view class="debug-row"><button role="button" v-for="stage in [1, 2, 3]" :key="stage" class="debug-btn" @click="store.DEBUG_SET_STAGE(stage)">S{{ stage }}</button></view></view>
+    </scroll-view>
+  </view></view>
 </template>
-<style lang="scss">
-.dbg-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90; display: flex; align-items: flex-end; }
-.dbg-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.5); animation: fade-in 0.2s ease-out; transition: opacity 0.25s ease-in; }
-.dbg-blur.closing { opacity: 0; }
-.dbg-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); transition: transform 0.25s ease-in, opacity 0.25s ease-in; }
-.dbg-panel.closing { transform: translateY(50%); opacity: 0.6; }
-.dbg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
-.dbg-title { font-size: 24rpx; font-weight: bold; color: #f1c40f; } .dbg-close { padding: 8rpx; font-size: 24rpx; color: #888; }
-.dbg-body { flex: 1; height: 0; } .dbg-section { margin-bottom: 16rpx; }
-.dbg-label { font-size: 20rpx; color: #888; display: block; margin-bottom: 6rpx; }
-.dbg-row { display: flex; gap: 8rpx; } .dbg-wrap { flex-wrap: wrap; }
-.dbg-btn { background: rgba(255,255,255,0.08); border-radius: 8rpx; padding: 10rpx 18rpx; font-size: 22rpx; } .dbg-btn .dbg-txt { color: #ccc; }
-.dbg-btn-sm { padding: 8rpx 14rpx; } .dbg-btn-red { background: rgba(231,76,60,0.2); } .dbg-btn-green { background: rgba(46,204,113,0.2); }
-.dbg-input { width: 100rpx; height: 48rpx; background: rgba(255,255,255,0.06); border-radius: 6rpx; padding: 4rpx 8rpx; font-size: 22rpx; color: #fff; }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+
+<style scoped lang="scss">
+.debug-overlay { z-index: 130; }
+.debug-note { margin-bottom: 20rpx; color: var(--xp); }
+.debug-section { margin-bottom: 24rpx; }
+.debug-label { display: block; font-size: 28rpx; font-weight: 700; color: var(--text); margin-bottom: 12rpx; }
+.debug-row { display: flex; flex-wrap: wrap; gap: 10rpx; align-items: center; }
+.debug-btn { margin: 0; padding: 16rpx 18rpx; font-size: 26rpx; line-height: 1.4; background: var(--surface-raised); color: var(--text); border: 1px solid var(--line); border-radius: 10rpx; }
+.debug-btn::after { border: none; }
+.debug-btn[disabled] { background: var(--surface-soft); color: var(--muted); opacity: 0.7; }
+.debug-danger { color: var(--attack); background: var(--attack-soft); }
+.debug-input { width: 144rpx; min-height: 68rpx; padding: 0 14rpx; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10rpx; background: var(--surface-soft); color: var(--text); font-size: 28rpx; }
 </style>

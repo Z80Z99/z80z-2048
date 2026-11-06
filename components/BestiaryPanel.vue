@@ -1,70 +1,83 @@
-﻿<script setup lang="ts">
-import { computed } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useGameStore } from '../store/gameStore'
-import { ENEMIES } from '../core/enemy'
+import { ENEMIES, getEnemyIcon, getEnemyFallbackIcon } from '../core/enemy'
+import type { EnemyDef } from '../types'
+
 const emit = defineEmits<{ close: [] }>()
-// 关闭动画：先播滑出（CSS transition），250ms 后再真正关闭
-const closing = ref(false)
-let closeTimer: any = null
-function close() {
-  if (closing.value) return
-  closing.value = true
-  closeTimer = setTimeout(() => emit('close'), 250)
-}
 const store = useGameStore()
-const m = computed(() => store.meta)
-const found = computed(() => m.value.unlockedEnemies.length)
-const totalDisc = computed(() => { let d = 0; for (const v of Object.values(m.value.enemyKills)) d += Math.floor(v / 5); return d })
-const nextGlobal = computed(() => (m.value.globalClaimLevel + 1) * 20)
-const canClaimGlobal = computed(() => totalDisc.value >= nextGlobal.value)
-const tierInfo: Record<number, { name: string; color: string; glow: string }> = { 1: { name: '普通', color: '#7f8c8d', glow: 'rgba(127,140,141,0.3)' }, 2: { name: '中级', color: '#3498db', glow: 'rgba(52,152,219,0.3)' }, 3: { name: '精英', color: '#e67e22', glow: 'rgba(230,126,34,0.3)' }, 4: { name: 'BOSS', color: '#c0392b', glow: 'rgba(192,57,43,0.4)' } }
-const grouped = computed(() => { const g: Record<number, typeof ENEMIES> = {}; for (const e of ENEMIES) { if (!g[e.tier]) g[e.tier] = []; g[e.tier].push(e) } return g })
+const discoveredOnly = ref(false)
+const failedPortraits = ref<Record<string, boolean>>({})
+const meta = computed(() => store.meta)
+const found = computed(() => ENEMIES.filter(enemy => meta.value.unlockedEnemies.includes(enemy.id)).length)
+const milestones = computed(() => Object.values(meta.value.enemyKills).reduce((sum, kills) => sum + Math.floor(kills / 5), 0))
+const nextGlobal = computed(() => (meta.value.globalClaimLevel + 1) * 20)
+const canClaimGlobal = computed(() => milestones.value >= nextGlobal.value)
+const groups = computed(() => {
+  const list = discoveredOnly.value ? ENEMIES.filter(enemy => unlocked(enemy.id)) : ENEMIES
+  const groupDefs = [
+    { name: '地牢入口', filter: (enemy: EnemyDef) => enemy.tier === 1 },
+    { name: '深渊回廊', filter: (enemy: EnemyDef) => enemy.tier === 2 },
+    { name: '终焉之间', filter: (enemy: EnemyDef) => enemy.tier === 3 },
+    { name: '守关首领', filter: (enemy: EnemyDef) => enemy.id.startsWith('boss_') },
+    { name: '无尽生物', filter: (enemy: EnemyDef) => enemy.tier >= 4 && !enemy.id.startsWith('boss_') },
+  ]
+  return groupDefs.map(group => ({ name: group.name, enemies: list.filter(group.filter) })).filter(group => group.enemies.length)
+})
+function unlocked(id: string) { return meta.value.unlockedEnemies.includes(id) }
+function kills(id: string) { return meta.value.enemyKills[id] ?? 0 }
+function goal(id: string) { return ((meta.value.enemyClaims[id] ?? 0) + 1) * 5 }
+function claimable(id: string) { return kills(id) >= goal(id) }
+function progress(id: string) { return Math.min(100, Math.max(0, (kills(id) - (meta.value.enemyClaims[id] ?? 0) * 5) / 5 * 100)) }
+function portrait(enemy: EnemyDef) { return failedPortraits.value[enemy.id] ? getEnemyFallbackIcon(enemy.id) : getEnemyIcon(enemy) }
+function imageIcon(enemy: EnemyDef) { return /^(\/|\.\/|data:image)/.test(portrait(enemy)) }
 </script>
+
 <template>
-  <view class="bestiary-overlay"><view class="bestiary-blur" :class="{ 'closing': closing }" @click="close()" />
-    <view class="bestiary-panel" :class="{ 'closing': closing }">
-      <view class="bs-header"><view class="bs-header-left"><text class="bs-title">怪物图鉴</text><view class="bs-count-badge"><text class="bs-count-text">{{ found }}/{{ ENEMIES.length }}</text></view></view><view class="bs-close" @click="close()"><text class="bs-close-x">×</text></view></view>
-      <view class="bs-global-card"><view class="bs-global-top"><view class="bs-global-info"><text class="bs-global-icon">◈</text><view><text class="bs-global-title">探索进度 · 下一奖励</text><text class="bs-global-nums">{{ totalDisc }}<text class="bs-global-div"> / {{ nextGlobal }}</text></text></view></view><view v-if="canClaimGlobal" class="bs-claim" @click="store.CLAIM_BESTIARY_REWARD('global')"><text class="bs-claim-label">领取</text><text class="bs-claim-bonus">+10碎片 +3生命</text></view><text v-else class="bs-global-remain">距下次 {{ nextGlobal - totalDisc }} 次</text></view><view class="bs-progress"><view class="bs-progress-fill bs-progress-gold" :style="{ width: `${Math.min(100, totalDisc / nextGlobal * 100)}%` }" /></view></view>
-      <scroll-view class="bs-body" scroll-y>
-        <view v-for="tier in [1,2,3,4]" :key="tier"><template v-if="grouped[tier]?.length"><view class="bs-tier"><view class="bs-tier-header"><view class="bs-tier-dot" :style="{ background: tierInfo[tier].color, boxShadow: `0 0 8rpx ${tierInfo[tier].glow}` }" /><text class="bs-tier-name" :style="{ color: tierInfo[tier].color }">{{ tierInfo[tier].name }}</text></view>
-          <view v-for="(e, i) in grouped[tier]" :key="e.id" :class="['bs-card', { 'bs-card-locked': !m.unlockedEnemies.includes(e.id) }]" :style="{ animationDelay: (i % 12) * 40 + 'ms' }">
-            <view class="bs-card-main"><text class="bs-card-name">{{ m.unlockedEnemies.includes(e.id) ? e.name : '???' }}</text>
-              <view v-if="m.unlockedEnemies.includes(e.id)" class="bs-card-stats"><view class="bs-stat"><text class="bs-stat-icon">❤</text><text class="bs-stat-val">{{ e.hp }}</text></view><view class="bs-stat"><text class="bs-stat-icon">⚔</text><text class="bs-stat-val">{{ e.attack }}</text></view><view class="bs-stat"><text class="bs-stat-icon">🛡</text><text class="bs-stat-val">{{ e.defense }}</text></view><view class="bs-stat"><text class="bs-stat-icon">⚡</text><text class="bs-stat-val">{{ e.speed }}</text></view></view>
-              <text v-else class="bs-unknown">击败后解锁</text></view>
-            <view v-if="m.unlockedEnemies.includes(e.id)" class="bs-card-side"><text class="bs-side-count">{{ (m.enemyKills[e.id] || 0) }}/{{ ((m.enemyClaims[e.id] || 0) + 1) * 5 }}</text><view class="bs-progress bs-progress-sm"><view class="bs-progress-fill bs-progress-gold" :style="{ width: `${Math.min(100, ((m.enemyKills[e.id] || 0) % 5) / 5 * 100)}%` }" /></view><view v-if="Math.floor((m.enemyKills[e.id] || 0) / 5) > (m.enemyClaims[e.id] || 0)" class="bs-claim bs-claim-sm" @click="store.CLAIM_BESTIARY_REWARD('enemy', e.id)"><text class="bs-claim-bonus">+3</text></view><text v-else class="bs-side-disc">×{{ Math.floor((m.enemyKills[e.id] || 0) / 5) }}</text></view></view></view></template></view>
-        <view style="height: 60px;" />
-      </scroll-view>
-    </view>
-  </view>
+  <view class="ui-overlay ui-sheet-overlay bestiary-overlay" @click="emit('close')"><view class="ui-sheet bestiary-panel" @click.stop>
+    <view class="ui-sheet-header"><view><text class="ui-kicker">地牢生物志 · {{ found }}/{{ ENEMIES.length }}</text><text class="ui-sheet-title">记录每一场相遇</text></view><button role="button" class="ui-close" @click="emit('close')">关闭</button></view>
+    <view class="bestiary-global"><view class="bestiary-global-row"><view><text class="bestiary-global-title">探索里程碑 {{ milestones }} / {{ nextGlobal }}</text><text class="ui-note">下一奖励：10 碎片 · 永久生命 +3</text></view><button role="button" class="bestiary-claim" :disabled="!canClaimGlobal" @click="store.CLAIM_BESTIARY_REWARD('global')">{{ canClaimGlobal ? '领取' : '未达成' }}</button></view><view class="bestiary-progress"><view :style="{ width: `${Math.min(100, milestones / nextGlobal * 100)}%` }" /></view></view>
+    <view class="bestiary-filter"><text class="ui-note">每 5 次击杀 = 1 个里程碑</text><button role="button" @click="discoveredOnly = !discoveredOnly">{{ discoveredOnly ? '显示全部' : '只看已发现' }}</button></view>
+    <scroll-view class="ui-scroll" scroll-y>
+      <text v-if="!groups.length" class="ui-note bestiary-empty">还没有发现的生物。开始冒险，击败你的第一个敌人。</text>
+      <view v-for="group in groups" :key="group.name" class="bestiary-group"><text class="bestiary-group-title">{{ group.name }}</text>
+        <view v-for="enemy in group.enemies" :key="enemy.id" class="bestiary-card" :class="{ 'bestiary-locked': !unlocked(enemy.id) }">
+          <view class="bestiary-card-main"><view class="bestiary-portrait"><template v-if="unlocked(enemy.id)"><image v-if="imageIcon(enemy)" class="bestiary-image" :src="portrait(enemy)" mode="aspectFit" @error="failedPortraits[enemy.id] = true" /><text v-else>{{ portrait(enemy) }}</text></template><text v-else>?</text></view><view class="bestiary-identity"><text class="bestiary-name">{{ unlocked(enemy.id) ? enemy.name : '未发现的生物' }}</text><view v-if="unlocked(enemy.id)" class="bestiary-stats"><text class="stat-hp">生命 {{ enemy.maxHp }}</text><text class="stat-attack">攻击 {{ enemy.attack }}</text><text class="stat-defense">防御 {{ enemy.defense }}</text><text class="stat-speed">速度 {{ enemy.speed }}</text></view><text v-else class="ui-note">击败后解锁记录</text></view></view>
+          <view v-if="unlocked(enemy.id)" class="bestiary-card-footer"><view class="bestiary-kills"><text>{{ kills(enemy.id) }} / {{ goal(enemy.id) }} 次击杀</text><view class="bestiary-progress"><view :style="{ width: `${progress(enemy.id)}%` }" /></view></view><button role="button" class="bestiary-claim" :disabled="!claimable(enemy.id)" @click="store.CLAIM_BESTIARY_REWARD('enemy', enemy.id)">{{ claimable(enemy.id) ? '领取 3 碎片' : '再遇，再战' }}</button></view>
+        </view>
+      </view>
+      <text class="bestiary-footnote">图鉴记录基础属性。实际战斗还受阶段、回合成长与强化影响。</text>
+    </scroll-view>
+  </view></view>
 </template>
-<style lang="scss">
-.bestiary-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 85; display: flex; align-items: flex-end; }
-.bestiary-blur { position: absolute; inset: 0; background: rgba(0,0,0,0.6); animation: fade-in 0.2s ease-out; transition: opacity 0.25s ease-in; }
-.bestiary-blur.closing { opacity: 0; }
-.bestiary-panel { position: relative; width: 100%; height: 80vh; background: #1a1a2e; border-radius: 24rpx 24rpx 0 0; padding: 24rpx 20rpx 20rpx; display: flex; flex-direction: column; animation: panel-rise 0.3s cubic-bezier(0.22,0.99,0.38,1.02); transition: transform 0.25s ease-in, opacity 0.25s ease-in; }
-.bestiary-panel.closing { transform: translateY(50%); opacity: 0.6; }
-.bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
-.bs-header-left { display: flex; align-items: center; gap: 12rpx; }
-.bs-title { font-size: 30rpx; font-weight: bold; color: #f1c40f; }
-.bs-count-badge { background: rgba(155,89,182,0.2); border: 1px solid rgba(155,89,182,0.3); border-radius: 6rpx; padding: 4rpx 12rpx; }
-.bs-count-text { font-size: 22rpx; color: #9b59b6; font-weight: bold; } .bs-close { padding: 8rpx; } .bs-close-x { font-size: 28rpx; color: #888; }
-.bs-global-card { background: rgba(255,255,255,0.03); border-radius: 12rpx; padding: 16rpx; margin-bottom: 14rpx; }
-.bs-global-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; }
-.bs-global-info { display: flex; align-items: center; gap: 10rpx; } .bs-global-icon { font-size: 32rpx; color: #f1c40f; }
-.bs-global-title { font-size: 22rpx; color: #888; display: block; } .bs-global-nums { font-size: 26rpx; font-weight: bold; color: #ccc; } .bs-global-div { color: #555; font-weight: normal; }
-.bs-global-remain { font-size: 20rpx; color: #555; }
-.bs-claim { background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); border-radius: 8rpx; padding: 8rpx 14rpx; }
-.bs-claim-label { font-size: 18rpx; color: #2ecc71; font-weight: bold; display: block; } .bs-claim-bonus { font-size: 16rpx; color: #2ecc71; }
-.bs-progress { height: 6rpx; background: rgba(255,255,255,0.06); border-radius: 3rpx; overflow: hidden; } .bs-progress-sm { margin: 4rpx 0; }
-.bs-progress-gold { background: linear-gradient(90deg, #f1c40f, #e67e22); } .bs-progress-fill { height: 100%; border-radius: 3rpx; }
-.bs-body { flex: 1; height: 0; } .bs-tier { margin-bottom: 16rpx; } .bs-tier-header { display: flex; align-items: center; gap: 8rpx; margin-bottom: 8rpx; }
-.bs-tier-dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; } .bs-tier-name { font-size: 22rpx; font-weight: bold; }
-.bs-card { display: flex; align-items: center; justify-content: space-between; padding: 12rpx; border-radius: 10rpx; background: rgba(255,255,255,0.02); margin-bottom: 6rpx; animation: bs-card-in 0.4s ease-out both; }
-.bs-card-locked { opacity: 0.3; } .bs-card-main { flex: 1; } .bs-card-name { font-size: 24rpx; font-weight: bold; color: #ccc; display: block; margin-bottom: 6rpx; }
-.bs-card-stats { display: flex; gap: 14rpx; } .bs-stat { display: flex; align-items: center; gap: 2rpx; } .bs-stat-icon { font-size: 18rpx; } .bs-stat-val { font-size: 20rpx; color: #888; }
-.bs-unknown { font-size: 20rpx; color: #555; } .bs-card-side { display: flex; flex-direction: column; align-items: flex-end; min-width: 80rpx; }
-.bs-side-count { font-size: 18rpx; color: #888; } .bs-side-disc { font-size: 20rpx; color: #f1c40f; font-weight: bold; } .bs-claim-sm { padding: 4rpx 12rpx; }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes panel-rise { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
-@keyframes bs-card-in { from { opacity: 0; transform: translateY(20rpx); } to { opacity: 1; transform: translateY(0); } }
+
+<style scoped lang="scss">
+.bestiary-overlay { z-index: 120; }
+.bestiary-global { padding: 20rpx; background: var(--accent-soft); border: 1px solid var(--line); border-radius: 16rpx; margin-bottom: 14rpx; }
+.bestiary-global-row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-bottom: 14rpx; }
+.bestiary-global-title { display: block; color: var(--text); font-size: 28rpx; font-weight: 700; margin-bottom: 4rpx; }
+.bestiary-claim { flex-shrink: 0; margin: 0; padding: 14rpx 18rpx; border: 1px solid var(--line); border-radius: 10rpx; color: var(--gold); background: var(--gold-soft); font-size: 26rpx; line-height: 1.4; }
+.bestiary-claim::after { border: none; }
+.bestiary-claim[disabled] { color: var(--muted); background: var(--surface-soft); }
+.bestiary-progress { height: 7rpx; background: var(--track); border-radius: 3rpx; overflow: hidden; }
+.bestiary-progress view { height: 100%; background: var(--gold); }
+.bestiary-filter { display: flex; justify-content: space-between; align-items: center; gap: 10rpx; margin: 4rpx 0 12rpx; }
+.bestiary-filter button { margin: 0; padding: 12rpx 8rpx; background: none; font-size: 26rpx; line-height: 1.4; color: var(--accent); }
+.bestiary-filter button::after { border: none; }
+.bestiary-group { margin-bottom: 26rpx; }
+.bestiary-group-title { display: block; color: var(--accent); font-size: 28rpx; font-weight: 700; margin: 8rpx 0 16rpx; }
+.bestiary-card { border: 1px solid var(--line); border-radius: 14rpx; padding: 20rpx; background: var(--surface-soft); margin-bottom: 14rpx; }
+.bestiary-card-main { display: flex; align-items: center; gap: 18rpx; }
+.bestiary-portrait { width: 82rpx; height: 92rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--surface-raised); border: 1px solid var(--line); border-radius: 40rpx 40rpx 12rpx 12rpx; font-size: 46rpx; color: var(--muted); }
+.bestiary-image { width: 76rpx; height: 84rpx; }
+.bestiary-identity { flex: 1; min-width: 0; }
+.bestiary-name { display: block; font-size: 30rpx; font-weight: 800; line-height: 1.4; color: var(--text); margin-bottom: 10rpx; }
+.bestiary-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6rpx 14rpx; font-size: 24rpx; }
+.bestiary-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; margin-top: 18rpx; padding-top: 16rpx; border-top: 1px solid var(--line); }
+.bestiary-kills { flex: 1; min-width: 0; color: var(--muted); font-size: 24rpx; }
+.bestiary-kills .bestiary-progress { margin-top: 8rpx; }
+.bestiary-locked { border-style: dashed; }
+.bestiary-locked .bestiary-name { color: var(--muted); font-weight: 500; }
+.bestiary-footnote { display: block; color: var(--muted); font-size: 26rpx; line-height: 1.7; margin: 26rpx 0 36rpx; }
+.bestiary-empty { padding: 36rpx 0; text-align: center; }
 </style>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-ghoul">
+<title id="title-ghoul">Grave Ghoul</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M23 220 L43 177 L71 164 L80 137 L108 166 L143 169 L178 140 L188 171 L217 183 L234 220 L204 230 L177 220 L144 238 L117 225 L90 235 L58 224 Z" fill="#5e685b" stroke="#242522" stroke-width="7"/>
+<path d="M23 220 L43 177 L71 164 L80 137 L108 166 L143 169 L178 140 L188 171 L217 183 L234 220 L204 230 L177 220 L144 238 L117 225 L90 235 L58 224 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M50 191 L77 174 L95 193 L82 221 L62 216 Z M174 176 L202 192 L217 217 L190 220 L166 204 Z" fill="#9ca487" opacity="1"/>
+<path d="M53 203 L69 191 M64 213 L76 201 M185 195 L201 210 M165 213 L176 221" fill="none" stroke="#d0cfac" stroke-width="3" opacity="1"/>
+<path d="M89 160 L103 124 L150 123 L171 170 L147 204 L118 208 L97 194 Z" fill="#9ca78a" stroke="#242522" stroke-width="7"/>
+<path d="M89 160 L103 124 L150 123 L171 170 L147 204 L118 208 L97 194 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M143 146 L160 173 L145 194 L123 203 L126 174 Z" fill="#697661" opacity="1"/>
+<path d="M79 96 L38 70 L50 116 L78 145 Z M170 95 L215 64 L207 112 L179 146 Z" fill="#959d84" stroke="#242522" stroke-width="7"/>
+<path d="M79 96 L38 70 L50 116 L78 145 Z M170 95 L215 64 L207 112 L179 146 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M48 81 L72 102 L74 126 L57 110 Z M204 78 L180 103 L181 128 L199 109 Z" fill="#626e5e" opacity="1"/>
+<path d="M79 55 L104 36 L130 41 L154 35 L176 62 L175 102 L168 134 L176 157 L158 187 L133 208 L110 201 L84 174 L81 146 L71 118 L72 82 Z" fill="#b6b99a" stroke="#242522" stroke-width="7"/>
+<path d="M79 55 L104 36 L130 41 L154 35 L176 62 L175 102 L168 134 L176 157 L158 187 L133 208 L110 201 L84 174 L81 146 L71 118 L72 82 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M109 47 L132 51 L150 43 L165 67 L155 95 L134 111 L115 95 L83 86 L85 63 Z" fill="#d8d4b0" opacity="1"/>
+<path d="M165 66 L170 93 L160 124 L165 157 L149 184 L130 200 L124 178 L143 149 L148 115 Z M79 93 L95 112 L92 140 L110 169 L108 186 L87 168 L84 139 L75 116 Z" fill="#77816b" opacity="1"/>
+<path d="M83 104 L115 114 L108 137 L87 135 L78 121 Z M137 113 L168 101 L172 118 L156 137 L141 133 Z" fill="#242522" opacity="1"/>
+<path d="M90 117 L107 120 L101 127 L88 125 Z M145 119 L160 112 L158 123 L147 127 Z" fill="#c9d69f" stroke="#c9d69f" stroke-width="8" opacity="0.13"/>
+<path d="M90 117 L107 120 L101 127 L88 125 Z M145 119 L160 112 L158 123 L147 127 Z" fill="#c9d69f"/>
+<path d="M125 119 L115 147 L128 143 L138 146 L133 127 Z" fill="#5e6855" opacity="1"/>
+<path d="M99 151 Q125 156 155 148 L159 168 L145 191 L122 196 L99 178 Z" fill="#51574a" stroke="#242522" stroke-width="7"/>
+<path d="M99 151 Q125 156 155 148 L159 168 L145 191 L122 196 L99 178 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M104 158 Q129 165 152 153 L148 177 L133 188 L118 184 L108 174 Z" fill="#242522" opacity="1"/>
+<path d="M105 156 L119 160 L113 183 Z M138 159 L151 153 L143 181 Z" fill="#e8daba" stroke="#242522" stroke-width="7"/>
+<path d="M105 156 L119 160 L113 183 Z M138 159 L151 153 L143 181 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M122 186 L124 177 M134 184 L136 177" fill="none" stroke="#c8b496" stroke-width="4" opacity="1"/>
+<path d="M92 58 L105 64 M138 64 L150 57 M100 82 L108 94 M149 80 L143 95 M92 148 L102 143" fill="none" stroke="#717964" stroke-width="3" opacity="1"/>
+<path d="M107 213 L118 220 M148 213 L139 222" fill="none" stroke="#cac6a4" stroke-width="3" opacity="1"/>
+</svg>

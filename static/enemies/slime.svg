@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-slime">
+<title id="title-slime">Glass Slime</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M29 196 Q34 168 56 156 C63 126 62 91 84 68 Q111 42 141 59 C167 51 188 74 191 112 Q192 148 213 166 Q233 183 227 206 Q225 219 203 224 L176 220 Q142 239 109 225 L77 232 Q58 222 40 224 Q23 215 29 196 Z" fill="#748d79" stroke="#242522" stroke-width="7"/>
+<path d="M29 196 Q34 168 56 156 C63 126 62 91 84 68 Q111 42 141 59 C167 51 188 74 191 112 Q192 148 213 166 Q233 183 227 206 Q225 219 203 224 L176 220 Q142 239 109 225 L77 232 Q58 222 40 224 Q23 215 29 196 Z" fill="none" stroke="#cee0bb" stroke-width="1.65" opacity="0.72"/>
+<path d="M39 197 Q53 175 73 165 Q73 111 89 85 Q109 63 132 68 Q108 80 103 117 L102 184 L75 213 L46 216 Z" fill="#b3c7a0" opacity="0.66"/>
+<path d="M147 65 Q182 77 181 122 Q178 156 199 179 L215 197 L198 214 L170 207 L143 222 L118 214 L146 188 L157 139 Z" fill="#435f55" opacity="0.63"/>
+<path d="M87 92 Q91 80 105 77 Q93 100 90 123 Q82 131 79 118 Z M73 181 Q88 175 90 184 Q85 197 74 199 Z" fill="#e2ead0" opacity="0.75"/>
+<path d="M82 139 L99 120 L119 133 L115 157 L96 168 L80 156 Z M138 132 L154 118 L174 135 L177 155 L157 165 L137 153 Z" fill="#324c46" opacity="1"/>
+<path d="M91 141 L100 132 L110 141 L103 155 L93 153 Z M148 138 L158 130 L167 139 L160 152 L150 151 Z" fill="#c8dba2" stroke="#c8dba2" stroke-width="8" opacity="0.13"/>
+<path d="M91 141 L100 132 L110 141 L103 155 L93 153 Z M148 138 L158 130 L167 139 L160 152 L150 151 Z" fill="#c8dba2"/>
+<path d="M99 132 L100 145 L110 141 Z M158 130 L157 143 L167 139 Z" fill="#f1edc4" opacity="1"/>
+<path d="M94 142 L100 145 L103 154 M152 140 L157 143 L160 151" fill="none" stroke="#6a876b" stroke-width="2.4" opacity="1"/>
+<path d="M106 181 Q130 192 153 177 Q144 205 125 206 Q109 202 106 181 Z" fill="#34534b" opacity="1"/>
+<path d="M119 194 Q130 198 141 191" fill="none" stroke="#b9c9a1" stroke-width="3" opacity="1"/>
+<path d="M51 205 Q62 210 73 207 M161 211 Q176 204 191 210" fill="none" stroke="#c3d1ad" stroke-width="3" opacity="1"/>
+<path d="M118 97 Q126 84 132 96 Q135 104 128 109 Q119 108 118 97 Z M183 184 Q189 176 196 183 Q198 192 190 195 Z" fill="#c8ddba" opacity="0.45"/>
+</svg>

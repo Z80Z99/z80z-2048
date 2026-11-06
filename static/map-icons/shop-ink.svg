@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M25 23 L23 10 L29 14 L33 9 L36 14 L42 11 L39 24 Z" fill="#FFF0CE" stroke="#352C24" stroke-width="2.7"/>
+<path d="M33 14 L32 22 M38 15 L36 22" fill="none" stroke="#352C24" stroke-width="1.9"/>
+<path d="M24 25 C23 31 14 33 14 45 C14 54 21 58 32 58 C43 58 49 53 49 44 C49 34 41 31 39 25 Z" fill="#FFF0CE" stroke="#352C24" stroke-width="2.9"/>
+<path d="M36 29 C40 36 44 39 44 46 C44 52 39 55 31 56 C43 58 48 52 47 43 C46 36 42 31 39 29 Z" fill="#BEA783"/>
+<path d="M21 24 Q31 26 42 24 L41 28 Q31 30 23 28 Z" fill="#BEA783" stroke="#352C24" stroke-width="2.5"/>
+<path d="M24 25 C20 18 13 21 18 26 Q22 29 28 26 M38 26 C44 19 50 23 46 27 Q43 30 38 26 C43 30 47 34 46 38" fill="none" stroke="#352C24" stroke-width="2.3"/>
+<path d="M22 35 Q18 40 20 46 M23 51 L27 53" fill="none" stroke="#352C24" stroke-width="2"/>
+<path d="M40 42 C40 51.3 26 51.3 26 42 C26 32.7 40 32.7 40 42 Z" fill="#BEA783" stroke="#352C24" stroke-width="2.3"/>
+<path d="M33 37 L37 42 L33 47 L29 42 Z" fill="#FFF0CE"/>
+<path d="M57 51 C57 61.7 41 61.7 41 51 C41 40.3 57 40.3 57 51 Z" fill="#BEA783" stroke="#352C24" stroke-width="2.7"/>
+<path d="M49 46 L53 51 L49 56 L45 51 Z" fill="#FFF0CE" stroke="#352C24" stroke-width="1.5"/>
+</svg>

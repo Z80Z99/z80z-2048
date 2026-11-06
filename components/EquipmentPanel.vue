@@ -1,277 +1,167 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useGameStore } from '../store/gameStore'
-import { ALL_EQUIPMENT, getSetData, getEquipStats, isNoSetItem } from '../core/equipment'
-import type { Equipment, SortMode } from '../core/equipment'
+import { equipmentById, formatEquipStats, computeEquipBonuses, getSetData } from '../core/equipment'
+import type { EquipSlot, SortMode } from '../core/equipment'
+import ItemIcon from './ItemIcon.vue'
 
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
 const store = useGameStore()
+const player = computed(() => store.effectivePlayer)
+const locked = computed(() => store.screen === 'battle' || Boolean(store.eventResult))
+const lockMessage = computed(() => store.screen === 'battle' ? '战斗期间可查看装备；战斗结束后才能更换或卸下。' : '事件结果等待确认，继续前进后才能更换或卸下装备。')
 const sortOpen = ref(false)
-
-interface InventoryItem extends Equipment {
-  level: number
-  compoundId: string
-  noset: boolean
-}
-
-interface SlotVM {
-  key: string
-  name: string
-  icon: string
-  item: InventoryItem | null
-  compoundId: string | null
-}
-const sortModes: { mode: SortMode; label: string }[] = [
-  { mode: 'quality', label: '品质优先' },
-  { mode: 'level',   label: '等级优先' },
-  { mode: 'slot',    label: '部位优先' },
-  { mode: 'name',    label: '名称排序' },
-  { mode: 'set',     label: '套装优先' },
+const activeTab = ref<'inventory' | 'sets'>('inventory')
+const notice = ref('')
+const slotDefs: { key: EquipSlot; name: string }[] = [
+  { key: 'helmet', name: '头盔' }, { key: 'armor', name: '铠甲' },
+  { key: 'gloves', name: '手套' }, { key: 'pants', name: '护腿' }, { key: 'boots', name: '战靴' },
 ]
-
-const slotDefs = [
-  { key: 'helmet', name: '头盔', icon: '⛑' },
-  { key: 'armor',  name: '铠甲', icon: '🛡' },
-  { key: 'gloves', name: '手套', icon: '🧤' },
-  { key: 'pants',  name: '护腿', icon: '👖' },
-  { key: 'boots',  name: '战靴', icon: '👢' },
-] as const
-
-const rc: Record<string, { label: string; c: string; bg: string }> = {
-  common: { label: '普通', c: '#95a5a6', bg: 'rgba(149,165,166,0.06)' },
-  rare:   { label: '稀有', c: '#3498db', bg: 'rgba(52,152,219,0.08)' },
-  epic:   { label: '史诗', c: '#e67e22', bg: 'rgba(230,126,34,0.1)' },
+const sortModes: { mode: SortMode; label: string }[] = [
+  { mode: 'quality', label: '品质优先' }, { mode: 'level', label: '等级优先' }, { mode: 'slot', label: '部位优先' },
+  { mode: 'name', label: '名称排序' }, { mode: 'set', label: '套装优先' },
+]
+const rarityLabels: Record<string, string> = { common: '普通', rare: '稀有', epic: '史诗' }
+function itemOf(compoundId: string) {
+  const item = equipmentById(compoundId)
+  if (!item) return null
+  return { ...item, compoundId, level: parseInt(compoundId.split(':')[1] || '1', 10) || 1, lines: formatEquipStats(compoundId) }
 }
-
-const inv = computed(() => store.player.inventory.map(compoundId => {
-  const baseId = compoundId.split(':')[0]
-  const level = parseInt(compoundId.split(':')[1] || '1') || 1
-  const eq = ALL_EQUIPMENT.find(e => e.id === baseId)
-  if (!eq) return null
-  const stats = getEquipStats(compoundId)
-  const noset = !eq.set
-  return { ...eq, level, stats, compoundId, noset }
-}).filter((x): x is InventoryItem => x !== null))
-
-const equipped = computed<SlotVM[]>(() => slotDefs.map(s => {
-  const compoundId = store.player.equipment[s.key]
-  if (!compoundId) return { ...s, item: null, compoundId: null }
-  const baseId = compoundId.split(':')[0]
-  const level = parseInt(compoundId.split(':')[1] || '1') || 1
-  const eq = ALL_EQUIPMENT.find(e => e.id === baseId)
-  if (!eq) return { ...s, item: null, compoundId: null }
-  const stats = getEquipStats(compoundId)
-  const noset = !eq.set
-  return { ...s, item: { ...eq, level, stats, noset }, compoundId }
+const inventory = computed(() => store.player.inventory.map((id, index) => ({ item: itemOf(id), index, key: `${id}-${index}` })).filter(entry => entry.item))
+const equipped = computed(() => slotDefs.map(slot => {
+  const id = store.player.equipment[slot.key]
+  return { ...slot, item: id ? itemOf(id) : null }
 }))
-
-const equippedIds = computed(() => {
-  const ids: string[] = []
-  for (const e of equipped.value) if (e.compoundId) ids.push(e.compoundId)
-  return ids
-})
-
-const totals = computed(() => {
-  const t: Record<string, number> = {}
-  for (const e of equipped.value) {
-    if (!e.item || !e.item.stats) continue
-    for (const [k, v] of Object.entries(e.item.stats)) t[k] = (t[k] || 0) + v
+const setBonuses = computed(() => computeEquipBonuses(store.player.equipment))
+const setGroups = computed(() => {
+  const counts = new Map<string, number>()
+  for (const slot of equipped.value) {
+    if (slot.item?.set) counts.set(slot.item.set, (counts.get(slot.item.set) ?? 0) + 1)
   }
-  return t
+  return [...counts].map(([id, count]) => ({ id, count, data: getSetData(id) })).filter(group => group.data)
 })
-
-const sets = computed(() => {
-  const m: Record<string, { cnt: number; name: string; color: string; b: { two: string; three: string; five: string }; level: number }> = {}
-  for (const e of equipped.value) {
-    if (!e.item || !e.item.set) continue
-    const sd = getSetData(e.item.set)
-    if (!sd) continue
-    const itemLevel = e.item.level || 1
-    const key = `${e.item.set}:${itemLevel}`
-    if (!m[key]) m[key] = { cnt: 0, name: sd.name || '', color: sd.color || '#888', b: sd.bonuses, level: itemLevel }
-    m[key].cnt++
-  }
-  return m
+const economy = computed(() => {
+  const effects = setBonuses.value.setEffects
+  return `金币 +${Math.round(player.value.goldBoost * 100)}%${effects.doubleGold ? ' · 结算翻倍' : ''} / 经验 +${Math.round(player.value.xpBoost * 100)}%${effects.doubleXp ? ' · 结算翻倍' : ''}`
 })
-
-function lab(k: string, _v: number) {
-  const n: Record<string, string> = { atk:'攻击', def:'防御', hp:'生命', spd:'速度', gold:'金币', xp:'经验' }
-  return n[k] || k
+function isEquipped(id: string) { return Object.values(store.player.equipment).includes(id) }
+function equip(id: string) {
+  if (locked.value) return
+  store.EQUIP_ITEM(id)
+  notice.value = `已装备 ${equipmentById(id)?.name ?? '装备'}`
 }
-function vv(k: string, v: number, noset?: boolean) {
-  if (k === 'gold' || k === 'xp') return `+${v}%`
-  if (noset && k !== 'spd') return `+${v}%`
-  return `+${v}`
+function unequip(slot: EquipSlot) {
+  if (locked.value) return
+  store.UNEQUIP_ITEM(slot)
+  notice.value = '装备已放回背包'
 }
 </script>
 
 <template>
-  <view class="eq-root">
-    <view class="eq-bg" @click="$emit('close')" />
-    <view class="eq-panel">
-      <view class="eq-handle"><view class="eq-handle-line" /></view>
-
-      <view class="eq-top-row">
-        <view class="eq-col eq-col-stat">
-          <text class="eq-sect">装备属性</text>
-          <view v-if="!Object.keys(totals).length" class="eq-dim eq-dim-pad">未装备</view>
-          <view v-for="([k, v]) in Object.entries(totals)" :key="k" class="eq-stat-row">
-            <text class="eq-stat-lbl">{{ lab(k, v) }}</text>
-            <text class="eq-stat-val">{{ vv(k, v) }}</text>
-          </view>
-        </view>
-
-        <view class="eq-col eq-col-slots">
-          <view v-for="e in equipped" :key="e.key"
-            :class="['eq-slot', e.item ? `eq-slot-${e.item.rarity}` : '']"
-            @click="store.UNEQUIP_ITEM(e.key)"
-          >
-            <template v-if="e.item">
-              <text class="eq-slot-name">Lv.{{ e.item.level }} {{ e.item.name }}</text>
-            </template>
-            <template v-else>
-              <text class="eq-slot-icon">{{ e.icon }}</text>
-              <text class="eq-slot-placeholder">{{ e.name }}</text>
-            </template>
-          </view>
-        </view>
-
-        <view class="eq-col eq-col-set">
-          <text class="eq-sect">套装效果</text>
-          <view v-if="!Object.keys(sets).length" class="eq-dim eq-dim-pad">无套装</view>
-          <view v-for="([sid, s]) in Object.entries(sets)" :key="sid" class="eq-set">
-            <view class="eq-set-top">
-              <view class="eq-set-dot" :style="{ background: s.color }" />
-              <text class="eq-set-name">{{ s.name }} Lv.{{ s.level }}</text>
-              <view class="eq-set-pips">
-                <view v-for="i in 5" :key="i" :class="['eq-set-pip', s.cnt >= i ? 'eq-set-pip-on' : '']" :style="s.cnt >= i ? { background: s.color } : {}" />
-              </view>
-            </view>
-            <template v-if="s.cnt >= 2">
-              <text :class="['eq-set-eff', s.cnt >= 2 ? 'eq-set-eff-on' : '']">✓ 2件: {{ s.b.two }}</text>
-              <text :class="['eq-set-eff', s.cnt >= 3 ? 'eq-set-eff-on' : '']">✓ 3件: {{ s.b.three }}</text>
-              <text :class="['eq-set-eff', s.cnt >= 5 ? 'eq-set-eff-on' : '']">✓ 5件: {{ s.b.five }}</text>
-            </template>
-          </view>
-        </view>
+  <view class="ui-overlay ui-sheet-overlay eq-overlay" @click="emit('close')">
+    <view class="ui-sheet eq-panel" @click.stop>
+      <view class="ui-sheet-header"><view><text class="ui-kicker">冒险者行装</text><text class="ui-sheet-title">装备与背包</text></view><button role="button" class="ui-close" @click="emit('close')">关闭</button></view>
+      <view class="eq-effective">
+        <text class="eq-effective-label">实际属性 · 已计入装备与套装</text>
+        <view class="eq-stats"><text class="stat-hp">生命 {{ player.hp }}/{{ player.maxHp }}</text><text class="stat-attack">攻击 ×{{ player.attackMultiplier.toFixed(2) }}{{ player.flatAttack ? ` +${player.flatAttack}` : '' }}</text><text class="stat-defense">防御 ×{{ player.defenseMultiplier.toFixed(2) }}{{ player.flatDefense ? ` +${player.flatDefense}` : '' }}</text><text class="stat-speed">速度 {{ Number(player.baseSpeed.toFixed(2)) }}</text></view>
+        <text class="eq-economy">{{ economy }}</text>
       </view>
-
-      <view class="eq-divider" />
-
-      <view class="eq-bottom">
-        <view class="eq-bottom-hd">
-          <text class="eq-sect eq-bottom-title">背包 · {{ inv.length }} 件</text>
-          <view class="eq-sort-wrap">
-            <view class="eq-sort-btn" @click="sortOpen = !sortOpen">整理 ▾</view>
-            <view v-if="sortOpen" class="eq-sort-drop">
-              <view v-for="m in sortModes" :key="m.mode" class="eq-sort-opt" @click="store.SORT_INVENTORY(m.mode); sortOpen = false">{{ m.label }}</view>
-            </view>
+      <text v-if="locked" class="eq-locked">{{ lockMessage }}</text>
+      <text v-else-if="notice" class="eq-notice" role="status">{{ notice }}</text>
+      <scroll-view class="ui-scroll" scroll-y>
+        <text class="eq-section-title">已装备</text>
+        <view class="eq-slots">
+          <view v-for="slot in equipped" :key="slot.key" class="eq-slot art-card" :class="slot.item ? `eq-rarity-${slot.item.rarity}` : 'eq-slot-empty'">
+            <view class="eq-slot-mark"><ItemIcon :slot="slot.item?.slot ?? slot.key" :set-id="slot.item?.set" :rarity="slot.item?.rarity" :show-quality="Boolean(slot.item)" :size="slot.item ? 'normal' : 'small'" /><text class="eq-slot-kind">{{ slot.name }}</text></view>
+            <view class="eq-slot-main"><text class="eq-item-name">{{ slot.item ? slot.item.name : '空置' }}</text><text v-if="slot.item" class="eq-item-meta">Lv.{{ slot.item.level }} · {{ rarityLabels[slot.item.rarity] }}</text><text v-for="line in slot.item?.lines ?? []" :key="line" class="eq-item-stat">{{ line }}</text></view>
+            <button role="button" v-if="slot.item" class="eq-small-btn" :disabled="locked" @click="unequip(slot.key)">卸下</button>
           </view>
         </view>
-        <scroll-view scroll-y class="eq-inv-scroll" :show-scrollbar="false">
-          <view v-if="!inv.length" class="eq-dim eq-dim-pad">暂无装备</view>
-          <view class="eq-inv-grid">
-            <view v-for="(item, i) in inv" :key="item.compoundId"
-              :class="['eq-inv-card', `eq-inv-${item.rarity}`, equippedIds.includes(item.compoundId) ? 'eq-inv-equipped' : '']"
-              :style="{ animationDelay: `${i * 0.03}s` }"
-              @click="store.EQUIP_ITEM(item.compoundId)"
-            >
-              <view class="eq-inv-top">
-                <text class="eq-inv-icon">{{ slotDefs.find(s => s.key === item.slot)?.icon || '◆' }}</text>
-                <view v-if="equippedIds.includes(item.compoundId)" class="eq-inv-check"><text>✓</text></view>
-              </view>
-              <text class="eq-inv-name">Lv.{{ item.level }} {{ item.name }}</text>
-              <text class="eq-inv-desc">{{ Object.entries(item.stats || {}).map(([k, v]) => `${lab(k, v)} ${vv(k, v, item.noset)}`).join(' ') }}</text>
+        <view class="eq-tabs"><button role="button" class="eq-tab" :class="{ 'eq-tab-active': activeTab === 'inventory' }" @click="activeTab = 'inventory'">背包 {{ inventory.length }}</button><button role="button" class="eq-tab" :class="{ 'eq-tab-active': activeTab === 'sets' }" @click="activeTab = 'sets'">套装效果 {{ setGroups.length }}</button></view>
+        <template v-if="activeTab === 'inventory'">
+          <view class="eq-inventory-heading"><text class="ui-note">点击装备，更换对应部位</text><button role="button" class="eq-small-btn" @click="sortOpen = !sortOpen">整理 {{ sortOpen ? '−' : '+' }}</button></view>
+          <view v-if="sortOpen" class="eq-sort-options"><button role="button" v-for="mode in sortModes" :key="mode.mode" class="eq-sort-btn" @click="store.SORT_INVENTORY(mode.mode); sortOpen = false">{{ mode.label }}</button></view>
+          <view v-if="!inventory.length" class="eq-empty"><text class="eq-empty-mark">◇</text><text class="ui-note">背包空空，战利品与商店会带来新的装备。</text></view>
+          <view class="eq-inventory">
+            <view v-for="entry in inventory" :key="entry.key" class="eq-inventory-item art-card" :class="`eq-rarity-${entry.item!.rarity}`">
+              <view class="eq-item-top"><text class="eq-rarity-label art-paper-label">{{ rarityLabels[entry.item!.rarity] }} · Lv.{{ entry.item!.level }}</text><text class="eq-item-meta">{{ slotDefs.find(slot => slot.key === entry.item!.slot)?.name }}</text></view>
+              <view class="eq-inventory-icon"><ItemIcon :slot="entry.item!.slot" :set-id="entry.item!.set" :rarity="entry.item!.rarity" size="normal" /></view>
+              <text class="eq-item-name">{{ entry.item!.name }}</text>
+              <text class="eq-item-meta">{{ entry.item!.set ? `${getSetData(entry.item!.set)?.name ?? ''}套装` : '独立装备 · 无套装效果' }}</text>
+              <view class="eq-item-stats"><text v-for="line in entry.item!.lines" :key="line" class="eq-item-stat">{{ line }}</text></view>
+              <button role="button" class="eq-equip-btn" :disabled="locked || isEquipped(entry.item!.compoundId)" @click="equip(entry.item!.compoundId)">{{ isEquipped(entry.item!.compoundId) ? '已装备' : locked ? '暂不可更换' : '装备' }}</button>
             </view>
           </view>
-          <view style="height: 10rpx;" />
-        </scroll-view>
-      </view>
-
-      <text class="eq-footer">点击已装备卸下 · 点击背包装备</text>
+        </template>
+        <template v-else>
+          <text class="ui-note eq-set-note">同一套装跨等级计件，2 / 3 / 5 件效果依次生效。</text>
+          <text v-if="!setGroups.length" class="ui-note eq-empty">尚未穿戴套装装备。</text>
+          <view v-for="group in setGroups" :key="group.id" class="eq-set art-card">
+            <view class="eq-set-title"><view class="eq-set-identity"><ItemIcon :set-id="group.id" size="small" /><text>{{ group.data!.name }}</text></view><text class="ui-badge">{{ group.count }} / 5 件</text></view>
+            <text v-for="threshold in [2, 3, 5]" :key="threshold" class="eq-set-bonus" :class="{ 'eq-set-active': group.count >= threshold }">{{ group.count >= threshold ? '已激活' : '未激活' }} · {{ threshold }} 件 — {{ threshold === 2 ? group.data!.bonuses.two : threshold === 3 ? group.data!.bonuses.three : group.data!.bonuses.five }}</text>
+          </view>
+        </template>
+        <view class="eq-bottom-space" />
+      </scroll-view>
     </view>
   </view>
 </template>
 
-<style lang="scss">
-.eq-root { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 85; display: flex; align-items: flex-end; }
-.eq-bg { position: absolute; inset: 0; background: rgba(2,2,12,0.6); animation: eq-bg-in 0.25s; }
-@keyframes eq-bg-in { from { opacity: 0; } to { opacity: 1; } }
-
-.eq-panel {
-  position: relative; width: 100%; height: 80vh; max-height: 80vh;
-  background: linear-gradient(180deg, #12122a 0%, #0a0a18 40%);
-  border-radius: 28rpx 28rpx 0 0; display: flex; flex-direction: column;
-  box-shadow: 0 -4rpx 32rpx rgba(0,0,0,0.5);
-  animation: eq-slide 0.35s cubic-bezier(0.22,0.99,0.38,1.02);
-}
-@keyframes eq-slide { from { transform: translateY(50%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
-
-.eq-handle { display: flex; justify-content: center; padding: 12rpx 0 4rpx; }
-.eq-handle-line { width: 50rpx; height: 4rpx; background: rgba(255,255,255,0.08); border-radius: 2rpx; }
-
-.eq-top-row { display: flex; gap: 12rpx; padding: 10rpx 20rpx 0; align-items: stretch; }
-.eq-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
-.eq-col-slots { gap: 8rpx; }
-.eq-col-stat { overflow-y: auto; }
-.eq-col-set { overflow-y: auto; }
-
-.eq-sect { font-size: 20rpx; font-weight: 700; color: #888; letter-spacing: 2rpx; display: block; margin-bottom: 8rpx; }
-.eq-dim { font-size: 18rpx; color: #444; } .eq-dim-pad { padding: 20rpx 0; text-align: center; }
-
-.eq-stat-row { display: flex; justify-content: space-between; padding: 12rpx 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-.eq-stat-lbl { font-size: 22rpx; color: #888; }
-.eq-stat-val { font-size: 22rpx; font-weight: 700; color: #f1c40f; }
-
-.eq-slot { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 16rpx; border-radius: 12rpx; border: 2px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); transition: all 0.15s; height: 64rpx; box-sizing: border-box; }
-.eq-slot:active { transform: scale(0.97); }
-.eq-slot-common { border-color: rgba(149,165,166,0.4); background: rgba(149,165,166,0.05); }
-.eq-slot-rare { border-color: rgba(52,152,219,0.45); background: rgba(52,152,219,0.07); box-shadow: 0 0 10rpx rgba(52,152,219,0.15); }
-.eq-slot-epic { border-color: rgba(230,126,34,0.5); background: rgba(230,126,34,0.09); box-shadow: 0 0 18rpx rgba(230,126,34,0.25); animation: eq-epic 2s ease-in-out infinite; }
-@keyframes eq-epic { 0%,100% { box-shadow: 0 0 12rpx rgba(230,126,34,0.2); } 50% { box-shadow: 0 0 24rpx rgba(230,126,34,0.45); } }
-.eq-slot-name { font-size: 22rpx; font-weight: 800; color: #fff; }
-.eq-slot-badge { padding: 2rpx 10rpx; border-radius: 5rpx; border: 1px solid; }
-.eq-slot-badge-txt { font-size: 16rpx; font-weight: 600; }
-.eq-slot-icon { font-size: 28rpx; opacity: 0.25; }
-.eq-slot-placeholder { font-size: 22rpx; color: #444; }
-
-.eq-set { margin-bottom: 10rpx; padding: 10rpx 12rpx; border-radius: 10rpx; background: rgba(255,255,255,0.02); }
-.eq-set-top { display: flex; align-items: center; gap: 6rpx; margin-bottom: 6rpx; }
-.eq-set-dot { width: 10rpx; height: 10rpx; border-radius: 5rpx; flex-shrink: 0; }
-.eq-set-name { font-size: 19rpx; font-weight: 700; color: #ccc; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.eq-set-pips { display: flex; gap: 4rpx; }
-.eq-set-pip { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: rgba(255,255,255,0.06); transition: all 0.3s; }
-.eq-set-pip-on { box-shadow: 0 0 4rpx rgba(255,255,255,0.15); }
-.eq-set-eff { font-size: 16rpx; color: #444; display: block; margin: 3rpx 0; transition: color 0.3s; }
-.eq-set-eff-on { color: #2ecc71; }
-
-.eq-divider { height: 1px; background: rgba(255,255,255,0.04); margin: 14rpx 20rpx; }
-
-.eq-bottom { padding: 0 20rpx; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.eq-bottom-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8rpx; }
-.eq-bottom-title { margin-bottom: 0 !important; }
-.eq-sort-wrap { position: relative; }
-.eq-sort-btn { font-size: 18rpx; color: #3498db; padding: 8rpx 16rpx; border-radius: 14rpx; border: 1px solid rgba(52,152,219,0.3); background: rgba(52,152,219,0.06); font-weight: 600; }
-.eq-sort-btn:active { background: rgba(52,152,219,0.15); transform: scale(0.95); }
-.eq-sort-drop { position: absolute; top: 100%; right: 0; margin-top: 6rpx; background: #1a1a30; border-radius: 10rpx; border: 1px solid rgba(52,152,219,0.2); box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.5); z-index: 10; min-width: 140rpx; padding: 6rpx 0; }
-.eq-sort-opt { font-size: 20rpx; color: #aaa; padding: 12rpx 22rpx; white-space: nowrap; transition: all 0.12s; }
-.eq-sort-opt:active { background: rgba(52,152,219,0.1); color: #3498db; }
-.eq-inv-scroll { flex: 1; height: 0; }
-
-.eq-inv-grid { display: flex; flex-wrap: wrap; gap: 8rpx; align-content: flex-start; }
-.eq-inv-card { width: calc(33.33% - 6rpx); padding: 10rpx; border-radius: 10rpx; border: 2px solid; box-sizing: border-box; transition: all 0.15s; animation: eq-inv-pop 0.3s ease-out both; }
-@keyframes eq-inv-pop { from { opacity: 0; transform: translateY(16rpx); } to { opacity: 1; transform: translateY(0); } }
-.eq-inv-card:active { transform: scale(0.95); }
-.eq-inv-common { border-color: rgba(149,165,166,0.25); background: rgba(149,165,166,0.03); }
-.eq-inv-rare { border-color: rgba(52,152,219,0.3); background: rgba(52,152,219,0.04); }
-.eq-inv-epic { border-color: rgba(230,126,34,0.35); background: rgba(230,126,34,0.05); }
-.eq-inv-equipped { opacity: 0.5; }
-.eq-inv-equipped .eq-inv-name { color: #2ecc71; }
-.eq-inv-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4rpx; }
-.eq-inv-icon { font-size: 28rpx; }
-.eq-inv-check { width: 28rpx; height: 28rpx; display: flex; align-items: center; justify-content: center; background: rgba(46,204,113,0.2); border-radius: 14rpx; font-size: 16rpx; color: #2ecc71; font-weight: bold; }
-.eq-inv-name { font-size: 18rpx; font-weight: 800; color: #ddd; display: block; margin-bottom: 3rpx; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.eq-inv-desc { font-size: 14rpx; color: #888; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 20rpx; }
-
-.eq-footer { text-align: center; font-size: 17rpx; color: #444; padding: 10rpx 0 22rpx; flex-shrink: 0; }
+<style scoped lang="scss">
+.eq-overlay { z-index: 120; }
+.eq-effective { padding: 18rpx; border: 1px solid var(--line); border-radius: 14rpx; background: var(--surface-soft); margin-bottom: 16rpx; }
+.eq-effective-label { display: block; font-size: 24rpx; color: var(--muted); margin-bottom: 10rpx; }
+.eq-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8rpx 16rpx; font-size: 26rpx; font-weight: 700; }
+.eq-economy { display: block; margin-top: 10rpx; color: var(--gold); font-size: 26rpx; }
+.eq-locked, .eq-notice { display: block; color: var(--accent); padding: 12rpx 16rpx; margin-bottom: 12rpx; background: var(--accent-soft); border-radius: 10rpx; font-size: 26rpx; line-height: 1.6; }
+.eq-notice { color: var(--hp); background: var(--hp-soft); }
+.eq-section-title { display: block; color: var(--muted); font-size: 26rpx; margin: 8rpx 0 14rpx; }
+.eq-slots { display: flex; flex-direction: column; gap: 10rpx; }
+.eq-slot { display: flex; align-items: center; gap: 18rpx; padding: 16rpx; border: 1px solid var(--line); border-left: 3rpx solid var(--line); border-radius: 12rpx; }
+.eq-slot-mark { width: 88rpx; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6rpx; text-align: center; }
+.eq-slot-empty { box-sizing: border-box; min-height: 88rpx; padding: 12rpx 16rpx; }
+.eq-slot-empty .eq-slot-mark { width: 142rpx; flex-direction: row; gap: 12rpx; }
+.eq-slot-empty :deep(.item-icon) { opacity: 0.58; }
+.eq-slot-empty .eq-item-name { color: var(--muted); font-size: 26rpx; font-weight: 400; }
+.eq-slot-kind { display: block; font-size: 24rpx; color: var(--muted); }
+.eq-inventory-icon { display: flex; justify-content: center; padding: 4rpx 0; }
+.eq-set-identity { display: flex; align-items: center; gap: 12rpx; min-width: 0; }
+.eq-set-identity text { overflow-wrap: anywhere; }
+.eq-set-title .ui-badge { flex-shrink: 0; }
+.eq-slot-main { flex: 1; min-width: 0; }
+.eq-item-name { color: var(--text); font-size: 28rpx; font-weight: 800; display: block; line-height: 1.5; }
+.eq-item-meta { display: block; color: var(--muted); font-size: 24rpx; line-height: 1.55; }
+.eq-item-stat { display: block; color: var(--text); font-size: 26rpx; line-height: 1.6; }
+.eq-small-btn, .eq-sort-btn { box-sizing: border-box; margin: 0; padding: 12rpx 18rpx; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10rpx; font-size: 26rpx; line-height: 1.4; }
+.eq-small-btn::after, .eq-sort-btn::after, .eq-tab::after, .eq-equip-btn::after { border: none; }
+.eq-small-btn[disabled] { color: var(--muted); background: var(--surface-soft); }
+.eq-tabs { display: flex; gap: 12rpx; margin: 28rpx 0 18rpx; border-bottom: 1px solid var(--line); }
+.eq-tab { flex: 1; margin: 0; padding: 16rpx 8rpx; color: var(--muted); background: none; border-bottom: 3rpx solid transparent; border-radius: 0; font-size: 28rpx; line-height: 1.5; }
+.eq-tab-active { color: var(--accent); border-bottom-color: var(--accent); }
+.eq-inventory-heading { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; margin-bottom: 16rpx; }
+.eq-sort-options { display: flex; flex-wrap: wrap; gap: 10rpx; padding: 12rpx 0 20rpx; }
+.eq-empty { text-align: center; padding: 40rpx 16rpx; }
+.eq-empty-mark { display: block; font-size: 52rpx; color: var(--accent); margin-bottom: 16rpx; }
+.eq-inventory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12rpx; }
+.eq-inventory-item { padding: 18rpx; box-sizing: border-box; border: 1px solid var(--line); border-top: 3rpx solid var(--line); border-radius: 14rpx; background-color: var(--surface-soft); display: flex; flex-direction: column; gap: 10rpx; }
+.eq-rarity-common { border-left-color: var(--rarity-common); }
+.eq-inventory-item.eq-rarity-common { border-top-color: var(--rarity-common); }
+.eq-rarity-rare { border-left-color: var(--rarity-rare); }
+.eq-inventory-item.eq-rarity-rare { border-top-color: var(--rarity-rare); }
+.eq-rarity-epic { border-left-color: var(--rarity-epic); }
+.eq-inventory-item.eq-rarity-epic { border-top-color: var(--rarity-epic); }
+.eq-item-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6rpx; }
+.eq-rarity-label { font-size: 24rpx; color: var(--muted); }
+.eq-rarity-rare .eq-rarity-label { color: var(--rarity-rare); }
+.eq-rarity-epic .eq-rarity-label { color: var(--rarity-epic); }
+.eq-item-stats { margin-bottom: 10rpx; }
+.eq-equip-btn { margin: auto 0 0; min-height: 72rpx; padding: 14rpx 10rpx; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10rpx; font-size: 26rpx; line-height: 1.4; }
+.eq-equip-btn[disabled] { color: var(--muted); background: var(--surface-raised); }
+.eq-set-note { margin-bottom: 20rpx; }
+.eq-set { padding: 20rpx; margin-bottom: 14rpx; border: 1px solid var(--line); background-color: var(--surface-soft); border-radius: 14rpx; }
+.eq-set-title { display: flex; align-items: center; justify-content: space-between; gap: 14rpx; font-size: 30rpx; font-weight: 800; color: var(--text); margin-bottom: 14rpx; }
+.eq-set-bonus { display: block; font-size: 26rpx; line-height: 1.7; color: var(--muted); margin: 8rpx 0; }
+.eq-set-active { color: var(--hp); }
+.eq-bottom-space { height: 36rpx; }
+@media (max-width: 360px) { .eq-inventory { grid-template-columns: minmax(0, 1fr); } }
 </style>

@@ -1,171 +1,132 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore } from '../../store/gameStore'
 import { UPGRADE_POOL, rarityText, upgradeCost } from '../../core/upgrade'
-import { ALL_EQUIPMENT, equipCost, getEquipStats } from '../../core/equipment'
+import { equipmentById, formatEquipStats, equipCost, getSetData } from '../../core/equipment'
+import ItemIcon from '../ItemIcon.vue'
 
 const store = useGameStore()
-
-const showRemove2 = ref(false)
-
-// shopEquipment holds compound ids (baseId:level:fluct) — resolve the definition
-// by base id (matching gameStore BUY_SHOP_EQUIP semantics)
-function equipOf(eid: string) {
-  return ALL_EQUIPMENT.find(e => e.id === eid.split(':')[0])
+const showRemove = ref(false)
+const upgradeOf = (id: string | null) => UPGRADE_POOL.find(upgrade => upgrade.id === id)
+const upgrades = computed(() => store.shopUpgrades.map((id, index) => {
+  const def = upgradeOf(id)
+  const count = store.upgrades.find(upgrade => upgrade.def.id === id)?.count ?? 0
+  return { id, index, def, price: upgradeCost(def), capped: Boolean(def && count >= def.maxStacks) }
+}))
+const equipment = computed(() => store.shopEquipment.map((id, index) => ({
+  id, index, def: id ? equipmentById(id) : undefined, lines: id ? formatEquipStats(id) : [],
+  level: id ? parseInt(id.split(':')[1] || '1', 10) || 1 : 1, price: equipCost(id ? equipmentById(id) : undefined),
+})))
+const heals = computed(() => store.shopHeals.map((id, index) => {
+  const def = upgradeOf(id)
+  return { id, index, def, price: Math.floor((def?.effect.value ?? 0) * 1.5) }
+}))
+const removable = computed(() => store.upgrades.filter(upgrade => upgrade.def.effect.type !== 'heal'))
+const cannotRefresh = computed(() => store.player.gold < store.shopRefreshCost)
+const cannotRemove = computed(() => store.shopRemoveUsed || store.player.gold < store.shopRemoveCost || removable.value.length === 0)
+function removeUpgrade(id: string) {
+  if (cannotRemove.value) return
+  store.SHOP_REMOVE_UPGRADE(id)
+  showRemove.value = false
 }
 </script>
 
 <template>
-  <view class="sv2">
-    <view class="sv2-hd">
-      <text class="sv2-title">商 店</text>
-      <view class="sv2-gold">
-        <text class="sv2-gold-dot">●</text>
-        <text class="sv2-gold-num">{{ store.player.gold }}</text>
-      </view>
-    </view>
-    <scroll-view class="sv2-body" scroll-y>
-      <view class="sv2-sec">
-        <view class="sv2-sec-hd">
-          <text class="sv2-sec-title">— 强化卡 —</text>
-          <view class="sv2-ref" @click="store.REFRESH_SHOP()">
-            <text class="sv2-ref-txt">↻ {{ store.shopRefreshCost }}G</text>
-          </view>
-        </view>
-        <view class="sv2-row">
-          <view v-for="(uid, i) in store.shopUpgrades" :key="i"
-            :class="['sv2-card', uid ? 'sv2-card-rarity-' + (UPGRADE_POOL.find(u => u.id === uid)?.rarity ?? 'common') : 'sv2-card-sold', 'sv2-anim-' + (store.shopRefreshCost % 2)]"
-            @click="store.BUY_SHOP_UPGRADE(i)">
-            <template v-if="uid">
-              <text class="sv2-card-tag">{{ rarityText(UPGRADE_POOL.find(u => u.id === uid)?.rarity ?? 'common') }}</text>
-              <text class="sv2-card-name">{{ UPGRADE_POOL.find(u => u.id === uid)?.name }}</text>
-              <view class="sv2-card-desc">
-                <text class="sv2-card-desc-txt">{{ UPGRADE_POOL.find(u => u.id === uid)?.description }}</text>
-              </view>
-              <text :class="['sv2-card-price', store.player.gold >= upgradeCost(UPGRADE_POOL.find(u => u.id === uid)) ? '' : 'sv2-nope']">{{ upgradeCost(UPGRADE_POOL.find(u => u.id === uid)) }}G</text>
+  <view class="screen shop-screen">
+    <view class="ui-page shop-content">
+      <view class="shop-header"><view><text class="ui-kicker">地牢补给站</text><text class="ui-title">旅途商店</text></view><view class="shop-wallet"><text class="shop-wallet-label">持有金币</text><text class="shop-wallet-value">{{ store.player.gold }}</text></view></view>
+      <image class="art-scene shop-scene" src="/static/scenes/shop.png" mode="aspectFill" alt="" aria-hidden="true" />
+      <view class="shop-refresh-bar art-card"><view><text class="shop-refresh-title">刷新全部商品</text><text class="ui-note">强化、装备与药水一起更新 · 已刷新 {{ store.shopRefreshCount }} 次</text></view><button role="button" class="shop-refresh-btn" :disabled="cannotRefresh" @click="store.REFRESH_SHOP()">{{ cannotRefresh ? '金币不足' : '刷新' }}<text>{{ store.shopRefreshCost }} 金币</text></button></view>
+      <view class="shop-section">
+        <view class="shop-section-header"><text class="shop-section-title">本局强化</text><text class="ui-note">购买后立即生效</text></view>
+        <view class="shop-goods">
+          <view v-for="item in upgrades" :key="`upgrade-${store.shopRefreshCount}-${item.index}`" class="shop-card art-card" :class="item.def ? `shop-rarity-${item.def.rarity}` : 'shop-sold'">
+            <template v-if="item.id && item.def">
+              <view class="shop-card-header"><text class="shop-rarity art-paper-label">{{ rarityText(item.def.rarity) }}</text><text class="shop-type">强化</text></view>
+              <view class="shop-item-art"><ItemIcon :upgrade-type="item.def.effect.type" :rarity="item.def.rarity" size="normal" /></view>
+              <text class="shop-card-name">{{ item.def.name }}</text><text class="shop-card-desc">{{ item.def.description }}</text>
+              <button role="button" class="shop-buy" :disabled="item.capped || store.player.gold < item.price" @click="store.BUY_SHOP_UPGRADE(item.index)"><text>{{ item.capped ? '已达叠加上限' : store.player.gold < item.price ? '金币不足' : '购买' }}</text><text v-if="!item.capped">{{ item.price }} 金币</text></button>
             </template>
-            <text v-else class="sv2-sold-txt">— 已售 —</text>
+            <template v-else><text class="shop-sold-mark">—</text><text class="ui-note">已售出</text></template>
           </view>
         </view>
       </view>
-
-      <view class="sv2-sec">
-        <text class="sv2-sec-title">— 装备 —</text>
-        <view class="sv2-row">
-          <template v-for="(eid, i) in store.shopEquipment" :key="i">
-            <view v-if="!eid" class="sv2-card sv2-card-sold">
-              <text class="sv2-sold-txt">— 已售 —</text>
-            </view>
-            <view v-else :class="['sv2-card', 'sv2-card-rarity-' + (equipOf(eid)?.rarity ?? 'common'), 'sv2-anim-' + (store.shopRefreshCost % 2)]" @click="store.BUY_SHOP_EQUIP(i)">
-              <text class="sv2-card-tag">{{ rarityText(equipOf(eid)?.rarity ?? 'common') }}</text>
-              <text class="sv2-card-name">{{ equipOf(eid)?.name }}</text>
-              <view class="sv2-card-desc sv2-card-stats">
-                <text class="sv2-card-stats-txt">{{ Object.entries(getEquipStats(eid)).map(([k, v]) => k === 'atk' ? `攻击+${v}%` : k === 'def' ? `防御+${v}%` : k === 'spd' ? `速度+${v}` : k === 'hp' ? `生命+${v}%` : k === 'gold' ? `金币+${v}%` : '').filter(Boolean).join(' ') }}</text>
-              </view>
-              <text :class="['sv2-card-price', store.player.gold >= equipCost(equipOf(eid)) ? '' : 'sv2-nope']">{{ equipCost(equipOf(eid)) }}G</text>
-            </view>
-          </template>
-        </view>
-      </view>
-
-      <view class="sv2-sec">
-        <view class="sv2-split">
-          <view class="sv2-split-half">
-            <text class="sv2-sec-title">— 回复 —</text>
-            <template v-for="(hid, i) in store.shopHeals" :key="i">
-              <view v-if="!hid" class="sv2-card sv2-card-sold" style="height:150rpx">
-                <text class="sv2-sold-txt">— 已售 —</text>
-              </view>
-              <view v-else :class="['sv2-card', 'sv2-card-heal', 'sv2-anim-' + (store.shopRefreshCost % 2)]" style="height:150rpx" @click="store.BUY_SHOP_HEAL(i)">
-                <text class="sv2-card-tag" style="color:#2ecc71">回复</text>
-                <text class="sv2-card-name">{{ UPGRADE_POOL.find(u => u.id === hid)?.name }}</text>
-                <view class="sv2-card-desc">
-                  <text class="sv2-card-desc-txt">{{ UPGRADE_POOL.find(u => u.id === hid)?.description }}</text>
-                </view>
-                <text class="sv2-card-price">{{ Math.floor(((UPGRADE_POOL.find(u => u.id === hid)?.effect.value ?? 0)) * 1.5) }}G</text>
-              </view>
+      <view class="shop-section">
+        <view class="shop-section-header"><text class="shop-section-title">装备</text><text class="ui-note">购买后放入背包</text></view>
+        <view class="shop-goods">
+          <view v-for="item in equipment" :key="`equipment-${store.shopRefreshCount}-${item.index}`" class="shop-card art-card" :class="item.def ? `shop-rarity-${item.def.rarity}` : 'shop-sold'">
+            <template v-if="item.id && item.def">
+              <view class="shop-card-header"><text class="shop-rarity art-paper-label">{{ rarityText(item.def.rarity) }}</text><text class="shop-type">Lv.{{ item.level }}</text></view>
+              <view class="shop-item-art"><ItemIcon :slot="item.def.slot" :set-id="item.def.set" :rarity="item.def.rarity" size="normal" /></view>
+              <text class="shop-card-name">{{ item.def.name }}</text><text class="shop-type">{{ item.def.set ? `${getSetData(item.def.set)?.name ?? ''}套装` : '独立装备' }}</text>
+              <view class="shop-equip-lines"><text v-for="line in item.lines" :key="line" class="shop-card-desc">{{ line }}</text></view>
+              <button role="button" class="shop-buy" :disabled="store.player.gold < item.price" @click="store.BUY_SHOP_EQUIP(item.index)"><text>{{ store.player.gold < item.price ? '金币不足' : '购买' }}</text><text>{{ item.price }} 金币</text></button>
             </template>
-          </view>
-          <view class="sv2-split-half">
-            <text class="sv2-sec-title">— 移除 —</text>
-            <view v-if="store.shopRemoveUsed" class="sv2-card sv2-card-sold" style="height:140rpx">
-              <text class="sv2-sold-txt">— 已用 —</text>
-            </view>
-            <view v-else class="sv2-card sv2-card-heal" style="height:140rpx;border-color:#e74c3c;background:rgba(231,76,60,0.06)" @click="showRemove2 = true">
-              <text class="sv2-card-tag" style="color:#e74c3c">移除</text>
-              <text class="sv2-card-name">移除强化</text>
-              <text class="sv2-card-price">{{ store.shopRemoveCost }}G</text>
-            </view>
+            <template v-else><text class="shop-sold-mark">—</text><text class="ui-note">已售出</text></template>
           </view>
         </view>
       </view>
-      <view style="height: 32px;" />
-    </scroll-view>
-
-    <view class="sv2-leave" @click="store.GO_TO_ROUTE()">
-      <text class="sv2-leave-txt">离开商店</text>
-    </view>
-
-    <view v-if="showRemove2" class="sv2-rm-overlay" @click="showRemove2 = false">
-      <view class="sv2-rm-panel" @click.stop>
-        <view class="sv2-rm-hd">
-          <text class="sv2-rm-title">移除强化</text>
-          <view class="sv2-rm-close" @click="showRemove2 = false"><text>×</text></view>
+      <view class="shop-section"><text class="shop-section-title">补给与整备</text><view class="shop-services">
+        <view v-for="item in heals" :key="`heal-${store.shopRefreshCount}-${item.index}`" class="shop-card art-card shop-heal" :class="{ 'shop-sold': !item.id }">
+          <template v-if="item.id && item.def">
+            <view class="shop-card-header"><text class="shop-rarity art-paper-label">生命补给</text><ItemIcon :upgrade-type="item.def.effect.type" :rarity="item.def.rarity" size="small" /></view>
+            <text class="shop-card-name">{{ item.def.name }}</text><text class="shop-card-desc">{{ item.def.description }}</text>
+            <button role="button" class="shop-buy" :disabled="store.player.gold < item.price || store.effectivePlayer.hp >= store.effectivePlayer.maxHp" @click="store.BUY_SHOP_HEAL(item.index)"><text>{{ store.effectivePlayer.hp >= store.effectivePlayer.maxHp ? '生命已满' : store.player.gold < item.price ? '金币不足' : '购买并使用' }}</text><text>{{ item.price }} 金币</text></button>
+          </template><text v-else class="ui-note">药水已售出</text>
         </view>
-        <scroll-view class="sv2-rm-list" scroll-y>
-          <text v-if="store.upgrades.length === 0" class="sv2-none">无强化</text>
-          <view v-for="u in store.upgrades" :key="u.def.id" class="sv2-rm-item" @click="store.SHOP_REMOVE_UPGRADE(u.def.id); showRemove2 = false">
-            <text class="sv2-rm-item-name">{{ u.def.name }} ×{{ u.count }}</text>
-            <text :class="['sv2-rm-item-cost', store.player.gold < store.shopRemoveCost ? 'sv2-nope' : '']">{{ store.player.gold >= store.shopRemoveCost ? `${store.shopRemoveCost}G` : '金币不足' }}</text>
-          </view>
-        </scroll-view>
-      </view>
+        <view class="shop-card art-card shop-remove"><text class="shop-rarity art-paper-label">本店限一次</text><text class="shop-card-name">移除强化</text><text class="shop-card-desc">选择一项强化移除一层。先查看，再决定。</text><button role="button" class="shop-buy" :disabled="cannotRemove" @click="showRemove = true"><text>{{ store.shopRemoveUsed ? '本店已使用' : !removable.length ? '暂无可移除强化' : store.player.gold < store.shopRemoveCost ? '金币不足' : '选择强化' }}</text><text v-if="!store.shopRemoveUsed">{{ store.shopRemoveCost }} 金币</text></button></view>
+      </view></view>
+      <button role="button" class="ui-btn ui-btn-secondary shop-leave" @click="store.GO_TO_ROUTE()">离开商店，继续前进</button>
     </view>
+    <view v-if="showRemove" class="ui-overlay" @click="showRemove = false"><view class="ui-dialog" @click.stop>
+      <view class="ui-sheet-header"><text class="ui-sheet-title">移除一层强化</text><button role="button" class="ui-close" @click="showRemove = false">取消</button></view><text class="ui-note shop-remove-note">每次花费 {{ store.shopRemoveCost }} 金币，不返还原购买价格。</text>
+      <button role="button" v-for="upgrade in removable" :key="upgrade.def.id" class="shop-remove-option art-card" :disabled="cannotRemove" @click="removeUpgrade(upgrade.def.id)"><view class="shop-remove-identity"><ItemIcon :upgrade-type="upgrade.def.effect.type" :rarity="upgrade.def.rarity" size="small" /><text class="shop-card-name">{{ upgrade.def.name }} ×{{ upgrade.count }}</text></view><text class="shop-card-desc">{{ upgrade.def.description }}</text><text class="stat-gold">移除一层</text></button>
+    </view></view>
   </view>
 </template>
 
-<style lang="scss">
-.sv2 { background: #0d0d1a; min-height:100vh; padding:24rpx 20rpx 220rpx; display:flex; flex-direction:column; }
-.sv2-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:24rpx; }
-.sv2-title { font-size:40rpx; font-weight:900; color:#f1c40f; }
-.sv2-gold { display:flex; align-items:center; gap:6rpx; background:rgba(241,196,15,0.1); border:1px solid rgba(241,196,15,0.2); border-radius:24rpx; padding:10rpx 24rpx; }
-.sv2-gold-dot { font-size:20rpx; color:#f1c40f; } .sv2-gold-num { font-size:30rpx; font-weight:900; color:#f1c40f; }
-.sv2-body { flex:1; } .sv2-sec { margin-bottom:28rpx; }
-.sv2-sec-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:10rpx; }
-.sv2-sec-title { font-size:24rpx; font-weight:700; color:#888; }
-.sv2-ref { padding:8rpx 18rpx; background:rgba(52,152,219,0.08); border:1px solid rgba(52,152,219,0.15); border-radius:10rpx; }
-.sv2-ref-txt { font-size:20rpx; color:#3498db; font-weight:600; }
-.sv2-row { display:flex; gap:12rpx; } .sv2-split { display:flex; gap:16rpx; } .sv2-split-half { flex:1; }
-.sv2-card { flex:1; padding:14rpx; border-radius:12rpx; border:2px solid; display:flex; flex-direction:column; gap:6rpx; min-height:210rpx; box-sizing:border-box; overflow:hidden; transition: all 0.2s; animation: card-pop 0.35s ease-out both; }
-.sv2-card:active { transform: scale(0.96); filter: brightness(1.2); }
-.sv2-card:nth-child(1) { animation-delay: 0.05s; }
-.sv2-card:nth-child(2) { animation-delay: 0.12s; }
-.sv2-card:nth-child(3) { animation-delay: 0.19s; }
-.sv2-card-rarity-common { border-color:#7f8c8d; background:rgba(127,140,141,0.08); }
-.sv2-card-rarity-rare { border-color:#3498db; background:rgba(52,152,219,0.1); }
-.sv2-card-rarity-epic { border-color:#e67e22; background:rgba(230,126,34,0.12); }
-/* 刷新动画：shopRefreshCost 每次 +10，%2 翻转触发 animation-name 切换 -> 卡片重播入场 */
-.sv2-anim-0 { animation: sv2-refresh-0 0.35s ease-out both; }
-.sv2-anim-1 { animation: sv2-refresh-1 0.35s ease-out both; }
-@keyframes sv2-refresh-0 { 0% { opacity: 0; transform: translateY(30rpx) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes sv2-refresh-1 { 0% { opacity: 0; transform: translateY(30rpx) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-.sv2-card-sold { border-color:rgba(255,255,255,0.04); border-style:dashed; background:rgba(255,255,255,0.01); justify-content:center; align-items:center; }
-.sv2-card-heal { border-color:#2ecc71; background:rgba(46,204,113,0.08); }
-.sv2-card-tag { font-size:20rpx; color:#888; flex-shrink:0; }
-.sv2-card-name { font-size:28rpx; font-weight:800; color:#fff; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.sv2-card-desc { overflow:hidden; max-height:56rpx; } .sv2-card-desc-txt { font-size:22rpx; color:#888; line-height:28rpx; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; white-space:normal; word-break:break-all; }
-.sv2-card-stats { overflow:hidden; max-height:56rpx; } .sv2-card-stats-txt { font-size:22rpx; color:#888; line-height:28rpx; display:block; white-space:normal; word-break:break-all; }
-.sv2-card-price { font-size:26rpx; font-weight:900; color:#f1c40f; align-self:flex-end; flex-shrink:0; margin-top:auto; } .sv2-nope { color:#e74c3c; }
-.sv2-sold-txt { font-size:20rpx; color:#888; }
-.sv2-leave { text-align:center; padding:18rpx; background:rgba(255,255,255,0.03); border-radius:12rpx; position:fixed; bottom:110rpx; left:20rpx; right:20rpx; }
-.sv2-leave-txt { font-size:26rpx; color:#888; }
-.sv2-rm-overlay { position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:200; }
-.sv2-rm-panel { background:#1a1a2e; border-radius:16rpx; padding:24rpx; width:300px; max-height:60vh; }
-.sv2-rm-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:16rpx; }
-.sv2-rm-title { font-size:26rpx; font-weight:bold; color:#fff; }
-.sv2-rm-close { width:40rpx;height:40rpx; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.08); border-radius:20rpx; color:#888; font-size:28rpx; }
-.sv2-rm-list { max-height:400rpx; }
-.sv2-rm-item { display:flex; justify-content:space-between; align-items:center; padding:14rpx; border-radius:10rpx; background:rgba(255,255,255,0.03); margin-bottom:8rpx; }
-.sv2-rm-item-name { font-size:24rpx; color:#ccc; font-weight:bold; } .sv2-rm-item-cost { font-size:22rpx; color:#e74c3c; }
-.sv2-none { font-size:20rpx; color:#888; text-align:center; padding:20rpx; }
+<style scoped lang="scss">
+.shop-content { max-width: 820rpx; }
+.shop-header { display: flex; justify-content: space-between; align-items: center; gap: 20rpx; margin-bottom: 28rpx; }
+.shop-scene { margin-bottom: 22rpx; }
+.shop-wallet { text-align: right; padding-left: 20rpx; border-left: 1px solid var(--line); }
+.shop-wallet-label { display: block; color: var(--muted); font-size: 24rpx; }
+.shop-wallet-value { color: var(--gold); font-size: 42rpx; font-weight: 800; }
+.shop-refresh-bar { display: flex; justify-content: space-between; align-items: center; gap: 20rpx; padding: 20rpx; border-radius: 14rpx; background-color: var(--surface); border: 1px solid var(--line); margin-bottom: 30rpx; }
+.shop-refresh-title { color: var(--text); font-size: 28rpx; font-weight: 700; }
+.shop-refresh-btn { margin: 0; min-width: 148rpx; flex-shrink: 0; padding: 14rpx 18rpx; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10rpx; line-height: 1.4; font-size: 26rpx; }
+.shop-refresh-btn text { display: block; font-size: 24rpx; margin-top: 4rpx; }
+.shop-refresh-btn::after, .shop-buy::after, .shop-remove-option::after { border: none; }
+.shop-refresh-btn[disabled] { color: var(--muted); background: var(--surface-soft); }
+.shop-section { margin-bottom: 32rpx; }
+.shop-section-header { display: flex; justify-content: space-between; align-items: baseline; gap: 16rpx; margin-bottom: 16rpx; }
+.shop-section-title { display: block; color: var(--text); font-size: 32rpx; font-weight: 800; }
+.shop-goods, .shop-services { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14rpx; }
+.shop-services { margin-top: 16rpx; }
+.shop-card { display: flex; flex-direction: column; gap: 10rpx; min-width: 0; padding: 20rpx; border: 1px solid var(--line); border-top: 3rpx solid var(--rarity-common); border-radius: 16rpx; background-color: var(--surface); box-shadow: var(--shadow); animation: ui-rise-in 180ms ease-out; }
+.shop-rarity-rare { border-top-color: var(--rarity-rare); }
+.shop-rarity-epic { border-top-color: var(--rarity-epic); }
+.shop-rarity-rare .shop-rarity { color: var(--rarity-rare); }
+.shop-rarity-epic .shop-rarity { color: var(--rarity-epic); }
+.shop-card-header { display: flex; justify-content: space-between; align-items: center; gap: 8rpx; }
+.shop-item-art { display: flex; justify-content: center; padding: 6rpx 0; }
+.shop-rarity, .shop-type { font-size: 24rpx; line-height: 1.5; color: var(--muted); }
+.shop-card-name { display: block; font-size: 30rpx; line-height: 1.45; font-weight: 800; color: var(--text); overflow-wrap: anywhere; }
+.shop-card-desc { display: block; font-size: 26rpx; line-height: 1.65; color: var(--muted); white-space: normal; }
+.shop-equip-lines { margin-bottom: 12rpx; }
+.shop-buy { display: flex; justify-content: space-between; align-items: center; gap: 8rpx; flex-wrap: wrap; margin: auto 0 0; min-height: 76rpx; padding: 14rpx 10rpx; font-size: 26rpx; line-height: 1.4; color: var(--gold); background: var(--gold-soft); border: 1px solid var(--line); border-radius: 10rpx; }
+.shop-buy[disabled] { color: var(--muted); background: var(--surface-soft); }
+.shop-sold { min-height: 180rpx; align-items: center; justify-content: center; box-shadow: none; background: var(--surface-soft); border-style: dashed; border-top-width: 1px; }
+.shop-sold-mark { font-size: 36rpx; color: var(--dim); }
+.shop-heal { border-top-color: var(--hp); }
+.shop-heal .shop-rarity { color: var(--hp); }
+.shop-remove { border-top-color: var(--attack); }
+.shop-remove .shop-rarity { color: var(--attack); }
+.shop-leave { width: 100%; margin-top: 18rpx; }
+.shop-remove-note { margin-bottom: 24rpx; }
+.shop-remove-option { margin: 0 0 12rpx; padding: 20rpx; border: 1px solid var(--line); border-radius: 12rpx; background-color: var(--surface-soft); color: var(--text); display: flex; flex-direction: column; gap: 12rpx; font-size: 26rpx; line-height: 1.6; text-align: left; }
+.shop-remove-identity { display: flex; align-items: center; gap: 12rpx; }
+@media (max-width: 360px) { .shop-goods, .shop-services { grid-template-columns: minmax(0, 1fr); } }
+@media (max-height: 700px) { .shop-scene { margin-bottom: 16rpx; } }
+@media (prefers-reduced-motion: reduce) { .shop-card { animation: none; } }
 </style>

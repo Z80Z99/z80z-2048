@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-wraith">
+<title id="title-wraith">Veil Wraith</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M51 163 Q37 142 39 112 L24 137 Q18 165 38 187 L24 219 L58 205 L77 228 L99 218 L122 239 L141 221 L166 233 L185 210 L222 222 L207 189 Q235 161 231 131 L216 115 Q218 147 198 159 L174 156 L153 172 L101 174 L77 153 Z" fill="#554e64" stroke="#242522" stroke-width="7"/>
+<path d="M51 163 Q37 142 39 112 L24 137 Q18 165 38 187 L24 219 L58 205 L77 228 L99 218 L122 239 L141 221 L166 233 L185 210 L222 222 L207 189 Q235 161 231 131 L216 115 Q218 147 198 159 L174 156 L153 172 L101 174 L77 153 Z" fill="none" stroke="#b9aec9" stroke-width="1.65" opacity="0.72"/>
+<path d="M33 155 Q36 176 52 184 L41 207 L63 197 L76 212 L90 190 L104 206 L119 229 L125 204 L102 180 L81 172 L60 177 Z M218 140 Q220 172 195 184 L211 209 L184 195 L163 220 L153 198 L174 177 L198 174 Z" fill="#8e819e" opacity="0.9"/>
+<path d="M76 196 L88 181 L107 197 L127 230 L116 231 L96 211 L86 216 Z M142 222 L148 198 L166 184 L180 191 L160 220 Z" fill="#b2a2b7" opacity="1"/>
+<path d="M66 116 L78 74 L96 50 L128 27 L158 45 L178 69 L190 112 L180 145 L166 171 L141 186 L113 184 L86 165 L70 144 Z" fill="#71657f" stroke="#242522" stroke-width="7"/>
+<path d="M66 116 L78 74 L96 50 L128 27 L158 45 L178 69 L190 112 L180 145 L166 171 L141 186 L113 184 L86 165 L70 144 Z" fill="none" stroke="#cabbd3" stroke-width="1.65" opacity="0.72"/>
+<path d="M84 76 L106 51 L129 36 L145 48 L127 63 L106 74 L94 100 L79 130 L75 139 L73 113 Z" fill="#ac9eb7" opacity="1"/>
+<path d="M151 49 L171 74 L181 111 L172 144 L156 163 L145 135 L158 107 L149 75 L136 64 Z" fill="#494253" opacity="1"/>
+<path d="M104 79 L126 63 L147 77 L159 106 L151 142 L136 171 L119 171 L100 146 L91 111 Z" fill="#b0aaa5" stroke="#242522" stroke-width="7"/>
+<path d="M104 79 L126 63 L147 77 L159 106 L151 142 L136 171 L119 171 L100 146 L91 111 Z" fill="none" stroke="#ded2c5" stroke-width="1.65" opacity="0.72"/>
+<path d="M110 84 L127 72 L140 83 L142 102 L125 119 L109 112 L99 109 Z" fill="#ddd3bb" opacity="1"/>
+<path d="M146 90 L153 109 L144 140 L133 161 L124 165 L124 143 L134 119 Z" fill="#777182" opacity="1"/>
+<path d="M96 110 L119 119 L112 141 L99 136 L91 122 Z M132 119 L154 105 L158 120 L146 141 L134 137 Z" fill="#302d3c" opacity="1"/>
+<path d="M102 121 L113 126 L110 132 L101 131 Z M137 123 L149 115 L148 127 L139 133 Z" fill="#d4c5ee" stroke="#d4c5ee" stroke-width="8" opacity="0.13"/>
+<path d="M102 121 L113 126 L110 132 L101 131 Z M137 123 L149 115 L148 127 L139 133 Z" fill="#d4c5ee"/>
+<path d="M125 132 L115 152 L125 146 L133 153 Z" fill="#5d556a" opacity="1"/>
+<path d="M114 158 L129 161 L140 152 L131 172 L121 178 Z" fill="#393241" opacity="1"/>
+<path d="M118 158 L120 167 M130 159 L127 169" fill="none" stroke="#c5b7c9" stroke-width="3" opacity="1"/>
+<path d="M89 151 L101 164 M161 149 L150 167 M86 87 L95 75 M166 91 L171 110 M58 188 L65 183" fill="none" stroke="#cec0d1" stroke-width="3" opacity="1"/>
+<path d="M76 127 L85 107 M180 129 L174 143 M149 189 L141 210 M108 189 L120 207" fill="none" stroke="#a596b6" stroke-width="3.5" opacity="1"/>
+</svg>

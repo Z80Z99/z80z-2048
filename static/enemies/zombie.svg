@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-zombie">
+<title id="title-zombie">Shroud Zombie</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M26 219 L44 177 L83 159 L102 165 L146 163 L177 157 L213 183 L226 222 L189 227 L165 237 L124 224 L91 238 L63 226 Z" fill="#68544a" stroke="#242522" stroke-width="7"/>
+<path d="M26 219 L44 177 L83 159 L102 165 L146 163 L177 157 L213 183 L226 222 L189 227 L165 237 L124 224 L91 238 L63 226 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M43 202 L78 172 L96 191 L77 229 L57 218 Z M160 175 L190 174 L213 202 L195 218 L172 226 Z" fill="#9d7260" opacity="1"/>
+<path d="M79 185 L87 196 L72 215 M185 187 L173 207 L186 215" fill="none" stroke="#c0977c" stroke-width="3" opacity="1"/>
+<path d="M91 163 L100 131 L151 134 L166 174 L146 210 L110 206 L83 188 Z" fill="#8d947b" stroke="#242522" stroke-width="7"/>
+<path d="M91 163 L100 131 L151 134 L166 174 L146 210 L110 206 L83 188 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M132 152 L150 141 L158 176 L138 195 L113 201 L121 176 Z" fill="#5b6254" opacity="1"/>
+<path d="M99 178 L114 187 M132 192 L144 182 M98 165 L111 173" fill="none" stroke="#c6c1a0" stroke-width="3" opacity="1"/>
+<path d="M82 49 L107 33 L139 35 L164 44 L184 75 L178 109 L187 134 L170 151 L163 181 L144 195 L111 190 L88 166 L76 140 L64 120 L72 91 L68 66 Z" fill="#979d81" stroke="#242522" stroke-width="7"/>
+<path d="M82 49 L107 33 L139 35 L164 44 L184 75 L178 109 L187 134 L170 151 L163 181 L144 195 L111 190 L88 166 L76 140 L64 120 L72 91 L68 66 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M106 43 L140 43 L158 55 L163 85 L145 106 L120 101 L107 83 L82 78 L84 56 Z" fill="#c0bea0" opacity="1"/>
+<path d="M162 54 L179 79 L168 117 L173 135 L151 164 L142 190 L122 184 L138 151 L153 115 Z M81 96 L95 114 L90 147 L109 174 L111 188 L89 165 L74 132 Z" fill="#656f60" opacity="1"/>
+<path d="M160 98 L174 111 L183 107 L190 122 L181 139 L165 139 L159 118 Z" fill="#8a8d74" stroke="#242522" stroke-width="7"/>
+<path d="M160 98 L174 111 L183 107 L190 122 L181 139 L165 139 L159 118 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M84 98 L112 104 L114 130 L96 139 L79 124 Z" fill="#544d45" opacity="1"/>
+<path d="M89 112 Q100 103 107 115 Q111 128 99 130 Q88 127 89 112 Z" fill="#d1c9ac" stroke="#d1c9ac" stroke-width="8" opacity="0.13"/>
+<path d="M89 112 Q100 103 107 115 Q111 128 99 130 Q88 127 89 112 Z" fill="#d1c9ac"/>
+<path d="M133 112 L153 96 L164 105 L159 128 L140 132 Z" fill="#242522" opacity="1"/>
+<path d="M143 117 L157 109 L153 122 L144 126 Z" fill="#b6c690" stroke="#b6c690" stroke-width="8" opacity="0.13"/>
+<path d="M143 117 L157 109 L153 122 L144 126 Z" fill="#b6c690"/>
+<path d="M124 122 L117 145 L132 143 L131 130 Z" fill="#4d5448" opacity="1"/>
+<path d="M88 145 L110 153 L115 179 L100 174 L90 162 Z" fill="#bb9d80" opacity="1"/>
+<path d="M91 150 L107 158 L109 173 L99 169 Z" fill="#e0d0ac" opacity="1"/>
+<path d="M116 160 L143 157 L153 167 L137 174 L111 172" fill="none" stroke="#242522" stroke-width="4" opacity="1"/>
+<path d="M119 164 L121 173 M131 162 L132 171 M143 162 L141 170" fill="none" stroke="#e4d7b9" stroke-width="4" opacity="1"/>
+<path d="M91 54 L109 62 L106 76 M128 45 L122 56 M152 76 L148 87 M91 88 L97 94" fill="none" stroke="#555c50" stroke-width="3" opacity="1"/>
+<path d="M77 120 L84 130 M100 142 L107 145 M147 179 L151 173" fill="none" stroke="#ced0af" stroke-width="3" opacity="1"/>
+</svg>

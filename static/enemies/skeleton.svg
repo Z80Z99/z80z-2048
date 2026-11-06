@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-skeleton">
+<title id="title-skeleton">Bone Soldier</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M32 220 L47 186 L85 169 L109 181 L150 178 L181 168 L213 187 L224 221 L191 231 L162 223 L129 236 L95 227 L59 234 Z" fill="#696960" stroke="#242522" stroke-width="7"/>
+<path d="M32 220 L47 186 L85 169 L109 181 L150 178 L181 168 L213 187 L224 221 L191 231 L162 223 L129 236 L95 227 L59 234 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M48 199 L80 180 L93 200 L68 216 L39 220 Z M176 180 L204 197 L216 219 L188 219 L163 201 Z" fill="#9a9882" opacity="1"/>
+<path d="M86 164 L99 152 L153 151 L169 163 L157 198 L140 215 L112 211 L95 192 Z" fill="#b6a384" stroke="#242522" stroke-width="7"/>
+<path d="M86 164 L99 152 L153 151 L169 163 L157 198 L140 215 L112 211 L95 192 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M144 158 L157 167 L141 205 L126 211 L131 180 Z" fill="#73685a" opacity="1"/>
+<path d="M104 177 L149 179 M108 190 L143 192 M116 202 L137 203" fill="none" stroke="#242522" stroke-width="4" opacity="1"/>
+<path d="M82 42 L111 28 L145 30 L174 44 L186 76 L181 109 L194 133 L175 151 L163 185 L145 202 L113 204 L93 187 L82 156 L62 138 L74 110 L70 76 Z" fill="#c9b797" stroke="#242522" stroke-width="7"/>
+<path d="M82 42 L111 28 L145 30 L174 44 L186 76 L181 109 L194 133 L175 151 L163 185 L145 202 L113 204 L93 187 L82 156 L62 138 L74 110 L70 76 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M112 34 L143 37 L166 56 L172 92 L158 114 L134 108 L111 87 L90 82 L85 57 Z" fill="#e2d2ad" opacity="1"/>
+<path d="M163 45 L183 77 L175 109 L184 132 L164 147 L153 184 L136 198 L140 150 L153 123 L165 95 Z M78 79 L92 96 L95 117 L84 141 L72 136 L81 110 Z" fill="#97876d" opacity="1"/>
+<path d="M82 98 Q101 94 120 111 L111 139 Q87 142 81 128 Z M134 111 Q154 94 173 100 L172 128 Q160 145 142 137 Z" fill="#242522" opacity="1"/>
+<path d="M94 115 L110 119 L106 126 L94 127 Z M145 118 L161 112 L160 125 L149 127 Z" fill="#b9b58c" stroke="#b9b58c" stroke-width="8" opacity="0.13"/>
+<path d="M94 115 L110 119 L106 126 L94 127 Z M145 118 L161 112 L160 125 L149 127 Z" fill="#b9b58c"/>
+<path d="M126 129 L116 153 L128 149 L138 153 Z" fill="#49463d" opacity="1"/>
+<path d="M95 151 L107 156 M157 152 L147 157 M104 55 L119 64 L113 79 L127 89 M153 57 L157 72" fill="none" stroke="#6a6051" stroke-width="3.2" opacity="1"/>
+<path d="M97 164 Q126 176 160 162 L153 191 L137 199 L115 197 L103 187 Z" fill="#c4b291" stroke="#242522" stroke-width="7"/>
+<path d="M97 164 Q126 176 160 162 L153 191 L137 199 L115 197 L103 187 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M104 169 Q128 179 154 168 L148 186 L117 189 L108 183 Z" fill="#242522" opacity="1"/>
+<path d="M114 174 L115 184 M127 177 L127 188 M140 175 L138 187" fill="none" stroke="#e4d7b9" stroke-width="6" opacity="1"/>
+<path d="M87 146 L94 141 M165 144 L176 138 M88 183 L97 179 M167 178 L178 182" fill="none" stroke="#e2cfaa" stroke-width="3" opacity="1"/>
+<path d="M62 193 L74 197 M187 195 L199 193 M80 214 L93 210" fill="none" stroke="#43453f" stroke-width="4" opacity="1"/>
+</svg>

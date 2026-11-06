@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-mud_golem">
+<title id="title-mud_golem">Mire Golem</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M24 214 L31 175 L61 151 L86 153 L99 128 L155 129 L176 151 L202 148 L227 174 L235 212 L213 229 L179 224 L156 236 L126 227 L94 237 L64 223 L42 230 Z" fill="#8d8065" stroke="#242522" stroke-width="7"/>
+<path d="M24 214 L31 175 L61 151 L86 153 L99 128 L155 129 L176 151 L202 148 L227 174 L235 212 L213 229 L179 224 L156 236 L126 227 L94 237 L64 223 L42 230 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M33 187 L61 160 L83 163 L96 185 L73 214 L47 220 L29 212 Z M171 163 L197 156 L219 180 L229 207 L204 215 L178 200 Z" fill="#b2a182" opacity="1"/>
+<path d="M98 173 L132 151 L168 174 L158 209 L130 227 L100 215 L86 193 Z" fill="#69674f" opacity="1"/>
+<path d="M106 176 L129 162 L149 178 L136 200 L113 199 Z" fill="#a39a77" opacity="1"/>
+<path d="M49 179 L61 190 L58 205 M191 175 L183 185 L192 203 M108 212 L115 221" fill="none" stroke="#4e4b3a" stroke-width="4" opacity="1"/>
+<path d="M81 51 L105 35 L131 40 L154 32 L175 54 L187 86 L179 116 L187 141 L166 166 L145 185 L113 188 L88 174 L71 147 L76 123 L67 97 L72 70 Z" fill="#a79a7a" stroke="#242522" stroke-width="7"/>
+<path d="M81 51 L105 35 L131 40 L154 32 L175 54 L187 86 L179 116 L187 141 L166 166 L145 185 L113 188 L88 174 L71 147 L76 123 L67 97 L72 70 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M90 61 L108 44 L133 48 L152 41 L167 63 L155 85 L137 91 L113 80 L82 86 Z" fill="#d0bf9a" opacity="1"/>
+<path d="M157 84 L175 72 L180 97 L170 119 L179 140 L161 158 L144 177 L128 175 L130 145 L143 123 Z" fill="#736b51" opacity="1"/>
+<path d="M81 90 L107 99 L104 124 L93 133 L104 157 L113 179 L91 166 L79 145 L82 120 L73 100 Z" fill="#827658" opacity="1"/>
+<path d="M88 96 L117 106 L112 125 L92 129 L81 116 Z M136 104 L167 90 L176 108 L158 126 L137 124 Z" fill="#383d31" opacity="1"/>
+<path d="M94 110 L111 112 L107 121 L93 120 Z M143 112 L162 101 L163 111 L147 120 Z" fill="#c0ce92" stroke="#c0ce92" stroke-width="8" opacity="0.13"/>
+<path d="M94 110 L111 112 L107 121 L93 120 Z M143 112 L162 101 L163 111 L147 120 Z" fill="#c0ce92"/>
+<path d="M125 111 L114 140 L126 147 L140 137 L131 119 Z" fill="#bfb08a" opacity="1"/>
+<path d="M122 117 L126 137 L138 135 L129 145 L117 139 Z" fill="#8b7e5e" opacity="1"/>
+<path d="M99 153 L121 157 L144 150 L160 148 L150 164 L130 174 L109 168 Z" fill="#494b37" opacity="1"/>
+<path d="M108 158 L126 164 L148 156" fill="none" stroke="#d0bc90" stroke-width="3" opacity="1"/>
+<path d="M76 72 L85 61 L101 64 L97 77 L86 81 Z M149 42 L168 55 L162 65 L150 60 Z M170 138 L179 143 L167 158 L156 162 L155 152 Z M62 210 L77 215 L84 226 L71 225 Z" fill="#7c9066" opacity="1"/>
+<path d="M101 53 L114 63 L109 75 M148 73 L140 83 M88 139 L96 145 M145 183 L155 190" fill="none" stroke="#60583f" stroke-width="3.5" opacity="1"/>
+<path d="M88 66 L91 70 M161 149 L171 145 M66 216 L73 219" fill="none" stroke="#b3be88" stroke-width="3" opacity="1"/>
+</svg>

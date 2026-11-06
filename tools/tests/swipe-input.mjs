@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict'
+
+export async function run() {
+  const { loadProject } = await import('../harness.mjs')
+  const { useSwipe } = loadProject('./composables/useSwipe')
+  let enabled = true
+  const moves = []
+  const swipe = useSwipe(dir => moves.push(dir), () => enabled)
+  const pointer = (x, y, extra = {}) => ({ clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', button: 0, isPrimary: true, ...extra })
+  swipe.onPointerDown(pointer(100, 100))
+  swipe.onPointerUp(pointer(180, 100))
+  assert.deepEqual(moves, ['right'])
+  swipe.onPointerDown(pointer(100, 100))
+  swipe.onPointerUp(pointer(100, 20))
+  assert.deepEqual(moves, ['right', 'up'])
+  swipe.onPointerDown(pointer(100, 100, { button: 2 }))
+  swipe.onPointerUp(pointer(180, 100))
+  swipe.onPointerDown(pointer(100, 100))
+  swipe.onPointerUp(pointer(110, 110))
+  assert.equal(moves.length, 2)
+  swipe.onPointerDown(pointer(100, 100))
+  swipe.onPointerCancel(pointer(100, 100))
+  swipe.onPointerUp(pointer(20, 100))
+  assert.equal(moves.length, 2)
+  swipe.onPointerDown(pointer(100, 100))
+  enabled = false
+  swipe.onPointerUp(pointer(20, 100))
+  assert.equal(moves.length, 2)
+  enabled = true
+  swipe.onPointerDown(pointer(100, 100))
+  swipe.onPointerUp(pointer(20, 100, { pointerId: 2 }))
+  assert.equal(moves.length, 2)
+  swipe.onPointerUp(pointer(20, 100))
+  assert.equal(moves.at(-1), 'left')
+  const touch = (x, y) => ({ clientX: x, clientY: y, identifier: 7 })
+  swipe.onPointerDown(pointer(100, 100, { pointerType: 'touch' }))
+  swipe.onTouchStart({ touches: [touch(100, 100)] })
+  swipe.onTouchEnd({ changedTouches: [touch(100, 180)] })
+  swipe.onPointerUp(pointer(100, 180, { pointerType: 'touch' }))
+  assert.deepEqual(moves, ['right', 'up', 'left', 'down'], 'touch/pointer events never double-trigger')
+  swipe.onTouchStart({ touches: [touch(100, 100)] })
+  swipe.onTouchMove({ touches: [touch(100, 100), { ...touch(120, 100), identifier: 8 }] })
+  swipe.onTouchEnd({ changedTouches: [touch(100, 180)] })
+  assert.equal(moves.length, 4)
+  swipe.onTouchStart({ touches: [{ pageX: 100, pageY: 100, identifier: 7 }] })
+  swipe.onTouchEnd({ changedTouches: [{ pageX: 20, pageY: 100, identifier: 7 }] })
+  assert.equal(moves.at(-1), 'left')
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-slime_large">
+<title id="title-slime_large">Crowned Slime</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M21 196 Q25 168 45 150 L51 109 Q52 89 73 89 Q75 59 96 48 L108 55 Q123 26 145 35 Q163 41 165 65 Q190 56 205 82 L210 127 Q207 151 229 174 Q241 196 231 214 L210 225 L184 220 L153 237 L122 229 L94 234 L69 221 L40 226 L24 216 Z" fill="#7c8970" stroke="#242522" stroke-width="7"/>
+<path d="M21 196 Q25 168 45 150 L51 109 Q52 89 73 89 Q75 59 96 48 L108 55 Q123 26 145 35 Q163 41 165 65 Q190 56 205 82 L210 127 Q207 151 229 174 Q241 196 231 214 L210 225 L184 220 L153 237 L122 229 L94 234 L69 221 L40 226 L24 216 Z" fill="none" stroke="#d8dcba" stroke-width="1.65" opacity="0.72"/>
+<path d="M34 197 L57 161 L63 111 L82 100 L89 71 L104 63 L115 79 L120 111 L107 153 L83 193 L71 212 L48 217 Z" fill="#b4bea0" opacity="0.76"/>
+<path d="M148 46 Q158 58 158 77 L184 72 L198 91 L201 135 L195 154 L224 185 L222 209 L202 214 L179 206 L151 226 L121 219 L140 196 L160 147 L146 107 Z" fill="#475e50" opacity="0.65"/>
+<path d="M105 63 L126 44 L137 40 L135 64 L126 89 L113 93 Z M69 111 L80 102 L88 107 L79 137 L67 143 Z" fill="#e4e5c2" opacity="0.72"/>
+<path d="M82 137 L101 117 L124 131 L121 159 L103 172 L82 158 Z M140 131 L161 114 L182 137 L180 160 L157 171 L140 155 Z" fill="#2c473d" opacity="1"/>
+<path d="M92 139 L105 129 L116 140 L105 159 L94 154 Z M150 138 L163 126 L174 140 L163 157 L152 153 Z" fill="#dfd6a0" stroke="#dfd6a0" stroke-width="8" opacity="0.13"/>
+<path d="M92 139 L105 129 L116 140 L105 159 L94 154 Z M150 138 L163 126 L174 140 L163 157 L152 153 Z" fill="#dfd6a0"/>
+<path d="M105 129 L104 145 L116 140 Z M163 126 L162 143 L174 140 Z" fill="#faf0c8" opacity="1"/>
+<path d="M95 140 L104 145 L105 158 M153 138 L162 143 L163 156" fill="none" stroke="#7c8d65" stroke-width="2.5" opacity="1"/>
+<path d="M96 184 L118 181 L130 189 L146 180 L164 181 Q155 211 127 215 Q103 211 96 184 Z" fill="#2f4b3e" opacity="1"/>
+<path d="M111 186 L118 191 L113 200 Z M144 188 L154 185 L148 200 Z" fill="#c6cf9e" opacity="1"/>
+<path d="M43 204 L66 212 M171 208 L187 200 L205 209 M91 218 L111 215" fill="none" stroke="#d4d8b2" stroke-width="3.5" opacity="1"/>
+<path d="M158 77 L167 68 L177 81 L169 94 L160 90 Z M77 180 L86 168 L95 179 L87 192 Z" fill="#cdd8b2" opacity="0.45"/>
+<path d="M133 83 L143 97 L136 117 M190 113 L185 137 M70 153 L65 175" fill="none" stroke="#9ab28d" stroke-width="3" opacity="0.7"/>
+</svg>

@@ -1,157 +1,151 @@
-import { Cell, Direction, SlideResult } from '../types';
+import type { Cell, Direction, SlideResult } from '../types'
 
-let nextCellId = 1;
+let nextCellId = 1
 
 function createCell(value: number, isNew = false, isMerged = false): Cell {
-  return { value, id: nextCellId++, isNew, isMerged };
+  return { value, id: nextCellId++, isNew, isMerged }
+}
+
+// 兼容恢复的棋盘与测试构造的 ID，避免新方块与存量方块重名。
+function reserveIds(grid: Cell[][]): void {
+  for (const row of grid) {
+    for (const cell of row) nextCellId = Math.max(nextCellId, cell.id + 1)
+  }
+}
+
+function resetCell(cell: Cell): Cell {
+  return { value: cell.value, id: cell.id, isNew: false, isMerged: false }
+}
+
+function copyCell(cell: Cell): Cell {
+  return cell.mergedFrom ? { ...cell, mergedFrom: [...cell.mergedFrom] } : { ...cell }
 }
 
 export function createEmptyGrid(): Cell[][] {
   return Array.from({ length: 4 }, () =>
-    Array.from({ length: 4 }, () => createCell(0))
-  );
+    Array.from({ length: 4 }, () => createCell(0)),
+  )
 }
 
-// Extract a line from the grid given direction and row/col index
 function extractLine(grid: Cell[][], direction: Direction, index: number): Cell[] {
-  const line: Cell[] = [];
+  const line: Cell[] = []
   for (let i = 0; i < 4; i++) {
     switch (direction) {
-      case 'left':  line.push(grid[index][i]); break;
-      case 'right': line.push(grid[index][3 - i]); break;
-      case 'up':    line.push(grid[i][index]); break;
-      case 'down':  line.push(grid[3 - i][index]); break;
+      case 'left': line.push(grid[index][i]); break
+      case 'right': line.push(grid[index][3 - i]); break
+      case 'up': line.push(grid[i][index]); break
+      case 'down': line.push(grid[3 - i][index]); break
     }
   }
-  return line;
+  return line
 }
 
-// Write a line back to the grid
 function setLine(grid: Cell[][], direction: Direction, index: number, line: Cell[]): void {
   for (let i = 0; i < 4; i++) {
-    const cell = line[i];
     switch (direction) {
-      case 'left':  grid[index][i] = cell; break;
-      case 'right': grid[index][3 - i] = cell; break;
-      case 'up':    grid[i][index] = cell; break;
-      case 'down':  grid[3 - i][index] = cell; break;
+      case 'left': grid[index][i] = line[i]; break
+      case 'right': grid[index][3 - i] = line[i]; break
+      case 'up': grid[i][index] = line[i]; break
+      case 'down': grid[3 - i][index] = line[i]; break
     }
   }
 }
 
-// Core: slide a single line toward index 0
 function mergeLine(line: Cell[]): { result: Cell[]; mergedSum: number; moved: boolean } {
-  // Filter out empty cells and reset merge/new flags
-  const nonEmpty = line
-    .filter(c => c.value !== 0)
-    .map(c => createCell(c.value, false, false));
-
-  const result: Cell[] = [];
-  let mergedSum = 0;
-  let i = 0;
+  const nonEmpty = line.filter(cell => cell.value !== 0).map(resetCell)
+  const empty = line.filter(cell => cell.value === 0).map(resetCell)
+  const result: Cell[] = []
+  let mergedSum = 0
+  let i = 0
 
   while (i < nonEmpty.length) {
-    if (i + 1 < nonEmpty.length && nonEmpty[i].value === nonEmpty[i + 1].value) {
-      const mergedValue = nonEmpty[i].value * 2;
-      result.push(createCell(mergedValue, false, true));
-      mergedSum += mergedValue;
-      i += 2;
+    const cell = nonEmpty[i]
+    const next = nonEmpty[i + 1]
+    if (next && cell.value === next.value) {
+      const merged = createCell(cell.value * 2, false, true)
+      // 两个源方块先滑入同一格，再显示新的合并方块。
+      merged.mergedFrom = [cell.id, next.id]
+      result.push(merged)
+      mergedSum += merged.value
+      i += 2
     } else {
-      result.push(nonEmpty[i]);
-      i += 1;
+      result.push(cell)
+      i++
     }
   }
 
-  // Pad to length 4 with empty cells
-  while (result.length < 4) {
-    result.push(createCell(0));
+  let emptyIndex = 0
+  while (result.length < 4) result.push(empty[emptyIndex++] ?? createCell(0))
+
+  return {
+    result,
+    mergedSum,
+    moved: line.some((cell, index) => cell.value !== result[index].value),
   }
-
-  // Check if anything moved
-  const moved = line.some((cell, idx) => cell.value !== result[idx].value);
-
-  return { result, mergedSum, moved };
 }
 
 export function slideGrid(grid: Cell[][], direction: Direction): SlideResult {
-  const newGrid = grid.map(row => row.map(c => createCell(c.value, false, false)));
-  let totalMergedSum = 0;
-  let moved = false;
+  reserveIds(grid)
+  const newGrid = grid.map(row => row.map(resetCell))
+  let mergedSum = 0
+  let moved = false
 
   for (let i = 0; i < 4; i++) {
-    const line = extractLine(newGrid, direction, i);
-    const { result, mergedSum, moved: lineMoved } = mergeLine(line);
-    totalMergedSum += mergedSum;
-    moved = moved || lineMoved;
-    setLine(newGrid, direction, i, result);
+    const line = mergeLine(extractLine(grid, direction, i))
+    mergedSum += line.mergedSum
+    moved = moved || line.moved
+    setLine(newGrid, direction, i, line.result)
   }
 
-  return { grid: newGrid, mergedSum: totalMergedSum, moved };
+  return { grid: newGrid, mergedSum, moved }
 }
 
 export interface SpawnResult {
-  grid: Cell[][];
-  spawnedValue: number;
-  spawned: boolean;
+  grid: Cell[][]
+  spawnedValue: number
+  spawned: boolean
+}
+
+function emptyPositions(grid: Cell[][]): { r: number; c: number }[] {
+  const positions: { r: number; c: number }[] = []
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (grid[r][c].value === 0) positions.push({ r, c })
+    }
+  }
+  return positions
 }
 
 export function spawnTileWithValue(grid: Cell[][], rng: () => number, value: number): Cell[][] | null {
-  const emptyCells: { r: number; c: number }[] = [];
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (grid[r][c].value === 0) {
-        emptyCells.push({ r, c });
-      }
-    }
-  }
-  if (emptyCells.length === 0) return null;
-
-  const idx = Math.floor(rng() * emptyCells.length);
-  const { r, c } = emptyCells[idx];
-  const newGrid = grid.map(row => [...row]);
-  newGrid[r][c] = createCell(value, false, false);
-  return newGrid;
+  const empty = emptyPositions(grid)
+  if (empty.length === 0) return null
+  reserveIds(grid)
+  const { r, c } = empty[Math.floor(rng() * empty.length)]
+  const newGrid = grid.map(row => row.map(copyCell))
+  newGrid[r][c] = createCell(value, true)
+  return newGrid
 }
 
 export function spawnTile(grid: Cell[][], rng: () => number): SpawnResult {
-  const emptyCells: { r: number; c: number }[] = [];
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (grid[r][c].value === 0) {
-        emptyCells.push({ r, c });
-      }
-    }
-  }
-
-  if (emptyCells.length === 0) {
-    return { grid, spawnedValue: 0, spawned: false };
-  }
-
-  const idx = Math.floor(rng() * emptyCells.length);
-  const { r, c } = emptyCells[idx];
-  const value = rng() < 0.9 ? 2 : 4;
-
-  const newGrid = grid.map(row => [...row]);
-  newGrid[r][c] = createCell(value, true, false);
-
-  return { grid: newGrid, spawnedValue: value, spawned: true };
+  const empty = emptyPositions(grid)
+  if (empty.length === 0) return { grid, spawnedValue: 0, spawned: false }
+  reserveIds(grid)
+  const { r, c } = empty[Math.floor(rng() * empty.length)]
+  const value = rng() < 0.9 ? 2 : 4
+  const newGrid = grid.map(row => row.map(copyCell))
+  newGrid[r][c] = createCell(value, true)
+  return { grid: newGrid, spawnedValue: value, spawned: true }
 }
 
 export function initGrid(rng: () => number): Cell[][] {
-  let grid = createEmptyGrid();
-  // Start with 2 random tiles
-  const r1 = spawnTile(grid, rng);
-  const r2 = spawnTile(r1.grid, rng);
-  return r2.grid;
+  const first = spawnTile(createEmptyGrid(), rng)
+  return spawnTile(first.grid, rng).grid
 }
 
-// Halve all non-zero tile values (minimum 2) for next combat round
+// 回合间只改变数值，保留棋子身份；新的回合不重播上次合并特效。
 export function halveGridTiles(grid: Cell[][]): Cell[][] {
-  return grid.map(row =>
-    row.map(cell => {
-      if (cell.value === 0) return createCell(0);
-      const halved = Math.floor(cell.value / 2);
-      return createCell(Math.max(2, halved), false, false);
-    }),
-  );
+  return grid.map(row => row.map(cell => ({
+    ...resetCell(cell),
+    value: cell.value === 0 ? 0 : Math.max(2, Math.floor(cell.value / 2)),
+  })))
 }

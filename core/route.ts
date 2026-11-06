@@ -1,5 +1,5 @@
-import { RouteNode, NodeType } from '../types';
-import { randomChoice, randomInt } from './random';
+import type { RouteNode, NodeType } from '../types'
+import { randomInt, createScopedRng } from './random'
 import { getEnemiesForLayer, getBossForStage, assignEnemyUpgrades, applyEnemyUpgradeStats } from './enemy';
 import { generateProceduralEnemy, generateProceduralBoss } from './enemy';
 
@@ -49,7 +49,8 @@ export function generateRoute(rng: () => number, stage: number = 1): RouteNode[]
         else if (roll < 0.48) type = 'rest'
         else type = 'battle';
       }
-      const noEnemy = type === 'shop' || type === 'rest';
+      // 事件不需要敌人，也不应消耗选敌/强化的随机数。
+      const noEnemy = type === 'shop' || type === 'rest' || type === 'event'
       nodes.push({
         id: `s${stage}_n${idCounter++}`, type, layer, position: i,
         nextIds: [], enemy: noEnemy ? null : makeEnemy(stage, layer, type === 'elite', rng),
@@ -67,10 +68,44 @@ export function generateRoute(rng: () => number, stage: number = 1): RouteNode[]
   const bossEnemy = { ...rawBoss, enemyUpgrades: bossUpgrades, attack: boostedBoss.atk, defense: boostedBoss.def, speed: boostedBoss.spd, hp: boostedBoss.hp, maxHp: boostedBoss.hp };
   layers[bossLayer - 1] = [{ id: `s${stage}_n${idCounter++}`, type: 'boss', layer: bossLayer, position: 0, nextIds: [], enemy: bossEnemy, completed: false, accessible: false }];
 
-  // Connect all to next layer
-  for (let li = 0; li < layers.length - 1; li++) {
-    for (const node of layers[li]) node.nextIds = layers[li + 1].map(n => n.id);
-  }
+  // 连接使用独立作用域，不改变已有节点/敌人的抽签顺序。
+  const signature = layers.flat().map(node => `${node.id}:${node.type}:${node.enemy?.id ?? ''}`).join('|')
+  connectRouteLayers(layers, createScopedRng(stage, 'route-links', signature))
 
   return layers.flat();
+}
+
+export function connectRouteLayers(layers: RouteNode[][], rng: () => number): void {
+  for (let li = 0; li < layers.length - 1; li++) {
+    const current = layers[li]
+    const next = layers[li + 1]
+    const edges = new Set<string>()
+    const center = (index: number, count: number) => (index + 0.5) / count
+    const nearest = (index: number, count: number, otherCount: number) =>
+      Math.min(otherCount - 1, Math.floor(center(index, count) * otherCount))
+    const add = (from: number, to: number) => edges.add(`${from}:${to}`)
+
+    // 双向补齐最近邻，保证每个节点既能到达，又能继续登顶。
+    current.forEach((_, from) => add(from, nearest(from, current.length, next.length)))
+    next.forEach((_, to) => add(nearest(to, next.length, current.length), to))
+
+    for (let from = 0; from < current.length; from++) {
+      const candidates = next.map((_, to) => to).filter(to =>
+        !edges.has(`${from}:${to}`) && Math.abs(center(from, current.length) - center(to, next.length)) < 0.5,
+      )
+      for (const to of candidates) {
+        const degree = [...edges].filter(edge => edge.startsWith(`${from}:`)).length
+        if (degree >= 2) break
+        const crosses = [...edges].some(edge => {
+          const [otherFrom, otherTo] = edge.split(':').map(Number)
+          return (from - otherFrom) * (to - otherTo) < 0
+        })
+        if (!crosses && rng() < 0.4) add(from, to)
+      }
+    }
+    current.forEach((node, from) => {
+      node.nextIds = next.filter((_, to) => edges.has(`${from}:${to}`)).map(node => node.id)
+    })
+  }
+  for (const node of layers[layers.length - 1] ?? []) node.nextIds = []
 }

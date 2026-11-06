@@ -1,62 +1,86 @@
-﻿<script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+<script setup lang="ts">
+import { ref, computed, watch, onUnmounted } from 'vue'
 import type { EnemyDef } from '../types'
-import { ROUND_ATK_BONUS, ROUND_DEF_BONUS, ROUND_SPD_BONUS } from '../core/enemy'
+import { getEnemyIcon, getEnemyFallbackIcon, getEnemyUpgradeDescription } from '../core/enemy'
 import { UPGRADE_POOL } from '../core/upgrade'
-const props = withDefaults(defineProps<{ enemy: EnemyDef; currentHp: number; round?: number; enemyAtkDown?: number }>(), { round: 1, enemyAtkDown: 0 })
-const hpPercent = computed(() => Math.max(0, (props.currentHp / props.enemy.maxHp) * 100))
-const atkBonus = computed(() => (props.round - 1) * ROUND_ATK_BONUS)
-const defBonus = computed(() => (props.round - 1) * ROUND_DEF_BONUS)
-const spdBonus = computed(() => (props.round - 1) * ROUND_SPD_BONUS)
-const effectiveAtkBonus = computed(() => atkBonus.value - props.enemyAtkDown)
-const hpColor = computed(() => hpPercent.value > 50 ? '#e74c3c' : hpPercent.value > 25 ? '#e67e22' : '#c0392b')
 
-// 受击反馈：HP 下降时短暂闪白+抖动（仅动画，不影响游戏状态）
+const props = defineProps<{ enemy: EnemyDef; currentHp: number; attack: number; defense: number; speed: number; round: number; kind?: string }>()
+const hpPercent = computed(() => Math.max(0, Math.min(100, props.currentHp / Math.max(1, props.enemy.maxHp) * 100)))
+const portraitFailed = ref(false)
+watch(() => props.enemy.id, () => { portraitFailed.value = false })
+const portrait = computed(() => portraitFailed.value ? getEnemyFallbackIcon(props.enemy.id) : getEnemyIcon(props.enemy))
+const portraitIsImage = computed(() => /^(\/|\.\/|data:image)/.test(portrait.value))
+const rank = computed(() => props.kind === 'boss' || props.enemy.id.startsWith('boss_') ? '守关首领' : props.kind === 'elite' ? '精英敌人' : '遭遇敌人')
+const traits = computed(() => (props.enemy.enemyUpgrades ?? []).map(id => UPGRADE_POOL.find(upgrade => upgrade.id === id)).filter(Boolean))
+const showTraits = ref(false)
 const hit = ref(false)
-let hitTimer: any = null
-watch(() => props.currentHp, (v, old) => {
-  if (old === undefined || v >= old) return
-  hit.value = true
+let hitTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => props.currentHp, (hp, oldHp) => {
+  if (hp >= oldHp) return
   if (hitTimer) clearTimeout(hitTimer)
-  hitTimer = setTimeout(() => { hit.value = false }, 350)
+  hit.value = true
+  hitTimer = setTimeout(() => { hit.value = false }, 260)
 })
+onUnmounted(() => { if (hitTimer) clearTimeout(hitTimer) })
 </script>
+
 <template>
-  <view class="enemy-card">
-    <view class="enemy-body" :class="{ 'hit': hit }">
-      <view class="enemy-top"><text class="enemy-name">{{ enemy.name }}</text><view class="enemy-tier"><text class="enemy-tier-text">S{{ enemy.tier > 3 ? 'B' : enemy.tier }}</text></view></view>
-    <view class="enemy-hp-section"><view class="enemy-hp-header"><text class="enemy-hp-label">HP</text><text class="enemy-hp-num">{{ currentHp }}/{{ enemy.maxHp }}</text></view><view class="enemy-hp-track"><view class="enemy-hp-fill" :style="{ width: `${hpPercent}%`, background: hpColor }" /></view></view>
-    <view class="enemy-stats">
-      <view class="enemy-stat-box enemy-stat-atk"><text class="enemy-stat-icon">⚔</text><view class="enemy-stat-info"><text class="enemy-stat-label">攻击</text><view class="enemy-stat-values"><text class="enemy-stat-base">{{ enemy.attack }}</text><text v-if="effectiveAtkBonus !== 0" :class="effectiveAtkBonus >= 0 ? 'enemy-stat-bonus' : 'enemy-stat-nerf'">{{ effectiveAtkBonus >= 0 ? '+' : '' }}{{ effectiveAtkBonus }}</text></view></view></view>
-      <view class="enemy-stat-box enemy-stat-def"><text class="enemy-stat-icon">🛡</text><view class="enemy-stat-info"><text class="enemy-stat-label">防御</text><view class="enemy-stat-values"><text class="enemy-stat-base">{{ enemy.defense }}</text><text v-if="defBonus > 0" class="enemy-stat-bonus">+{{ defBonus }}</text></view></view></view>
-      <view class="enemy-stat-box enemy-stat-spd"><text class="enemy-stat-icon">⚡</text><view class="enemy-stat-info"><text class="enemy-stat-label">速度</text><view class="enemy-stat-values"><text class="enemy-stat-base">{{ enemy.speed }}</text><text v-if="spdBonus > 0" class="enemy-stat-bonus">+{{ spdBonus }}</text></view></view></view>
-    </view>
-    <view v-if="(enemy.enemyUpgrades || []).length > 0" class="enemy-upgrades"><text v-for="(uid, i) in enemy.enemyUpgrades" :key="i" class="enemy-upgrade-tag">{{ UPGRADE_POOL.find(x => x.id === uid)?.name ?? uid }}</text></view>
+  <view class="enemy-card ui-card">
+    <view class="enemy-body" :class="{ 'enemy-hit': hit }">
+      <view class="enemy-header">
+        <view class="enemy-portrait" :class="{ 'enemy-portrait-boss': rank === '守关首领' }">
+          <image v-if="portraitIsImage" class="enemy-portrait-image" :src="portrait" mode="aspectFit" :aria-label="enemy.name" @error="portraitFailed = true" />
+          <text v-else class="enemy-portrait-icon">{{ portrait }}</text>
+        </view>
+        <view class="enemy-identity">
+          <view class="enemy-name-row">
+            <text class="enemy-name">{{ enemy.name }}</text>
+            <button role="button" class="enemy-traits-toggle" :aria-expanded="showTraits" aria-controls="enemy-stat-details" @click="showTraits = !showTraits">{{ traits.length ? `能力 ${traits.length}` : '详情' }} {{ showTraits ? '−' : '+' }}</button>
+          </view>
+          <view class="enemy-hp-row"><text class="enemy-rank">{{ rank }}</text><text class="enemy-hp-num">生命 {{ currentHp }} / {{ enemy.maxHp }}</text></view>
+          <view class="enemy-hp-track"><view class="enemy-hp-fill" :style="{ width: `${hpPercent}%` }" /></view>
+        </view>
+      </view>
+      <view class="enemy-stats">
+        <view class="enemy-stat"><text class="enemy-stat-label">攻击</text><text class="enemy-stat-value stat-attack">{{ attack }}</text></view>
+        <view class="enemy-stat"><text class="enemy-stat-label">有效防御</text><text class="enemy-stat-value stat-defense">{{ defense }}</text></view>
+        <view class="enemy-stat"><text class="enemy-stat-label">速度</text><text class="enemy-stat-value stat-speed">{{ speed }}</text></view>
+      </view>
+      <view v-if="showTraits" id="enemy-stat-details" class="enemy-traits">
+        <text class="enemy-growth">当前数值已计入第 {{ round }} 回合成长与削弱效果；有效防御已计入你的穿透效果。</text>
+        <text v-if="!traits.length" class="enemy-growth">该敌人没有额外强化能力。</text>
+        <view v-for="trait in traits" :key="trait!.id" class="enemy-trait"><text class="enemy-trait-name">{{ trait!.name }}</text><text class="enemy-trait-desc">{{ getEnemyUpgradeDescription(trait!.id) }}</text></view>
+      </view>
     </view>
   </view>
 </template>
-<style lang="scss">
-.enemy-card { background: linear-gradient(180deg, rgba(40,10,10,0.9), rgba(30,10,20,0.9)); border: 1px solid rgba(231,76,60,0.2); border-radius: 14rpx; padding: 14rpx 16rpx 10rpx; margin-bottom: 16rpx; animation: enemy-in 0.4s ease-out; }
-/* 受击动画在内层播放，避免 animation-name 切换导致外层入场动画重播 */
-.enemy-body.hit { animation: enemy-hit 0.35s ease-out; }
-@keyframes enemy-in { from { opacity: 0; transform: translateY(-12rpx); } to { opacity: 1; transform: translateY(0); } }
-@keyframes enemy-hit { 0% { filter: brightness(1); transform: translateX(0); } 25% { filter: brightness(2.2); transform: translateX(-8rpx); } 50% { filter: brightness(1.3); transform: translateX(8rpx); } 75% { filter: brightness(1.5); transform: translateX(-4rpx); } 100% { filter: brightness(1); transform: translateX(0); } }
-.enemy-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; }
-.enemy-name { font-size: 30rpx; font-weight: 800; color: #fff; }
-.enemy-tier { background: rgba(231,76,60,0.2); border: 1px solid rgba(231,76,60,0.3); border-radius: 6rpx; padding: 4rpx 12rpx; }
-.enemy-tier-text { font-size: 20rpx; font-weight: bold; color: #e74c3c; }
-.enemy-hp-section { margin-bottom: 10rpx; } .enemy-hp-header { display: flex; justify-content: space-between; margin-bottom: 3rpx; }
-.enemy-hp-label { font-size: 18rpx; color: #888; } .enemy-hp-num { font-size: 22rpx; font-weight: bold; color: #ccc; }
-.enemy-hp-track { height: 14rpx; background: rgba(255,255,255,0.06); border-radius: 7rpx; overflow: hidden; }
-.enemy-hp-fill { height: 100%; border-radius: 7rpx; transition: width 0.4s, background 0.4s; }
-.enemy-stats { display: flex; gap: 10rpx; }
-.enemy-stat-box { flex: 1; display: flex; align-items: center; gap: 8rpx; padding: 10rpx 12rpx; border-radius: 10rpx; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); }
-.enemy-stat-icon { font-size: 28rpx; width: 36rpx; text-align: center; } .enemy-stat-info { display: flex; flex-direction: column; }
-.enemy-stat-label { font-size: 16rpx; color: #888; } .enemy-stat-values { display: flex; align-items: baseline; gap: 6rpx; }
-.enemy-stat-base { font-size: 26rpx; font-weight: 800; color: #fff; }
-.enemy-stat-bonus { font-size: 20rpx; font-weight: 600; color: #e74c3c; }
-.enemy-stat-nerf { font-size: 20rpx; font-weight: 600; color: #2ecc71; }
-.enemy-stat-atk { border-left: 3rpx solid #e74c3c; } .enemy-stat-def { border-left: 3rpx solid #3498db; } .enemy-stat-spd { border-left: 3rpx solid #f1c40f; }
-.enemy-upgrades { display: flex; gap: 6rpx; flex-wrap: wrap; margin-top: 10rpx; }
-.enemy-upgrade-tag { font-size: 18rpx; color: #e74c3c; background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.2); border-radius: 6rpx; padding: 2rpx 10rpx; }
+
+<style scoped lang="scss">
+.enemy-card { padding: 12rpx 16rpx; margin-bottom: 12rpx; border-left: 4rpx solid var(--attack); }
+.enemy-header { display: flex; align-items: center; gap: 14rpx; }
+.enemy-portrait { display: flex; align-items: center; justify-content: center; width: 76rpx; height: 86rpx; flex-shrink: 0; box-sizing: border-box; border: 1px solid var(--line); border-radius: 30rpx 30rpx 10rpx 10rpx; background: var(--surface-raised); box-shadow: inset 0 0 0 5rpx var(--surface-soft); }
+.enemy-portrait-boss { border-color: var(--accent); background: var(--accent-soft); }
+.enemy-portrait-image { width: 70rpx; height: 76rpx; }
+.enemy-portrait-icon { font-size: 44rpx; line-height: 1; }
+.enemy-identity { flex: 1; min-width: 0; }
+.enemy-name-row { display: flex; align-items: center; justify-content: space-between; gap: 10rpx; margin-bottom: 2rpx; }
+.enemy-name { flex: 1; min-width: 0; font-size: 30rpx; color: var(--text); font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.enemy-rank { color: var(--attack); font-size: 22rpx; line-height: 1.4; }
+.enemy-hp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8rpx; flex-wrap: wrap; margin-bottom: 5rpx; }
+.enemy-hp-num { font-size: 24rpx; line-height: 1.3; color: var(--text); font-weight: 700; }
+.enemy-hp-track { height: 8rpx; border-radius: 4rpx; background: var(--track); overflow: hidden; }
+.enemy-hp-fill { height: 100%; background: var(--attack); transition: width 250ms ease; }
+.enemy-stats { display: flex; gap: 10rpx; margin-top: 8rpx; }
+.enemy-stat { flex: 1; display: flex; align-items: baseline; justify-content: center; gap: 8rpx; padding: 3rpx 0; background: var(--surface-soft); border-radius: 8rpx; }
+.enemy-stat-label { font-size: 24rpx; line-height: 1.3; color: var(--muted); }
+.enemy-stat-value { font-size: 28rpx; line-height: 1.3; font-weight: 800; }
+.enemy-growth { display: block; font-size: 26rpx; line-height: 1.6; color: var(--muted); margin: 8rpx 0; }
+.enemy-traits-toggle { flex-shrink: 0; box-sizing: border-box; min-height: 46rpx; padding: 7rpx 10rpx; margin: 0; background: var(--accent-soft); color: var(--accent); border-radius: 8rpx; font-size: 24rpx; line-height: 1.3; white-space: nowrap; }
+.enemy-traits-toggle::after { border: none; }
+.enemy-traits { border-top: 1px solid var(--line); margin-top: 12rpx; padding-top: 12rpx; }
+.enemy-trait { margin: 10rpx 0; }
+.enemy-trait-name { color: var(--xp); font-weight: 700; font-size: 26rpx; margin-right: 12rpx; }
+.enemy-trait-desc { color: var(--muted); font-size: 26rpx; line-height: 1.6; }
+.enemy-hit { animation: enemy-hit 260ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .enemy-hit { animation: none; } .enemy-hp-fill { transition: none; } }
 </style>

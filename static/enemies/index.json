@@ -1,0 +1,195 @@
+{
+    "schemaVersion":  1,
+    "collection":  "Original monster portraits - first-stage enemies and three bosses",
+    "style":  "Charcoal ink; warm bone and stone facets; muted sage, rust and violet; static eye light",
+    "canvas":  {
+                   "width":  256,
+                   "height":  256,
+                   "background":  "transparent",
+                   "pixelFormat":  "RGBA",
+                   "supersampling":  4
+               },
+    "generator":  "tools/art/monster-portraits.ps1",
+    "assets":  [
+                   {
+                       "id":  "rat",
+                       "name":  "Fang Rat",
+                       "png":  "/static/enemies/rat.png",
+                       "svg":  "/static/enemies/rat.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#b97e6b",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "slime",
+                       "name":  "Glass Slime",
+                       "png":  "/static/enemies/slime.png",
+                       "svg":  "/static/enemies/slime.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#8da88a",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "skeleton",
+                       "name":  "Bone Soldier",
+                       "png":  "/static/enemies/skeleton.png",
+                       "svg":  "/static/enemies/skeleton.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#baa78a",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "bat",
+                       "name":  "Cave Bat",
+                       "png":  "/static/enemies/bat.png",
+                       "svg":  "/static/enemies/bat.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#9d8199",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "zombie",
+                       "name":  "Shroud Zombie",
+                       "png":  "/static/enemies/zombie.png",
+                       "svg":  "/static/enemies/zombie.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#af7865",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "spider",
+                       "name":  "Grave Spider",
+                       "png":  "/static/enemies/spider.png",
+                       "svg":  "/static/enemies/spider.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#a58baf",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "slime_large",
+                       "name":  "Crowned Slime",
+                       "png":  "/static/enemies/slime_large.png",
+                       "svg":  "/static/enemies/slime_large.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#acb184",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "ghoul",
+                       "name":  "Grave Ghoul",
+                       "png":  "/static/enemies/ghoul.png",
+                       "svg":  "/static/enemies/ghoul.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#9da88a",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "crawler",
+                       "name":  "Crypt Crawler",
+                       "png":  "/static/enemies/crawler.png",
+                       "svg":  "/static/enemies/crawler.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#b38a68",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "bone_archer",
+                       "name":  "Hooded Bone Archer",
+                       "png":  "/static/enemies/bone_archer.png",
+                       "svg":  "/static/enemies/bone_archer.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#88957b",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "mud_golem",
+                       "name":  "Mire Golem",
+                       "png":  "/static/enemies/mud_golem.png",
+                       "svg":  "/static/enemies/mud_golem.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#8a9771",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "cave_troll",
+                       "name":  "Cave Troll",
+                       "png":  "/static/enemies/cave_troll.png",
+                       "svg":  "/static/enemies/cave_troll.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#a1a48b",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "orc",
+                       "name":  "Ironjaw Orc",
+                       "png":  "/static/enemies/orc.png",
+                       "svg":  "/static/enemies/orc.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#aa7860",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "wraith",
+                       "name":  "Veil Wraith",
+                       "png":  "/static/enemies/wraith.png",
+                       "svg":  "/static/enemies/wraith.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#a393ba",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "necromancer",
+                       "name":  "Ash Necromancer",
+                       "png":  "/static/enemies/necromancer.png",
+                       "svg":  "/static/enemies/necromancer.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#9d83ad",
+                       "boss":  false
+                   },
+                   {
+                       "id":  "boss_rock",
+                       "name":  "Rune-Cracked Sovereign",
+                       "png":  "/static/enemies/boss_rock.png",
+                       "svg":  "/static/enemies/boss_rock.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#a4c5ae",
+                       "boss":  true
+                   },
+                   {
+                       "id":  "boss_dragon",
+                       "name":  "Cinder Dragon",
+                       "png":  "/static/enemies/boss_dragon.png",
+                       "svg":  "/static/enemies/boss_dragon.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#ba8168",
+                       "boss":  true
+                   },
+                   {
+                       "id":  "boss_final",
+                       "name":  "The Hollow Monarch",
+                       "png":  "/static/enemies/boss_final.png",
+                       "svg":  "/static/enemies/boss_final.svg",
+                       "width":  256,
+                       "height":  256,
+                       "accent":  "#b69bbf",
+                       "boss":  true
+                   }
+               ]
+}

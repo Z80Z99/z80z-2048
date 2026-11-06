@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<!-- Original engraving: the last sanctuary, a faceted obelisk above an eye-shaped altar. -->
+<path d="M0 0 L960 0 L960 540 L0 540 Z" fill="#2b211f"/>
+<path d="M158 0 L802 0 L696 396 L264 396 Z" fill="#49332d"/>
+<path d="M256 363 L256 167 C256 58 704 58 704 167 L704 363 Z" fill="#694a3b"/>
+<path d="M283 363 L283 175 C283 89 677 89 677 175 L677 363 Z" fill="#302725"/>
+<path d="M339 357 L339 196 C339 129 621 129 621 196 L621 357 Z" fill="#513b33"/>
+<path d="M361 357 L361 203 C361 153 599 153 599 203 L599 357 Z" fill="#272221"/>
+<path d="M390 353 L390 226 C390 184 570 184 570 226 L570 353 Z" fill="#72523f"/>
+<path d="M410 353 L410 231 C410 209 550 209 550 231 L550 353 Z" fill="#403029"/>
+<path d="M0 402 L374 345 L586 345 L960 402 L960 540 L0 540 Z" fill="#514038"/>
+<path d="M0 457 L397 345 L413 345 L178 540 L0 540 Z M960 457 L563 345 L547 345 L782 540 L960 540 Z" fill="#3c312c"/>
+<path d="M0 453 L960 453 M0 508 L960 508 M189 398 L771 398 M312 369 L648 369" fill="none" stroke="#282524" stroke-width="4"/>
+<path d="M0 459 L960 459 M0 514 L960 514 M205 403 L755 403" fill="none" stroke="#8b6550" stroke-width="2"/>
+<path d="M389 345 L34 540 M438 345 L291 540 M522 345 L669 540 M571 345 L926 540" fill="none" stroke="#292525" stroke-width="4"/>
+<path d="M0 0 L960 0 L960 424 L791 398 L791 194 C791 19 169 19 169 194 L169 398 L0 424 Z" fill="#584034" stroke="#211f1f" stroke-width="7"/>
+<path d="M0 24 L195 24 L177 85 L0 100 Z M0 118 L151 106 L143 189 L0 205 Z M0 223 L140 207 L140 283 L0 300 Z M0 318 L139 303 L140 394 L0 415 Z" fill="#74513e"/>
+<path d="M765 24 L960 24 L960 100 L783 85 Z M809 106 L960 118 L960 205 L817 189 Z M820 207 L960 223 L960 300 L820 283 Z M821 303 L960 318 L960 415 L820 394 Z" fill="#3f312c"/>
+<path d="M74 101 L74 199 M100 300 L100 406 M866 101 L866 199 M863 300 L863 406" fill="none" stroke="#2e2725" stroke-width="5"/>
+<path d="M188 393 L188 195 C188 44 772 44 772 195 L772 393" fill="none" stroke="#b48a61" stroke-width="5"/>
+<path d="M219 389 L219 198 C219 78 741 78 741 198 L741 389" fill="none" stroke="#242223" stroke-width="14"/>
+<path d="M218 201 L189 190 M245 143 L219 128 M303 108 L287 86 M379 87 L371 65 M480 78 L480 53 M581 87 L589 65 M657 108 L673 86 M715 143 L741 128 M742 201 L770 190" fill="none" stroke="#2a2423" stroke-width="5"/>
+<path d="M243 231 L279 231 L279 372 L243 379 Z M681 231 L717 231 L717 379 L681 372 Z" fill="#70513e" stroke="#262223" stroke-width="4"/>
+<path d="M252 239 L264 239 L264 367 L252 369 Z M690 239 L702 239 L702 369 L690 367 Z" fill="#a07551"/>
+<path d="M237 223 L285 223 L285 236 L237 236 Z M675 223 L723 223 L723 236 L675 236 Z" fill="#977051" stroke="#262223" stroke-width="3"/>
+<path d="M248 265 L275 265 M248 314 L275 314 M686 265 L712 265 M686 314 L712 314" fill="none" stroke="#2c2523" stroke-width="3"/>
+<path d="M355 434 L375 409 L585 409 L605 434 L605 455 L355 455 Z" fill="#75533e" stroke="#272323" stroke-width="5"/>
+<path d="M371 436 L589 436 L589 448 L371 448 Z" fill="#b08359"/>
+<path d="M390 407 L409 387 L551 387 L570 407 L570 424 L390 424 Z" fill="#886044" stroke="#272323" stroke-width="4"/>
+<path d="M415 383 L430 365 L530 365 L545 383 L545 397 L415 397 Z" fill="#a6764d" stroke="#272323" stroke-width="4"/>
+<path d="M431 365 L435 238 L480 144 L525 238 L529 365 Z" fill="#91714f" stroke="#232122" stroke-width="6"/>
+<path d="M480 144 L480 365 L529 365 L525 238 Z" fill="#533d30"/>
+<path d="M440 239 L480 166 L480 355 L444 355 Z" fill="#a9855d"/>
+<path d="M480 167 L516 242 L512 354 L490 355 Z" fill="#684c36"/>
+<path d="M449 259 Q480 236 511 259 Q480 283 449 259 Z" fill="#2d2624" stroke="#d1a775" stroke-width="3"/>
+<path d="M471 259 Q480 243 489 259 Q480 275 471 259 Z" fill="#d9b381"/>
+<path d="M480 253 L480 265" fill="none" stroke="#3c2b25" stroke-width="3"/>
+<path d="M448 294 L465 309 L451 336 M508 294 L493 310 L508 336 M463 341 L480 350 L498 340" fill="none" stroke="#caa070" stroke-width="3"/>
+<path d="M327 368 L344 350 L356 363 L350 379 L324 383 Z M607 365 L620 349 L637 368 L639 384 L613 379 Z" fill="#8a6044" stroke="#2b2423" stroke-width="4"/>
+<path d="M331 353 C323 337 338 329 332 311 C351 321 347 336 343 348 L350 346 L346 355 Z M615 352 C609 339 621 330 617 316 C633 328 630 341 625 352 Z" fill="#b27f53"/>
+<path d="M334 350 Q330 340 339 330 Q344 340 339 351 Z M618 350 Q615 341 623 332 Q627 342 622 351 Z" fill="#e4bb7b"/>
+<path d="M95 461 L132 443 L173 459 L184 481 L102 487 Z M778 484 L802 459 L839 468 L857 490 L793 504 Z" fill="#6c4c3a" stroke="#302727" stroke-width="4"/>
+<path d="M103 461 L132 451 L164 462 M802 480 L813 469 L832 475" fill="none" stroke="#ab7952" stroke-width="3"/>
+<path d="M26 68 L26 24 L82 24 M878 24 L934 24 L934 68 M26 472 L26 516 L82 516 M878 516 L934 516 L934 472" fill="none" stroke="#bd9767" stroke-width="3" opacity="0.7"/>
+</svg>

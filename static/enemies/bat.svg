@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="title-bat">
+<title id="title-bat">Cave Bat</title>
+<desc>Original hand-inked dark-fantasy monster bust; static luminous eyes, faceted parchment shading, transparent silhouette.</desc>
+<path d="M99 134 C64 124 48 94 21 69 L27 107 L18 139 Q38 130 47 153 Q55 140 71 172 Q86 159 99 190 L120 185 Z" fill="#756675" stroke="#242522" stroke-width="7"/>
+<path d="M99 134 C64 124 48 94 21 69 L27 107 L18 139 Q38 130 47 153 Q55 140 71 172 Q86 159 99 190 L120 185 Z" fill="none" stroke="#bdaec0" stroke-width="1.65" opacity="0.72"/>
+<path d="M29 89 L39 118 L49 142 L70 158 L86 168 L102 164 L84 142 L54 125 Z" fill="#9b8397" opacity="1"/>
+<path d="M28 86 Q47 127 96 148 M27 107 Q57 127 99 164 M48 146 L51 127 M73 164 L76 141" fill="none" stroke="#40383f" stroke-width="3.5" opacity="1"/>
+<path d="M156 134 C193 121 207 91 235 64 L229 108 L239 140 Q216 126 207 154 Q195 139 182 171 Q166 158 156 190 L135 181 Z" fill="#756675" stroke="#242522" stroke-width="7"/>
+<path d="M156 134 C193 121 207 91 235 64 L229 108 L239 140 Q216 126 207 154 Q195 139 182 171 Q166 158 156 190 L135 181 Z" fill="none" stroke="#bdaec0" stroke-width="1.65" opacity="0.72"/>
+<path d="M226 86 L213 119 L204 141 L179 157 L163 168 L151 158 L173 137 L204 115 Z" fill="#a28a9f" opacity="1"/>
+<path d="M231 86 Q205 124 159 150 M229 110 Q200 127 157 166 M208 146 L204 122 M181 163 L181 139" fill="none" stroke="#40383f" stroke-width="3.5" opacity="1"/>
+<path d="M78 204 L97 174 L121 166 L153 172 L174 201 L157 217 L147 232 L128 224 L111 233 L99 215 Z" fill="#6e6b64" stroke="#242522" stroke-width="7"/>
+<path d="M78 204 L97 174 L121 166 L153 172 L174 201 L157 217 L147 232 L128 224 L111 233 L99 215 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M109 184 L127 190 L144 183 L141 214 L130 218 L116 212 Z" fill="#b3a48d" opacity="1"/>
+<path d="M90 111 L72 43 L91 57 L108 85 L127 75 L148 83 L170 53 L188 36 L174 110 L173 143 L160 166 L147 182 L123 187 L104 172 L84 144 Z" fill="#91857d" stroke="#242522" stroke-width="7"/>
+<path d="M90 111 L72 43 L91 57 L108 85 L127 75 L148 83 L170 53 L188 36 L174 110 L173 143 L160 166 L147 182 L123 187 L104 172 L84 144 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M82 60 L96 78 L100 105 L90 105 Z M175 54 L160 80 L157 108 L168 104 Z" fill="#b19198" opacity="1"/>
+<path d="M119 87 L137 85 L158 111 L156 142 L144 165 L126 172 L109 153 L110 115 Z" fill="#b8aa96" opacity="1"/>
+<path d="M87 113 L102 117 L108 146 L122 164 L113 174 L95 159 L86 139 Z M164 107 L172 120 L169 146 L153 169 L144 165 L154 140 Z" fill="#5f5655" opacity="1"/>
+<path d="M93 120 L118 126 L111 142 L96 138 Z M137 126 L164 117 L160 138 L144 142 Z" fill="#242522" opacity="1"/>
+<path d="M101 127 L112 130 L108 136 L100 133 Z M145 130 L156 124 L155 134 L147 136 Z" fill="#d8b18c" stroke="#d8b18c" stroke-width="8" opacity="0.13"/>
+<path d="M101 127 L112 130 L108 136 L100 133 Z M145 130 L156 124 L155 134 L147 136 Z" fill="#d8b18c"/>
+<path d="M111 144 Q130 134 147 145 L151 158 L139 171 L120 173 L105 159 Z" fill="#958679" stroke="#242522" stroke-width="7"/>
+<path d="M111 144 Q130 134 147 145 L151 158 L139 171 L120 173 L105 159 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M123 144 L134 144 L137 152 L127 159 L118 151 Z" fill="#483b3e" opacity="1"/>
+<path d="M109 160 Q129 166 147 158 L140 182 L120 181 Z" fill="#242522" opacity="1"/>
+<path d="M113 160 L122 164 L119 184 Z M136 165 L145 160 L139 183 Z" fill="#e4d7b9" stroke="#242522" stroke-width="7"/>
+<path d="M113 160 L122 164 L119 184 Z M136 165 L145 160 L139 183 Z" fill="none" stroke="#c7b99a" stroke-width="1.65" opacity="0.72"/>
+<path d="M113 99 L119 106 M138 96 L145 102 M115 201 L120 210 M140 202 L137 212" fill="none" stroke="#d2c2a4" stroke-width="3" opacity="1"/>
+</svg>
