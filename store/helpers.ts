@@ -77,9 +77,8 @@ export function buildShop(
   const eqSlots: (string | null)[] = [null, null, null]
   for (let i = 0; i < 3 && eqPool.length > 0; i++) {
     const idx = Math.floor(rng() * eqPool.length)
-    // level keeps Math.random semantics (matches original rollEquipLevel)
-    const level = (stage - 1) * 2 + 1 + Math.floor(Math.random() * 2)
-    eqSlots[i] = makeEquipId(eqPool[idx].id, level)
+    const level = (stage - 1) * 2 + 1 + Math.floor(rng() * 2)
+    eqSlots[i] = makeEquipId(eqPool[idx].id, level, undefined, rng)
     eqPool.splice(idx, 1)
   }
 

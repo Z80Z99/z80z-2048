@@ -26,8 +26,11 @@ export function shuffleArray<T>(rng: () => number, arr: T[]): T[] {
   return result;
 }
 
-let globalRng = createRng(Date.now());
-
-export function setGlobalSeed(seed: number) {
-  globalRng = createRng(seed);
+export function createScopedRng(seed: number, ...scope: (string | number)[]): () => number {
+  let hash = seed | 0;
+  for (const part of scope) {
+    const text = `${String(part).length}:${part}`;
+    for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619);
+  }
+  return createRng(hash);
 }

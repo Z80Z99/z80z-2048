@@ -1,4 +1,4 @@
-import { EnemyDef } from '../types';
+import type { EnemyDef } from '../types'
 
 export interface EnemyEntry {
   def: EnemyDef;
@@ -77,34 +77,53 @@ const STAGE_3_ELITE: EnemyEntry[] = [
 
 const STAGE_3_BOSS: EnemyDef = { id: 'boss_final', name: '终焉之主', hp: 260, maxHp: 260, attack: 56, defense: 26, speed: 16, tier: 4 };
 
-// ====== Stage 4+: Endless procedural enemies ======
-const ENDLESS_TEMPLATES: { name: string; hp: number; atk: number; def: number; spd: number }[] = [
-  { name: '虚空行者', hp: 80, atk: 40, def: 12, spd: 10 },
-  { name: '混沌魔', hp: 100, atk: 36, def: 16, spd: 8 },
-  { name: '深渊领主', hp: 120, atk: 44, def: 14, spd: 12 },
-  { name: '星界吞噬者', hp: 90, atk: 48, def: 8, spd: 15 },
-  { name: '不朽守护者', hp: 150, atk: 30, def: 22, spd: 5 },
-  { name: '暗影龙', hp: 110, atk: 42, def: 12, spd: 13 },
-  { name: '破碎之魂', hp: 70, atk: 50, def: 6, spd: 16 },
-  { name: '远古魔像', hp: 160, atk: 34, def: 20, spd: 4 },
-  { name: '虚空龙', hp: 130, atk: 46, def: 14, spd: 11 },
-  { name: '终焉使徒', hp: 100, atk: 44, def: 10, spd: 14 },
-  { name: '时空裂隙', hp: 85, atk: 48, def: 10, spd: 13 },
-  { name: '原初混沌', hp: 140, atk: 38, def: 18, spd: 6 },
-  { name: '虚无之影', hp: 75, atk: 52, def: 4, spd: 17 },
-  { name: '永恒守卫', hp: 170, atk: 32, def: 24, spd: 3 },
-  { name: '星界审判官', hp: 115, atk: 46, def: 13, spd: 12 },
-];
+// ====== Stage 4+: 无尽模式种族目录 ======
+interface EndlessTemplate {
+  key: string
+  name: string
+  hp: number
+  atk: number
+  def: number
+  spd: number
+}
 
-const ENDLESS_ELITE_TEMPLATES: { name: string; hp: number; atk: number; def: number; spd: number }[] = [
-  { name: '时空扭曲者', hp: 160, atk: 52, def: 18, spd: 13 },
-  { name: '灭世者', hp: 180, atk: 56, def: 20, spd: 14 },
-  { name: '维度裂缝', hp: 140, atk: 60, def: 14, spd: 16 },
-  { name: '星界守护者', hp: 200, atk: 48, def: 24, spd: 10 },
-  { name: '虚空之喉', hp: 150, atk: 64, def: 12, spd: 17 },
-];
+const ENDLESS_TEMPLATES: EndlessTemplate[] = [
+  { key: 'void_walker', name: '虚空行者', hp: 80, atk: 40, def: 12, spd: 10 },
+  { key: 'chaos_demon', name: '混沌魔', hp: 100, atk: 36, def: 16, spd: 8 },
+  { key: 'abyss_lord', name: '深渊领主', hp: 120, atk: 44, def: 14, spd: 12 },
+  { key: 'astral_devourer', name: '星界吞噬者', hp: 90, atk: 48, def: 8, spd: 15 },
+  { key: 'immortal_guardian', name: '不朽守护者', hp: 150, atk: 30, def: 22, spd: 5 },
+  { key: 'shadow_dragon', name: '暗影龙', hp: 110, atk: 42, def: 12, spd: 13 },
+  { key: 'shattered_soul', name: '破碎之魂', hp: 70, atk: 50, def: 6, spd: 16 },
+  { key: 'ancient_golem', name: '远古魔像', hp: 160, atk: 34, def: 20, spd: 4 },
+  { key: 'void_dragon', name: '虚空龙', hp: 130, atk: 46, def: 14, spd: 11 },
+  { key: 'doom_apostle', name: '终焉使徒', hp: 100, atk: 44, def: 10, spd: 14 },
+  { key: 'spacetime_rift', name: '时空裂隙', hp: 85, atk: 48, def: 10, spd: 13 },
+  { key: 'primordial_chaos', name: '原初混沌', hp: 140, atk: 38, def: 18, spd: 6 },
+  { key: 'void_shadow', name: '虚无之影', hp: 75, atk: 52, def: 4, spd: 17 },
+  { key: 'eternal_guard', name: '永恒守卫', hp: 170, atk: 32, def: 24, spd: 3 },
+  { key: 'astral_judge', name: '星界审判官', hp: 115, atk: 46, def: 13, spd: 12 },
+]
 
-const ENDLESS_BOSS_NAMES = ['虚空之主', '混沌之源', '终焉化身', '灭世神', '原初之暗', '星界审判长', '虚无之王', '万象归零'];
+const ENDLESS_ELITE_TEMPLATES: EndlessTemplate[] = [
+  { key: 'spacetime_twister', name: '时空扭曲者', hp: 160, atk: 52, def: 18, spd: 13 },
+  { key: 'world_destroyer', name: '灭世者', hp: 180, atk: 56, def: 20, spd: 14 },
+  { key: 'dimensional_rift', name: '维度裂缝', hp: 140, atk: 60, def: 14, spd: 16 },
+  { key: 'astral_guardian', name: '星界守护者', hp: 200, atk: 48, def: 24, spd: 10 },
+  { key: 'void_maw', name: '虚空之喉', hp: 150, atk: 64, def: 12, spd: 17 },
+]
+
+// 顺序也是旧版 boss_endless_<stage> 的种族映射，不要随意重排。
+const ENDLESS_BOSS_TEMPLATES = [
+  { key: 'void_master', name: '虚空之主' },
+  { key: 'chaos_origin', name: '混沌之源' },
+  { key: 'doom_avatar', name: '终焉化身' },
+  { key: 'world_end_god', name: '灭世神' },
+  { key: 'primordial_dark', name: '原初之暗' },
+  { key: 'astral_high_judge', name: '星界审判长' },
+  { key: 'void_king', name: '虚无之王' },
+  { key: 'zero_all', name: '万象归零' },
+]
 
 // ====== Public API ======
 
@@ -119,12 +138,13 @@ function getEnemiesForLayer(stage: number, layer: number, elite: boolean, rng: (
     pool = elite ? STAGE_3_ELITE : STAGE_3_NORMAL;
   }
 
-  // Filter by minLayer
-  const candidates = pool.filter(e => e.minLayer <= layer);
-  // Pick one - prefer later minLayer for deeper layers
-  if (candidates.length === 0) return pool[0].def;
-  // Weight higher minLayer more for deeper layers
-  const weights = candidates.map(e => 1 + Math.max(0, layer - e.minLayer));
+  // 只在解锁后出现；第一层无偏好，越深越偏向较晚解锁的种族。
+  const candidates = pool.filter(e => e.minLayer <= layer)
+  if (candidates.length === 0) return pool[0].def
+  // 有意改变分布：旧版 layer - minLayer 反而偏爱早期敌人。
+  // 第 10 层权重为 minLayer；第 1~10 层线性增强偏好，不改变任何敌人数值。
+  const depthBias = Math.min(1, Math.max(0, (layer - 1) / 9))
+  const weights = candidates.map(e => 1 + (e.minLayer - 1) * depthBias)
   const total = weights.reduce((a, b) => a + b, 0);
   let roll = rng() * total;
   for (let i = 0; i < candidates.length; i++) {
@@ -140,7 +160,7 @@ function getBossForStage(stage: number): EnemyDef {
   return { ...STAGE_3_BOSS };
 }
 
-// Legacy exports for backward compat
+// 无尽图鉴显示未缩放的模板基础值；实战仍按阶段、层数和强化计算。
 export const ENEMIES: EnemyDef[] = [
   ...STAGE_1_NORMAL.map(e => e.def),
   ...STAGE_1_ELITE.map(e => e.def), STAGE_1_BOSS,
@@ -148,36 +168,96 @@ export const ENEMIES: EnemyDef[] = [
   ...STAGE_2_ELITE.map(e => e.def), STAGE_2_BOSS,
   ...STAGE_3_NORMAL.map(e => e.def),
   ...STAGE_3_ELITE.map(e => e.def), STAGE_3_BOSS,
-];
+  ...[...ENDLESS_TEMPLATES, ...ENDLESS_ELITE_TEMPLATES].map(tmpl => ({
+    id: `endless_${tmpl.key}`, name: tmpl.name, tier: 4 as const,
+    hp: tmpl.hp, maxHp: tmpl.hp, attack: tmpl.atk, defense: tmpl.def, speed: tmpl.spd,
+  })),
+  ...ENDLESS_BOSS_TEMPLATES.map(tmpl => ({
+    id: `boss_endless_${tmpl.key}`, name: tmpl.name, tier: 4 as const,
+    hp: 250, maxHp: 250, attack: 60, defense: 24, speed: 16,
+  })),
+]
+
+import { monsterPortrait } from '../utils/artwork'
+
+export function getBestiaryId(enemyId: string): string {
+  // 旧 Boss 按阶段循环，可以精确反查；新种族 ID 自然保持不变。
+  const legacyBoss = /^boss_endless_([1-9]\d*)$/.exec(enemyId)
+  if (legacyBoss) {
+    const stage = Number(legacyBoss[1])
+    if (Number.isSafeInteger(stage) && stage >= 4) {
+      return `boss_endless_${ENDLESS_BOSS_TEMPLATES[(stage - 4) % ENDLESS_BOSS_TEMPLATES.length].key}`
+    }
+  }
+  // 旧 endless_<stage>_<layer>_<random> 不包含模板信息，不能合并成一个种族。
+  // 保留未知键与原计数；只有拥有额外可靠种族信息的迁移才能安全归类。
+  return enemyId
+}
+
+export function getEnemyIcon(enemyOrId: string | Pick<EnemyDef, 'id'>): string {
+  const id = getBestiaryId(typeof enemyOrId === 'string' ? enemyOrId : enemyOrId.id)
+  const portrait = monsterPortrait(id)
+  if (portrait) return portrait
+  return getEnemyFallbackIcon(id)
+}
+
+export function getEnemyFallbackIcon(id: string): string {
+  if (id === 'rat') return '🐀'
+  if (id === 'bat') return '🦇'
+  if (id.includes('spider') || id.includes('crawler')) return '🕷'
+  if (id.includes('slime')) return '🟢'
+  if (/dragon|wyrm|hydra/.test(id)) return '🐉'
+  if (/golem|boss_rock|giant|troll/.test(id)) return '🪨'
+  if (/skeleton|bone|zombie|ghoul|necromancer|lich|plague/.test(id)) return '💀'
+  if (/wraith|specter|soul|shadow/.test(id)) return '👻'
+  if (/knight|guard|warrior|orc/.test(id)) return '🛡'
+  if (/mage|flayer/.test(id)) return '🪄'
+  if (/flame|fire/.test(id)) return '🔥'
+  if (/angel/.test(id)) return '🪽'
+  if (/demon|executioner|destroyer/.test(id)) return '👹'
+  if (/assassin/.test(id)) return '🗡'
+  if (/worm/.test(id)) return '🐛'
+  if (/beast/.test(id)) return '🐾'
+  if (/eye|maw|devourer|eater/.test(id)) return '👁'
+  if (id.startsWith('boss_')) return '👑'
+  if (id.startsWith('endless_') || /void|chaos/.test(id)) return '🌀'
+  return '◆'
+}
+
+// 仅压缩无尽敌人的初始速度，24 及以下保持旧版取整；回合加速仍由战斗层叠加。
+// 超过 24 后使用 24 + sqrt(raw - 24)，不是硬上限，深层速度仍会缓慢增长。
+function scaleEndlessSpeed(raw: number): number {
+  return Math.floor(raw <= 24 ? raw : 24 + Math.sqrt(raw - 24))
+}
 
 export function generateProceduralEnemy(stage: number, layer: number, elite: boolean, rng: () => number): EnemyDef {
-  const scale = 1 + (stage - 3) * 0.35 + layer * 0.02;
-  const templates = elite ? ENDLESS_ELITE_TEMPLATES : ENDLESS_TEMPLATES;
-  const tmpl = templates[Math.floor(rng() * templates.length)];
-  const id = `endless_${stage}_${layer}_${Math.floor(rng() * 9999)}`;
+  const scale = 1 + (stage - 3) * 0.35 + layer * 0.02
+  const templates = elite ? ENDLESS_ELITE_TEMPLATES : ENDLESS_TEMPLATES
+  const tmpl = templates[Math.floor(rng() * templates.length)]
   return {
-    id, name: tmpl.name, tier: 4,
+    // RouteNode.id 保存遭遇实例；enemy.id 只表示种族，不再为 ID 消耗随机数。
+    id: `endless_${tmpl.key}`, name: tmpl.name, tier: 4,
     hp: Math.floor(tmpl.hp * scale),
     maxHp: Math.floor(tmpl.hp * scale),
     attack: Math.floor(tmpl.atk * scale),
     defense: Math.floor(tmpl.def * scale),
-    speed: Math.floor(tmpl.spd * scale),
-  };
+    speed: scaleEndlessSpeed(tmpl.spd * scale),
+  }
 }
 
 export function generateProceduralBoss(stage: number, rng: () => number): EnemyDef {
-  const name = ENDLESS_BOSS_NAMES[(stage - 4) % ENDLESS_BOSS_NAMES.length];
-  const scale = 1 + (stage - 3) * 0.4;
+  const tmpl = ENDLESS_BOSS_TEMPLATES[(stage - 4) % ENDLESS_BOSS_TEMPLATES.length]
+  const scale = 1 + (stage - 3) * 0.4
   return {
-    id: `boss_endless_${stage}`,
-    name: `${name} Lv.${stage}`,
+    id: `boss_endless_${tmpl.key}`,
+    name: `${tmpl.name} Lv.${stage}`,
     tier: 4,
     hp: Math.floor(250 * scale),
     maxHp: Math.floor(250 * scale),
     attack: Math.floor(60 * scale),
     defense: Math.floor(24 * scale),
-    speed: Math.floor(16 * scale),
-  };
+    speed: scaleEndlessSpeed(16 * scale),
+  }
 }
 
 export { getEnemiesForLayer, getBossForStage };
@@ -203,6 +283,23 @@ export function assignEnemyUpgrades(stage: number, rng: () => number): string[] 
     pool.splice(idx, 1);
   }
   return result;
+}
+
+// 敌人沿用玩家强化名称，但属性算法不同；展示必须与 applyEnemyUpgradeStats 对齐。
+export function getEnemyUpgradeDescription(upgradeId: string): string {
+  const upgrade = UPGRADE_POOL.find(u => u.id === upgradeId)
+  if (!upgrade) return '未知敌人强化'
+  const { type, value } = upgrade.effect
+  if (!Number.isFinite(value)) return '敌人强化数值无效'
+  const percent = (amount: number) => `${amount >= 0 ? '+' : ''}${Number(amount.toFixed(2))}%`
+  switch (type) {
+    case 'attack_multiplier': return `攻击${percent(value * 100)}`
+    case 'defense_multiplier':
+    case 'spawn_reduction': return `防御${percent(value * 100)}`
+    case 'max_hp': return `生命上限${percent(value)}`
+    case 'enemy_atk_down': return `攻击${percent(-value * 100)}`
+    default: return '该强化不改变敌人属性'
+  }
 }
 
 // Apply enemy upgrade effects to stats

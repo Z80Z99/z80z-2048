@@ -7,7 +7,7 @@ export const UPGRADE_POOL: UpgradeDef[] = [
   { id: 'def_up_1', name: '防御强化', description: '防御倍率 +20%', rarity: 'common', effect: { type: 'defense_multiplier', value: 0.2 }, maxStacks: 5 },
   { id: 'heal_1', name: '急救包', description: '恢复 20 HP', rarity: 'common', effect: { type: 'heal', value: 20 }, maxStacks: 99 },
   { id: 'max_hp_1', name: '生命训练', description: '最大生命 +10（同时恢复 10 HP）', rarity: 'common', effect: { type: 'max_hp', value: 10 }, maxStacks: 5 },
-  { id: 'spawn_red_1', name: '灵活身法', description: '生成方块的防御效果 +10%', rarity: 'common', effect: { type: 'spawn_reduction', value: 0.1 }, maxStacks: 5 },
+  { id: 'spawn_red_1', name: '灵活身法', description: '棋盘防御加成 +10%（同类加成合计上限 50%）', rarity: 'common', effect: { type: 'spawn_reduction', value: 0.1 }, maxStacks: 5 },
   { id: 'enemy_atk_1', name: '弱点看破', description: '敌人攻击力 -1', rarity: 'common', effect: { type: 'enemy_atk_down', value: 1 }, maxStacks: 5 },
   { id: 'gold_1', name: '淘金者', description: '战斗获得金币 +15%', rarity: 'common', effect: { type: 'gold_boost', value: 0.15 }, maxStacks: 5 },
   { id: 'max_hp_3', name: '生命强化', description: '最大生命 +20（同时恢复 20 HP）', rarity: 'common', effect: { type: 'max_hp', value: 20 }, maxStacks: 4 },
@@ -19,7 +19,7 @@ export const UPGRADE_POOL: UpgradeDef[] = [
   { id: 'heal_2', name: '大急救包', description: '恢复 40 HP', rarity: 'rare', effect: { type: 'heal', value: 40 }, maxStacks: 99 },
   { id: 'max_hp_2', name: '顽强生命', description: '最大生命 +30（同时恢复 30 HP）', rarity: 'rare', effect: { type: 'max_hp', value: 30 }, maxStacks: 3 },
   { id: 'start_tile_1', name: '开局优势', description: '每回合开始时棋盘上多一个 8', rarity: 'rare', effect: { type: 'starting_tile', value: 8 }, maxStacks: 3 },
-  { id: 'spawn_red_2_5', name: '灵巧闪避', description: '生成方块的防御效果 +18%', rarity: 'rare', effect: { type: 'spawn_reduction', value: 0.18 }, maxStacks: 3 },
+  { id: 'spawn_red_2_5', name: '灵巧闪避', description: '棋盘防御加成 +18%（同类加成合计上限 50%）', rarity: 'rare', effect: { type: 'spawn_reduction', value: 0.18 }, maxStacks: 3 },
   { id: 'enemy_atk_2', name: '战术压制', description: '敌人攻击力 -2', rarity: 'rare', effect: { type: 'enemy_atk_down', value: 2 }, maxStacks: 3 },
   { id: 'gold_2', name: '黄金猎人', description: '战斗获得金币 +30%', rarity: 'rare', effect: { type: 'gold_boost', value: 0.3 }, maxStacks: 3 },
   { id: 'bonus_turn_0_5', name: '快速思考', description: '每回合步数 +2', rarity: 'rare', effect: { type: 'bonus_turns', value: 2 }, maxStacks: 4 },
@@ -29,7 +29,7 @@ export const UPGRADE_POOL: UpgradeDef[] = [
   { id: 'def_up_3', name: '不朽之盾', description: '防御倍率 +50%', rarity: 'epic', effect: { type: 'defense_multiplier', value: 0.5 }, maxStacks: 2 },
   { id: 'bonus_turn_2', name: '时停', description: '每回合步数 +5', rarity: 'epic', effect: { type: 'bonus_turns', value: 5 }, maxStacks: 2 },
   { id: 'start_tile_2', name: '天命开局', description: '每回合开始时棋盘上多一个 32', rarity: 'epic', effect: { type: 'starting_tile', value: 32 }, maxStacks: 1 },
-  { id: 'spawn_red_2', name: '幻影步法', description: '生成方块的防御效果 +25%', rarity: 'epic', effect: { type: 'spawn_reduction', value: 0.25 }, maxStacks: 2 },
+  { id: 'spawn_red_2', name: '幻影步法', description: '棋盘防御加成 +25%（同类加成合计上限 50%）', rarity: 'epic', effect: { type: 'spawn_reduction', value: 0.25 }, maxStacks: 2 },
   { id: 'enemy_atk_3', name: '破军之势', description: '敌人攻击力 -3', rarity: 'epic', effect: { type: 'enemy_atk_down', value: 3 }, maxStacks: 2 },
   { id: 'gold_3', name: '黄金律法', description: '战斗获得金币 +50%', rarity: 'epic', effect: { type: 'gold_boost', value: 0.5 }, maxStacks: 2 },
   { id: 'max_hp_4', name: '不灭之躯', description: '最大生命 +50（同时恢复 50 HP）', rarity: 'epic', effect: { type: 'max_hp', value: 50 }, maxStacks: 2 },
@@ -57,11 +57,7 @@ export function pickUpgrades(
   hpRatio: number = 1,
   minRarity?: UpgradeRarity,
 ): UpgradeDef[] {
-  // If player already owns any max_hp upgrade, override heal exclusion
-  const hasMaxHpUpgrade = activeUpgradeIds.some(id =>
-    UPGRADE_POOL.find(u => u.id === id && u.effect.type === 'max_hp'),
-  );
-  const shouldExcludeHeal = excludeHeal && !hasMaxHpUpgrade;
+  const shouldExcludeHeal = excludeHeal;
 
   // Filter: exclude upgrades at max stacks, and optionally heal
   const available = UPGRADE_POOL.filter(u => {
@@ -89,31 +85,18 @@ export function pickUpgrades(
     rarityCounts[healAvailable.rarity]++;
   }
 
-  // Then pick remaining by rarity weighting
+  // Boss rewards may offer three epics; other rewards keep the rarity caps.
   while (picked.length < count) {
-    const rarity = weightedRarity(rng);
-    // Limit: max 2 epics, max 3 rares per reward screen
-    if (rarity === 'epic' && rarityCounts.epic >= 2) continue;
-    if (rarity === 'rare' && rarityCounts.rare >= 3) continue;
-
-    const candidates = shuffled.filter(
-      u => u.rarity === rarity && !picked.includes(u),
+    const candidates = shuffled.filter(u =>
+      !picked.includes(u) &&
+      (u.rarity !== 'epic' || minRarity === 'epic' || rarityCounts.epic < 2) &&
+      (u.rarity !== 'rare' || rarityCounts.rare < 3),
     );
-    const candidate = candidates.length > 0 ? candidates[0] : null;
-
-    if (candidate) {
-      picked.push(candidate);
-      rarityCounts[rarity]++;
-    } else {
-      // Fallback: pick any unpicked from shuffled
-      const fallback = shuffled.find(u => !picked.includes(u));
-      if (fallback) {
-        picked.push(fallback);
-        rarityCounts[fallback.rarity]++;
-      } else {
-        break; // no more available
-      }
-    }
+    if (candidates.length === 0) break;
+    const rarity = weightedRarity(rng);
+    const candidate = candidates.find(u => u.rarity === rarity) || candidates[0];
+    picked.push(candidate);
+    rarityCounts[candidate.rarity]++;
   }
 
   return picked;

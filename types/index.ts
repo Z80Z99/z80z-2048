@@ -22,9 +22,10 @@ export type UpgradeRarity = 'common' | 'rare' | 'epic';
 
 export interface Cell {
   value: number;       // 0 = empty
-  id: number;          // unique ID for React key / animation tracking
+  id: number;          // stable ID for Vue key / animation tracking
   isNew: boolean;      // true if just spawned this turn
   isMerged: boolean;   // true if result of a merge this turn
+  mergedFrom?: number[];
 }
 
 export interface SlideResult {
@@ -57,6 +58,14 @@ export interface RoundResult {
   playerFirst: boolean;
   playerSpeed: number;
   enemySpeed: number;
+  playerHpAfter?: number;
+  healing?: number;
+  reflectedDamage?: number;
+  playerActed?: boolean;
+  enemyActed?: boolean;
+  avoidReason?: 'dodge' | 'skip' | 'defense' | 'kill' | null;
+  fortifyUsed?: boolean;
+  fortifyTriggered?: boolean;
 }
 
 export interface BattleState {
@@ -73,7 +82,11 @@ export interface BattleState {
   lastRoundResult: RoundResult | null;
   savedSteps: number;
   equipEffects?: Partial<EquipSetEffects>;
+  fortifyUsed?: boolean;
+  totalTurns?: number;
 }
+
+export type CombatAttribute = 'attack' | 'defense' | 'speed';
 
 export interface EquipSetEffects {
   extraTurns: number;
@@ -90,6 +103,20 @@ export interface EquipSetEffects {
   reflect: number;
   enemyAtkDown: number;
   enemySpdDown: number;
+  attackBonus: number;
+  defenseBonus: number;
+  hpBonus: number;
+  speedBonus: number;
+  speedPercent: number;
+  goldBonus: number;
+  xpBonus: number;
+  halfDefense: boolean;
+  dropRarityBoost: number;
+  dropCount: number;
+  randomBonus: number;
+  randomDouble: boolean;
+  randomStat?: CombatAttribute;
+  doubleStat?: CombatAttribute;
 }
 
 export interface BattleResult {
@@ -103,6 +130,7 @@ export interface BattleResult {
   leveledUp?: boolean;
   savedSteps?: number;
   droppedEquipment?: string | null;
+  droppedEquipmentIds?: string[];
 }
 
 // ---- Route Map ----
@@ -159,6 +187,7 @@ export interface PlayerStats {
   spawnReduction: number;
   enemyAtkDown: number;
   goldBoost: number;
+  xpBoost: number;
   baseSpeed: number;
   equipment: { pants?: string; helmet?: string; armor?: string; gloves?: string; boots?: string };
   inventory: string[];
@@ -194,6 +223,11 @@ export interface MetaUpgradeDef {
 
 // ---- Root State ----
 
+export interface RewardRequest {
+  reason: 'start' | 'levelup' | 'elite' | 'boss';
+  minRarity?: UpgradeRarity;
+}
+
 export interface GameState {
   screen: Screen;
   theme: 'dark' | 'light';
@@ -203,19 +237,25 @@ export interface GameState {
   currentNodeId: string | null;
   battle: BattleState | null;
   rewardChoices: UpgradeDef[];
-  rewardReason: 'start' | 'levelup';
+  rewardReason: RewardRequest['reason'];
+  rewardQueue: RewardRequest[];
+  rewardRollCount: number;
   pendingLevels: number;
   shopUpgrades: (string | null)[];
   shopEquipment: (string | null)[];
   shopHeals: (string | null)[];
   shopRefreshCost: number;
+  shopRefreshCount: number;
   shopRemoveCost: number;
   shopRemoveUsed: boolean;
   stage: number;
   gameEvent: { id: string; title: string; icon: string; desc: string; choices: { label: string; tooltip?: string; effect: Record<string, any> }[] } | null;
-  eventResult: { label: string; desc: string } | null;
+  eventResult: { label: string; desc: string; choiceIndex: number; effect: Record<string, any> } | null;
   meta: MetaState;
   runSeed: number;
+  runOutcome: 'victory' | 'defeat' | null;
+  runShards: number;
+  debugActionCount: number;
 }
 
 // ---- Events ----
