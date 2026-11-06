@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -82,6 +82,14 @@ try {
     child.once('close', (code, signal) => {
       process.removeListener('SIGINT', onInterrupt)
       process.removeListener('SIGTERM', onTerminate)
+      const ok = (code ?? (signal === 'SIGINT' ? 130 : 1)) === 0
+      if (ok && action === 'build' && platform === 'mp-weixin') {
+        // 微信主包上限 2 MB：只压缩构建副本，源 PNG 保持完整分辨率。
+        const optimized = spawnSync(process.execPath, [path.join(projectRoot, 'tools/optimize-mp-art.mjs'), outputDir], { stdio: 'inherit' })
+        const size = spawnSync(process.execPath, ['-e', `const fs=require('fs'),path=require('path');const walk=d=>fs.readdirSync(d,{withFileTypes:true}).reduce((n,e)=>n+(e.isDirectory()?walk(path.join(d,e.name)):fs.statSync(path.join(d,e.name)).size),0);const b=walk(${JSON.stringify(outputDir)});console.log('[uni-app] WeChat package: '+(b/1048576).toFixed(2)+' MiB'+(b>2097152?' (over 2 MiB limit)':''))`], { stdio: 'inherit' })
+        process.exitCode = optimized.status === 0 ? (size.status === 0 ? 0 : 1) : 1
+        return
+      }
       process.exitCode = code ?? (signal === 'SIGINT' ? 130 : 1)
     })
   }
