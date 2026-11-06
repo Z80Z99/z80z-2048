@@ -1,7 +1,6 @@
-// w2-bugfix.mjs — TDD test for W2 Step 6: END_TURN_EARLY now applies equip
-// set-effects (doubleGold) and updates bestiary meta on enemy kill.
-// RED on old code (pre-merge): gold lacks doubleGold, meta not updated.
-// GREEN after _resolveKill unification.
+// w2-bugfix.mjs — END_TURN_EARLY applies equipment rewards and updates bestiary.
+// Treasure deliberately fixes the historical doubleGold bug: 5pc raises drop
+// rarity, while gear + 2pc grant additive gold percentages and 3pc grants XP.
 
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -22,7 +21,7 @@ export async function run() {
   store.meta.unlockedEnemies = [];
   store.meta.enemyKills = {};
 
-  // ── Equip 5 treasure items → 5pc set bonus grants doubleGold ─────
+  // ── Equip 5 treasure items → cumulative rewards + higher drop rarity ──
   store.player.equipment = {
     pants: 'eq_treasure_pants_common:1:100',
     helmet: 'eq_treasure_helmet_common:1:100',
@@ -31,10 +30,11 @@ export async function run() {
     boots: 'eq_treasure_boots_common:1:100',
   };
   const bonuses = equipmentMod.computeEquipBonuses(store.player.equipment);
-  assert.ok(
-    bonuses.setEffects.doubleGold === true,
-    '5 treasure items grant doubleGold set effect',
-  );
+  assert.equal(bonuses.setEffects.doubleGold, false, 'treasure never grants double gold');
+  assert.equal(bonuses.setEffects.dropRarityBoost, 1, '5pc treasure raises equipment rarity one tier');
+  assert.equal(bonuses.setEffects.goldBonus, 0.25, '2pc treasure grants +25% gold');
+  assert.equal(bonuses.setEffects.xpBonus, 0.3, '3pc treasure grants +30% XP');
+  assert.equal(bonuses.stats.gold, 40, 'five common treasure pieces add +40% gear gold');
 
   // ── Enter a battle node ──────────────────────────────────────────
   const battleNode = store.route.find(
@@ -43,10 +43,8 @@ export async function run() {
   assert.ok(battleNode, 'route has an accessible battle node');
   store.SELECT_NODE(battleNode.id);
   assert.strictEqual(store.screen, 'battle', 'entered battle screen');
-  assert.ok(
-    store.battle.equipEffects.doubleGold === true,
-    'battle equipEffects carries doubleGold',
-  );
+  assert.equal(store.battle.equipEffects.doubleGold, false, 'battle has no false doubleGold flag');
+  assert.equal(store.battle.equipEffects.dropRarityBoost, 1, 'battle retains treasure drop quality bonus');
 
   // ── Craft a killable battle state ────────────────────────────────
   const enemyId = store.battle.enemy.id;
@@ -68,19 +66,17 @@ export async function run() {
   store.player.maxHp = 100;
   store.player.gold = 0;
   store.player.goldBoost = 0;
+  store.player.xpBoost = 0;
 
   // ── When: END_TURN_EARLY kills the enemy ────────────────────────
   store.END_TURN_EARLY();
 
-  // ── Then: gold includes doubleGold factor ───────────────────────
-  // baseGold = floor(1 * 15 * (1 + 0 + 0)) * 1 = 15
-  // doubleGold → 30; savedStepsBonus = 10 * 2 = 20 → goldEarned = 50
-  // Old code (bug): 15 + 20 = 35 (no doubleGold, no rMult/equipEffects)
-  const goldGained = store.player.gold;
-  assert.ok(
-    goldGained >= 50,
-    `gold gained includes doubleGold: got ${goldGained}, expected >= 50`,
-  );
+  // ── Then: use the real, additive treasure reward multipliers ─────
+  // Gold = floor(15 * (1 + .40 gear + .25 set)) + 10 saved steps * 2 = 44.
+  // XP = floor((8 + floor(9999 / 8)) * (1 + .30 set)) = 1634.
+  assert.equal(store.player.gold, 44, 'treasure gold includes gear + set percentages, not doubling');
+  assert.equal(store.battle.result.goldEarned, 44, 'recorded gold matches the amount awarded');
+  assert.equal(store.battle.result.xpEarned, 1634, 'treasure grants its actual +30% XP bonus');
 
   // ── And: bestiary meta updated (was missing on old END_TURN_EARLY) ──
   assert.ok(

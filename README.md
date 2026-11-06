@@ -1,55 +1,73 @@
 # Z80Z — 2048 Roguelike
 
-基于 2048 玩法的 Roguelike 爬塔游戏，微信小程序（uni-app Vue 3 + Pinia + TypeScript）。
+把数字化为力量的地牢爬塔游戏。基于 uni-app、Vue 3、Pinia 和 TypeScript，支持微信小程序与 H5。
 
 ## 玩法
 
-- **2048 战斗**：滑动合并方块积攒攻击力，生成方块积攒防御力，空格数决定出手速度；每回合结束棋盘数值减半，考验合并规划
-- **地图爬塔**：每阶段 10 层 + BOSS 层，包含战斗 / 精英 / 商店 / 休息 / 事件节点，3 个手写阶段后进入无尽程序化生成
-- **装备系统**：20 套套装 x 5 部位 x 3 品质，2/3/5 件套触发套装效果（吸血、闪避、先手、双倍金币等）；装备带等级与随机属性浮动
-- **强化卡**：普通 / 稀有 / 史诗共 26 张，局内三选一成长，可叠加
-- **局外成长**：灵魂碎片购买永久升级，怪物图鉴击杀解锁奖励
-- **种子随机**：整局使用 Mulberry32 种子 RNG，同一种子结果可复现（含战斗判定）
+- **2048 战斗**：每回合基础 6 步。合并产出的数字累计为攻击，盘面数字之和折算为防御，空格越多速度越快。回合后方块减半，最低为 2。
+- **先后手结算**：速度相同时玩家先手；先手致死会阻止后手行动。闪避、吸血、回复、首击减伤和反弹分别结算并显示原因。
+- **路线爬塔**：每阶段 10 层加 1 个首领层，纸质墨线地图包含真实分叉与汇合，只能进入虚线相连的节点。三阶段后进入无尽模式。
+- **装备与成长**：20 套套装、5 部位、3 品质，另有 15 款非套装装备。2/3/5 件效果与描述一致；26 张强化卡、局外升级、怪物图鉴。
+- **事件选择**：先显示明确成本与收益，再一次性确认。金币不足或无可重铸装备时选项不可用，不会隐式欠债。
+- **种子复现**：同一初始存档、种子和操作序列得到相同游戏结果；随机按节点、回合和刷新次数隔离。UI 动画 ID 不属于玩法结果。
 
-## 技术栈
+## 开发与构建
 
-| 层 | 技术 |
-|---|---|
-| 框架 | uni-app（Vue 3 组合式 API） |
-| 状态 | Pinia |
-| 语言 | TypeScript / SCSS |
-| 目标平台 | 微信小程序 |
-
-## 项目结构
-
-```
-core/            纯游戏逻辑（棋盘、战斗、敌人、路线、强化、装备、事件、随机）
-store/           Pinia 状态（gameStore 全量游戏流程 + 纯函数辅助）
-types/           类型定义
-components/       UI 组件（Board、Tile、各面板、screens/ 下按屏幕拆分）
-pages/index/      唯一页面（屏幕切换外壳 + 悬浮工具栏）
-tools/            测试基建（node 内存编译 + 整局模拟 + 统计平价）
-utils/            本地持久化（uni storage）
-```
-
-## 运行
-
-1. 用 HBuilderX 导入本项目
-2. 运行到微信开发者工具
-3. 发布前将 `manifest.json` 中的 `appid`（当前为游客占位符 `touristappid`）替换为自己的微信小程序 appid
-
-## 测试
-
-项目无构建链路，测试跑在 Node 上（内存转译 TypeScript，可实例化真实 Pinia store）：
+要求 **Node.js ≥22.12**（已在 Node 24.18 验证）。项目保留 HBuilderX 的根目录布局，同时提供锁定版本的官方 uni-app 命令行工具链。
 
 ```bash
-node tools/run-tests.mjs                       # TDD 单测（表征 + 回归 + bugfix）
-node tools/simulate.mjs                        # 固定种子整局模拟，输出 SHA-256 回归锚点
-node tools/parity.mjs                          # 200 种子统计平价（验证改动不影响数值分布）
-node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检查
+npm ci --ignore-scripts --no-audit --no-fund
+npm run dev:h5                 # http://127.0.0.1:5173/
+npm run build:h5
+npm run preview:h5             # http://127.0.0.1:4173/
+npm run build:mp-weixin
 ```
 
-## 说明
+生成目录：
 
-- `node_modules/`、`unpackage/`（构建产物）不入库
-- `manifest.json` 中的 appid 为占位符，不包含真实小程序凭据
+- `unpackage/dist/build/h5`：正式 H5 静态资源。
+- `unpackage/dist/build/mp-weixin`：在微信开发者工具中导入。
+
+也可用 HBuilderX 导入项目运行。`manifest.json` 的 appid 保持 `touristappid`；发布者需要自行配置真实小程序 appid。默认关闭 uni 统计，开发服务仅监听本机。
+
+**操作**：手机滑动棋盘；H5 支持鼠标左键按住拖动及方向键。战斗中不可换装。界面支持浅/深色及阶段配色，系统开启减少动态效果时关闭位移特效。调试面板只在命令行开发模式开放，正式构建无调试入口且调试动作无效。
+
+## 结构
+
+```text
+core/              纯棋盘、战斗、装备、路线、敌人、事件、随机、升级逻辑
+store/             游戏状态与奖励队列；独立 development-only 调试动作
+components/        UI 面板及 screens/ 下的屏幕
+pages/index/       页面外壳、屏幕切换、工具栏
+utils/             防御性本地存档读取与保存
+static/            本地资源，无外链依赖
+tools/             测试、模拟、统计、官方构建入口
+```
+
+`store.player` 保存基础属性，`store.effectivePlayer` 统一计算装备和套装后的属性。UI 与战斗预览都使用同一计算路径，穿脱装备不回满血，也不会重复叠加属性。
+
+## 验证
+
+```bash
+npm test                       # 15 组单元/回归测试
+npm run typecheck              # 核心、store、类型、storage
+npm run simulate               # 固定种子快照 + 重复种子校验
+npm run parity                 # 200 种子，每种子复跑 + 历史可比指标
+```
+
+默认模拟与统计命令是**只读验证**：差异会失败，不会把错误静默写成新基线。只有在明确审核规则改动后执行：
+
+```bash
+node tools/simulate.mjs --update-baseline
+node tools/parity.mjs record
+```
+
+`parity-before.json` 保存原版统计。新版将获胜战斗回合与死亡战斗回合分开记录，前者用于与旧版对比；有效步数统计包含全部回合，不再仅计算最后一回合。
+
+**统计限制**：自动策略固定选择首个节点、循环方向、不购买装备，不代表真人通关率，也不充分覆盖套装流派的数值平衡。装备效果另有逐套、逐阈值与结算回归测试。
+
+## 本轮改进
+
+详见 [IMPROVEMENTS.md](./IMPROVEMENTS.md)：机制修复、视觉交互、测试结果、基线变化和未验证范围。纸质分叉地图另见 [MAP_IMPROVEMENTS.md](./MAP_IMPROVEMENTS.md)。怪物、装备和场景美术见 [ART_IMPROVEMENTS.md](./ART_IMPROVEMENTS.md)。
+
+局外存档键保持 `z80z_meta`。旧的数字型无尽首领 ID 可迁移至稳定物种 ID；无法反推物种的旧随机普通怪 ID 原样保留，不凭空合并或删除记录。当前仍仅持久化局外成长，不自动保存进行中的冒险。

@@ -6,7 +6,7 @@
     "strict": false,
     "noEmit": true,
     "skipLibCheck": true,
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "DOM"],
     "types": [],
     "baseUrl": "..",
     "paths": {

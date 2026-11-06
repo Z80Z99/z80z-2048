@@ -2,12 +2,34 @@
   "name": "z80z-roguelike",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "test": "node tools/run-tests.mjs",
+    "typecheck": "node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json",
+    "simulate": "node tools/simulate.mjs",
+    "parity": "node tools/parity.mjs",
+    "dev:h5": "node tools/build.mjs dev h5",
+    "build:h5": "node tools/build.mjs build h5",
+    "build:mp-weixin": "node tools/build.mjs build mp-weixin",
+    "preview:h5": "node tools/build.mjs preview h5"
+  },
   "dependencies": {
-    "pinia": "^2.1.7",
-    "vue": "^3.4.0"
+    "@dcloudio/uni-app": "3.0.0-5030420261029002",
+    "@dcloudio/uni-components": "3.0.0-5030420261029002",
+    "@dcloudio/uni-h5": "3.0.0-5030420261029002",
+    "@dcloudio/uni-mp-weixin": "3.0.0-5030420261029002",
+    "pinia": "2.1.7",
+    "vue": "3.4.21"
   },
   "devDependencies": {
-    "sass": "^1.69.5",
-    "typescript": "^5.3.0"
+    "@dcloudio/types": "3.4.31",
+    "@dcloudio/vite-plugin-uni": "3.0.0-5030420261029002",
+    "sass": "1.77.8",
+    "typescript": "5.9.3",
+    "vite": "5.2.8"
   }
 }

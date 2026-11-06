@@ -5,26 +5,25 @@
   "player": {
     "hp": 0,
     "maxHp": 100,
-    "gold": 45,
-    "xp": 14,
-    "level": 2
+    "gold": 53,
+    "xp": 24,
+    "level": 1
   },
-  "upgradeIds": [
-    "heal_1"
-  ],
+  "upgradeIds": [],
   "meta": {
-    "totalGold": 24,
+    "totalGold": 10,
     "totalRuns": 1,
-    "unlockedEnemies": 3,
+    "unlockedEnemies": 2,
     "enemyKills": {
       "rat": 1,
-      "slime": 1,
-      "bat": 1
+      "crawler": 1
     }
   },
   "battleStats": {
     "rounds": 8,
-    "kills": 3,
-    "turns": 18
+    "winningRounds": 5,
+    "losingRounds": 3,
+    "kills": 2,
+    "turns": 30
   }
 }

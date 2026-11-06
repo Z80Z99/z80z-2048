@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const TESTS_DIR = path.resolve(import.meta.dirname, 'tests');
 
@@ -31,7 +32,7 @@ async function main() {
     total++;
     try {
       // Convert Windows path to file:// URL for ESM dynamic import
-      const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
+      const fileUrl = pathToFileURL(filePath).href;
       const mod = await import(fileUrl);
       if (typeof mod.run !== 'function') {
         console.log(`SKIP  ${file}  (no run() export)`);

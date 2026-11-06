@@ -5,12 +5,14 @@
 	"versionName": "1.0.0",
 	"versionCode": "100",
 	"transformPx": false,
+	"uniStatistics": { "enable": false },
 	"app-plus": {
 		"usingComponents": true,
 		"compilerVersion": 3
 	},
 	"mp-weixin": {
 		"appid": "touristappid",
+		"styleIsolation": "apply-shared",
 		"setting": {
 			"urlCheck": false,
 			"es6": true,

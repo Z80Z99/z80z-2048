@@ -1,10 +1,6 @@
 // simulate.mjs — Full-game simulation driving the REAL Pinia store.
-// Runs a complete game from START_RUN through all screens, dumping a
-// deterministic baseline snapshot for regression anchoring.
-//
-// Exports runSim(seed) for reuse by tools/parity.mjs.
-// When run directly (`node tools/simulate.mjs`), uses seed 12345,
-// writes baseline.snapshot.json, and prints the SHA-256.
+// Runs a complete game through the real store. The default CLI verifies
+// the committed snapshot; use --update-baseline for intentional rule changes.
 
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
@@ -26,7 +22,7 @@ const DIRECTIONS = ['up', 'left', 'down', 'right'];
 
 // ── Reusable simulation ──────────────────────────────────────────
 export function runSim(seed = DEFAULT_SEED) {
-  const battleStats = { rounds: 0, kills: 0, turns: 0 };
+  const battleStats = { rounds: 0, kills: 0, turns: 0, winningRounds: 0, losingRounds: 0 };
 
   pinia.setActivePinia(pinia.createPinia());
   const gameStoreMod = loadProject('./store/gameStore');
@@ -105,8 +101,11 @@ export function runSim(seed = DEFAULT_SEED) {
         // Capture battle stats before clearing
         if (b.result) {
           battleStats.rounds += b.round;
-          battleStats.turns += b.turnsUsed;
-          if (b.result.playerWon) battleStats.kills++;
+          battleStats.turns += b.totalTurns ?? b.turnsUsed;
+          if (b.result.playerWon) {
+            battleStats.kills++;
+            battleStats.winningRounds += b.round;
+          } else battleStats.losingRounds += b.round;
         }
         store.SHOW_BATTLE_RESULT();
         // phase now 'finished' — loop around to handle below
@@ -171,10 +170,15 @@ export function runSim(seed = DEFAULT_SEED) {
     break;
   }
 
+  // Invalid or stuck runs must fail validation rather than resemble a short game.
+  if (iterations >= MAX_ITERATIONS || store.screen !== 'gameover') {
+    throw new Error(`Simulation did not finish: seed=${seed} screen=${store.screen} iterations=${iterations}`);
+  }
+
   // ── Build snapshot ───────────────────────────────────────────────
   const snapshot = {
     seed,
-    stagesCleared: store.stage - 1,
+    stagesCleared: store.runOutcome === 'victory' ? store.stage : store.stage - 1,
     screen: store.screen,
     player: {
       hp: store.player.hp,
@@ -192,6 +196,8 @@ export function runSim(seed = DEFAULT_SEED) {
     },
     battleStats: {
       rounds: battleStats.rounds,
+      winningRounds: battleStats.winningRounds,
+      losingRounds: battleStats.losingRounds,
       kills: battleStats.kills,
       turns: battleStats.turns,
     },
@@ -210,10 +216,20 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === __filename;
 if (isMain) {
   const { snapshot, hash, iterations } = runSim(DEFAULT_SEED);
 
-  // ── Write baseline ───────────────────────────────────────────────
+  const repeat = runSim(DEFAULT_SEED);
+  if (repeat.hash !== hash) throw new Error('The same seed produced a different simulation snapshot.');
   const outPath = path.resolve(import.meta.dirname, 'baseline.snapshot.json');
   const json = JSON.stringify(snapshot, null, 2);
-  fs.writeFileSync(outPath, json, 'utf8');
+  if (process.argv.includes('--update-baseline')) {
+    fs.writeFileSync(outPath, json, 'utf8');
+    console.log('Updated baseline for an intentional behavior change.');
+  } else {
+    const expected = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+    if (JSON.stringify(expected) !== JSON.stringify(snapshot)) {
+      console.error('Snapshot mismatch. Review the behavior change before using --update-baseline.');
+      process.exitCode = 1;
+    } else console.log('Snapshot and repeat-seed determinism: PASS');
+  }
 
   // ── Report ───────────────────────────────────────────────────────
   console.log(`Iterations: ${iterations}`);
