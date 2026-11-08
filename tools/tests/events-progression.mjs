@@ -1,5 +1,6 @@
 // 事件结算与无尽进度的纯逻辑回归：不依赖存档、不更新共享快照。
 import assert from 'node:assert/strict'
+import { EXPANSION_CONTRACTS, assertExpansionContracts } from './events-expansion.mjs'
 
 function sequence(...values) {
   let index = 0
@@ -17,10 +18,12 @@ export async function run() {
   const { loadProject } = await import('../harness.mjs')
   const events = loadProject('./core/events')
   const equipment = loadProject('./core/equipment')
+  const cards = loadProject('./core/upgrade')
+  const consumables = loadProject('./core/consumables')
   const enemies = loadProject('./core/enemy')
   const route = loadProject('./core/route')
   const { createRng } = loadProject('./core/random')
-  const { pickEvent, resolveEventEffect, getEventChoiceDisabledReason, getReforgeEligibleItem, buildEventResult } = events
+  const { pickEvent, resolveEventEffect, getEventChoiceDisabledReason, getEventRequiresBlackConfirmation, getReforgeEligibleItem, buildEventResult } = events
   const { ALL_EQUIPMENT, formatEquipStats } = equipment
   const { ENEMIES, generateProceduralEnemy, generateProceduralBoss, getBestiaryId, getEnemyIcon, getEnemiesForLayer } = enemies
   const catalog = new Map()
@@ -28,14 +31,22 @@ export async function run() {
     const event = pickEvent(3, () => (i + 0.5) / 100)
     catalog.set(event.id, event)
   }
-  assert.equal(catalog.size, 10, 'all event definitions are reachable')
+  assert.equal(catalog.size, 25, 'all fifteen existing and ten expansion event definitions are reachable')
+  const legacyCatalog = new Map([...catalog].filter(([id]) => !EXPANSION_CONTRACTS.has(id)))
+  assert.equal(legacyCatalog.size, 15, 'all ten legacy and five sixcolor event definitions remain reachable')
+  assert.deepEqual([...legacyCatalog.keys()].sort(), [
+    'treasure_chest', 'healing_fountain', 'dark_shrine', 'fallen_warrior', 'gambler',
+    'ancient_scroll', 'spike_trap', 'mysterious_box', 'dying_merchant', 'ancient_anvil',
+    'risk_shrine', 'cursed_archive', 'alchemy_supply', 'abyss_contract', 'cleansing_hermit',
+  ].sort(), 'new events supplement, not replace, the existing event outcomes')
+  assertExpansionContracts(catalog, loadProject)
   const choice = (id, index) => catalog.get(id).choices[index].effect
   const getEq = id => ALL_EQUIPMENT.find(eq => eq.id === id.split(':')[0])
   const common = ALL_EQUIPMENT.filter(eq => eq.rarity === 'common' && eq.set).slice(0, 3)
   const worn = `${common[0].id}:1:100`
   const first = `${common[1].id}:5:90`
   const second = `${common[2].id}:1:110`
-  const rich = { gold: 1000, inventory: [worn, first, second], equipment: { [common[0].slot]: worn } }
+  const rich = { gold: 1000, inventory: [worn, first, second], equipment: { [common[0].slot]: worn }, purpleLayers: 2 }
 
   // 数据文案必须如实反映实际机制，每个选项都解释其结果。
   for (const event of catalog.values()) {
@@ -47,8 +58,14 @@ export async function run() {
   assert.match(catalog.get('dark_shrine').choices[1].tooltip, /基础生命上限/)
   assert.match(catalog.get('ancient_anvil').choices[1].tooltip, /背包中首件/)
   assert.doesNotMatch(JSON.stringify(catalog.get('ancient_scroll')), /后悔|似乎|风险/)
-  for (let stage = 1; stage <= 3; stage++) {
-    for (let i = 0; i < 100; i++) assert.ok(pickEvent(stage, () => i / 100).stageMin <= stage)
+  for (const [stage, expectedCount] of [[1, 9], [2, 19], [3, 25], [4, 25]]) {
+    const stageIds = new Set()
+    for (let i = 0; i < 100; i++) {
+      const event = pickEvent(stage, () => (i + 0.5) / 100)
+      assert.ok(event.stageMin <= stage)
+      stageIds.add(event.id)
+    }
+    assert.equal(stageIds.size, expectedCount, `stage ${stage}: exact available event count`)
   }
 
   // 精确分层样本验证 50% / 70%，不使用不稳定的统计阈值。
@@ -185,24 +202,116 @@ export async function run() {
     assert.ok(text.includes(`（${cloudLabels.join('，')}）`), 'equipment stat block matches the shared formatter exactly')
   }
 
-  // 全部选项都有纯数值结算与可读描述；装备描述必须包含实际名字和实际属性。
+  // 十个旧事件仍是扁平数值结算；四个新交易使用结构化、精确 ID 奖励。
+  const tradeEvents = new Map([
+    ['risk_shrine', { count: 5, allowedClasses: ['red'], requiredClass: 'red', cost: 0 }],
+    ['cursed_archive', { count: 5, allowedClasses: ['gold', 'purple'], requiredClass: 'purple', cost: 0 }],
+    ['alchemy_supply', { count: 1, allowedClasses: [], cost: 35 }],
+    ['abyss_contract', { count: 3, allowedClasses: ['gold', 'black'], requiredClass: 'black', cost: 0 }],
+    ['cleansing_hermit', { count: 1, allowedClasses: [], cost: 40 }],
+  ])
+  for (const [id, contract] of tradeEvents) {
+    const event = catalog.get(id)
+    const trades = event.choices.filter(option => option.effect.type === 'card_trade')
+    const leaves = event.choices.filter(option => option.effect.type === 'none')
+    assert.equal(trades.length, contract.count, `${id}: all approved trade variants are reachable`)
+    assert.equal(leaves.length, 1, `${id}: voluntary safe leave remains available`)
+    assert.equal(event.choices.length, trades.length + leaves.length)
+    assert.deepEqual(resolveEventEffect(leaves[0].effect, 3, () => { throw new Error('safe leave consumed RNG') }), { type: 'none' })
+    assert.match(leaves[0].tooltip, /无消耗.*无奖励/)
+    if (contract.requiredClass) {
+      const offered = new Set(trades.flatMap(option => option.effect.grants.map(grant => grant.id)))
+      const required = cards.UPGRADE_POOL.filter(def => def.cardClass === contract.requiredClass).map(def => def.id)
+      assert.deepEqual([...offered].filter(id => cards.cardById(id).cardClass === contract.requiredClass).sort(), required.sort(), `${id}: every risk/curse/doom card is obtainable`)
+    }
+  }
   const originalRandom = Math.random
   const originalNow = Date.now
   try {
     Math.random = () => { throw new Error('unseeded event/enemy RNG') }
     Date.now = () => { throw new Error('wall clock event/enemy RNG') }
-    for (const event of catalog.values()) {
+    // 原15事件继续完整执行既有精确断言；扩展事件不套用旧零hpCost/gold假设，改由独立契约验证。
+    assertExpansionContracts(catalog, loadProject)
+    for (const event of legacyCatalog.values()) {
       for (const option of event.choices) {
         const before = JSON.stringify(option.effect)
         for (const roll of [0, 0.999999]) {
           const result = resolveEventEffect(option.effect, 3, () => roll, rich)
           assert.equal(getEventChoiceDisabledReason(result, rich), null)
-          for (const [field, value] of Object.entries(result)) {
-            if (['type', 'eqId', 'removeEqId'].includes(field)) assert.equal(typeof value, 'string')
-            else assert.ok(typeof value === 'number' && Number.isFinite(value), `${result.type}.${field} must be a resolved number`)
+          if (option.effect.type === 'card_trade') {
+            assert.equal(result.type, 'card_trade')
+            const eventContract = tradeEvents.get(event.id)
+            assert.ok(eventContract, `${event.id}: explicit trade contract`)
+            const source = option.effect
+            assert.ok(Array.isArray(source.grants), 'each raw choice provides its own exact grant list')
+            const contract = { cardGrants: source.grants.map(({ id, count }) => ({ id, count })), cost: source.cost ?? 0 }
+            if (source.consumableGrants !== undefined) contract.consumableGrants = source.consumableGrants.map(({ id, count }) => ({ id, count }))
+            assert.equal(contract.cost, eventContract.cost, 'variant retains approved event price')
+            assert.equal(source.gold ?? 0, 0)
+            assert.equal(source.hpCost ?? 0, 0)
+            const grantClasses = contract.cardGrants.map(grant => cards.cardById(grant.id)?.cardClass)
+            assert.ok(grantClasses.every(cardClass => eventContract.allowedClasses.includes(cardClass)), 'each trade stays in its approved classes')
+            if (eventContract.requiredClass) {
+              assert.ok(grantClasses.includes(eventContract.requiredClass), 'no variant omits its required risk, curse or doom cost')
+              if (event.id !== 'risk_shrine') assert.ok(grantClasses.includes('gold'), 'curse/doom trade retains its gold benefit')
+            }
+            if (event.id === 'alchemy_supply') assert.deepEqual(contract.consumableGrants, [{ id: 'tactical_potion', count: 1 }])
+            else assert.ok(!Object.hasOwn(contract, 'consumableGrants'), 'risk trades do not silently add consumables')
+            const requiresBlackConfirmation = grantClasses.includes('black')
+            assert.deepEqual(result, { type: 'card_trade', ...contract, gold: 0, hpCost: 0, removesPurple: source.removesPurple ?? 0, requiresBlackConfirmation }, 'cached grant IDs, counts and expenses are exact')
+            assert.deepEqual(Object.keys(result).sort(), [
+              'type', 'cardGrants', 'cost', 'gold', 'hpCost', 'removesPurple', 'requiresBlackConfirmation',
+              ...(contract.consumableGrants ? ['consumableGrants'] : []),
+            ].sort(), 'cached trade has no raw grant list or unresolved fields')
+            for (const field of ['cost', 'gold', 'hpCost']) assert.ok(typeof result[field] === 'number' && Number.isFinite(result[field]))
+            for (const [field, lookup] of [['cardGrants', cards.cardById], ['consumableGrants', consumables.consumableById]]) {
+              for (const grant of result[field] ?? []) {
+                assert.deepEqual(Object.keys(grant).sort(), ['count', 'id'])
+                assert.ok(Number.isSafeInteger(grant.count) && grant.count > 0)
+                assert.equal(lookup(grant.id)?.id, grant.id, 'grant uses an exact registered ID')
+              }
+            }
+            assert.equal(getEventRequiresBlackConfirmation(option.effect), requiresBlackConfirmation)
+            assert.equal(getEventRequiresBlackConfirmation(result), requiresBlackConfirmation)
+            const noRng = () => { throw new Error('cached trade consumed RNG') }
+            assert.deepEqual(resolveEventEffect(result, 3, noRng, rich), result, 'cached trade resolves identically without rerolling')
+            assert.equal(resolveEventEffect({ ...result, requiresBlackConfirmation: !requiresBlackConfirmation }, 3, noRng, rich).requiresBlackConfirmation, requiresBlackConfirmation, 'confirmation is derived from black grants, not trusted flags')
+            assert.notEqual(result.cardGrants, option.effect.grants, 'cached grants do not alias source arrays')
+            result.cardGrants.forEach((grant, index) => assert.notEqual(grant, option.effect.grants[index]))
+            if (result.consumableGrants) {
+              assert.notEqual(result.consumableGrants, option.effect.consumableGrants)
+              result.consumableGrants.forEach((grant, index) => assert.notEqual(grant, option.effect.consumableGrants[index]))
+            }
+          } else {
+            for (const [field, value] of Object.entries(result)) {
+              if (['type', 'eqId', 'removeEqId'].includes(field)) assert.equal(typeof value, 'string')
+              else assert.ok(typeof value === 'number' && Number.isFinite(value), `${result.type}.${field} must be a resolved number`)
+            }
           }
           const text = buildEventResult(result)
           assert.doesNotMatch(text, /不可思议|无法显示|数据不可用|永久|undefined|NaN/)
+          if (result.type === 'card_trade') {
+            assert.equal(option.tooltip, text, `${event.id}: every variant tooltip describes its exact cached outcome`)
+            for (const [field, lookup, validate] of [
+              ['cardGrants', cards.cardById, cards.validateCard],
+              ['consumableGrants', consumables.consumableById, consumables.validateConsumable],
+            ]) {
+              for (const grant of result[field] ?? []) {
+                const def = lookup(grant.id)
+                assert.ok(validate(def), `${grant.id}: valid complete grant definition`)
+                assert.ok(text.includes(def.name) && text.includes(cards.cardClassText(def.cardClass)))
+                assert.ok(text.includes(`×${grant.count}`), 'description states actual grant count')
+                for (const effect of def.effects) {
+                  assert.ok(text.includes(cards.cardEffectText(effect)), 'description states every positive and negative effect')
+                  assert.ok(text.includes(effect.polarity === 'positive' ? '正面收益（+）' : '负面代价（−）'))
+                }
+                if (field === 'consumableGrants') assert.match(text, /获得时不自动使用.*使用消耗 1 份/)
+                else if (def.cardClass === 'purple') assert.match(text, /普通商店不能移除，可用净化药剂或奇遇移除/)
+                else if (def.cardClass === 'black') assert.match(text, /本局无法移除，商店与净化均无效/)
+              }
+            }
+            if (result.requiresBlackConfirmation) assert.match(text, /额外确认.*确认前取消/)
+          }
           for (const field of ['eqId', 'removeEqId']) {
             if (!result[field]) continue
             assert.ok(text.includes(getEq(result[field]).name))
@@ -289,23 +398,39 @@ export async function run() {
   assert.ok(generateProceduralBoss(200, () => 0).speed > generateProceduralBoss(40, () => 0).speed)
   assert.equal(enemies.ROUND_SPD_BONUS, 1, 'round speed can keep rising after procedural softcap')
 
-  // 敌人复用强化名称，但说明必须对应敌人实际属性算法，而非玩家回血或棋盘规则。
-  const { getEnemyUpgradeDescription, applyEnemyUpgradeStats } = enemies
-  for (const [id, expected] of [
-    ['atk_up_1', '攻击+20%'], ['atk_up_2', '攻击+35%'], ['atk_up_3', '攻击+50%'],
-    ['def_up_1', '防御+20%'], ['def_up_2', '防御+35%'], ['def_up_3', '防御+50%'],
-    ['max_hp_1', '生命上限+10%'], ['max_hp_4', '生命上限+50%'],
-    ['spawn_red_1', '防御+10%'], ['spawn_red_2_5', '防御+18%'], ['spawn_red_2', '防御+25%'],
-    ['enemy_atk_1', '攻击-100%'],
-  ]) assert.equal(getEnemyUpgradeDescription(id), expected)
+  // 敌人独立冻结旧十三种强化及其顺序、名称和数值，不借用玩家同名新卡。
+  const { ENEMY_UPGRADE_POOL, getEnemyUpgradeName, getEnemyUpgradeDescription, applyEnemyUpgradeStats } = enemies
+  const frozenEnemyContracts = [
+    ['atk_up_1', '攻击强化', 'attack_multiplier', 0.2, '攻击+20%'],
+    ['def_up_1', '防御强化', 'defense_multiplier', 0.2, '防御+20%'],
+    ['max_hp_1', '生命训练', 'max_hp', 10, '生命上限+10%'],
+    ['spawn_red_1', '灵活身法', 'spawn_reduction', 0.1, '防御+10%'],
+    ['max_hp_3', '生命强化', 'max_hp', 20, '生命上限+20%'],
+    ['atk_up_2', '强力攻击', 'attack_multiplier', 0.35, '攻击+35%'],
+    ['def_up_2', '铜墙铁壁', 'defense_multiplier', 0.35, '防御+35%'],
+    ['max_hp_2', '顽强生命', 'max_hp', 30, '生命上限+30%'],
+    ['spawn_red_2_5', '灵巧闪避', 'spawn_reduction', 0.18, '防御+18%'],
+    ['atk_up_3', '毁灭之力', 'attack_multiplier', 0.5, '攻击+50%'],
+    ['def_up_3', '不朽之盾', 'defense_multiplier', 0.5, '防御+50%'],
+    ['spawn_red_2', '幻影步法', 'spawn_reduction', 0.25, '防御+25%'],
+    ['max_hp_4', '不灭之躯', 'max_hp', 50, '生命上限+50%'],
+  ]
+  assert.deepEqual(ENEMY_UPGRADE_POOL, frozenEnemyContracts.map(([id, name, type, value]) => ({ id, name, type, value })), 'exact old thirteen-entry enemy pool remains independent')
+  assert.ok(Object.isFrozen(ENEMY_UPGRADE_POOL) && ENEMY_UPGRADE_POOL.every(Object.isFrozen))
+  for (const [id, name, , , description] of frozenEnemyContracts) {
+    assert.equal(getEnemyUpgradeName(id), name)
+    assert.equal(getEnemyUpgradeDescription(id), description)
+  }
+  assert.equal(cards.cardById('atk_up_1').effects[0].value, 0.08, 'player same-ID card uses its redesigned value')
+  assert.equal(getEnemyUpgradeDescription('atk_up_1'), '攻击+20%', 'player value does not leak into enemy description')
   assert.doesNotMatch(getEnemyUpgradeDescription('max_hp_4'), /恢复|回复|治疗/)
   assert.doesNotMatch(getEnemyUpgradeDescription('spawn_red_2'), /棋盘|上限|生成/)
   assert.deepEqual(applyEnemyUpgradeStats(['max_hp_4'], 100, 100, 8, 200), { atk: 100, def: 100, spd: 8, hp: 300 }, '50 means +50% enemy HP, not a flat +50 or heal')
   assert.deepEqual(applyEnemyUpgradeStats(['spawn_red_2'], 100, 100, 8, 200), { atk: 100, def: 125, spd: 8, hp: 200 }, 'spawn reduction instead multiplies enemy defense by 1.25')
   assert.deepEqual(applyEnemyUpgradeStats(['atk_up_2', 'def_up_2'], 100, 100, 8, 200), { atk: 135, def: 135, spd: 8, hp: 200 })
-  for (const id of ['', 'unknown_upgrade']) assert.equal(getEnemyUpgradeDescription(id), '未知敌人强化')
-  for (const id of ['heal_1', 'bonus_turn_1', 'start_tile_1', 'gold_1']) {
-    assert.equal(getEnemyUpgradeDescription(id), '该强化不改变敌人属性', 'unsupported enemy effects must not reuse player descriptions')
+  for (const id of ['', 'unknown_upgrade', 'enemy_atk_1', 'heal_1', 'bonus_turn_1', 'start_tile_1', 'gold_1', 'red_berserk', 'curse_burn', 'doom_soul']) {
+    assert.equal(getEnemyUpgradeName(id), '未知敌人强化')
+    assert.equal(getEnemyUpgradeDescription(id), '未知敌人强化', 'outside frozen registry: never reuse player names or effects')
     assert.deepEqual(applyEnemyUpgradeStats([id], 100, 100, 8, 200), { atk: 100, def: 100, spd: 8, hp: 200 })
   }
 

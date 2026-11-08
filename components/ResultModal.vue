@@ -8,6 +8,7 @@ const props = defineProps<{ result: BattleResult }>()
 const store = useGameStore()
 const overflow = computed(() => props.result.overflowDamage ?? 0)
 const savedGold = computed(() => props.result.playerWon ? (props.result.savedSteps ?? 0) * 2 : 0)
+const lastRound = computed(() => store.battle?.lastRoundResult)
 const drops = computed(() => (props.result.droppedEquipmentIds ?? (props.result.droppedEquipment ? [props.result.droppedEquipment] : [])).map((id, index) => ({
   id, key: `${id}-${index}`, item: equipmentById(id), lines: formatEquipStats(id),
 })))
@@ -19,13 +20,14 @@ const drops = computed(() => (props.result.droppedEquipmentIds ?? (props.result.
       <text class="ui-kicker">{{ result.playerWon ? '战利品 / VICTORY' : '战斗记录 / DEFEAT' }}</text>
       <text class="ui-title result-title">{{ result.playerWon ? '道路已清' : '这一次，止步于此' }}</text>
       <text class="ui-note result-summary">与 {{ store.battle?.enemy.name ?? '敌人' }} 交战 {{ result.totalRounds }} 个回合</text>
+      <view v-if="lastRound && (lastRound.curseDamage || lastRound.extraDamage || lastRound.enemyHealing)" class="result-last-round"><text class="result-section-title">最后回合 · 机制与代价</text><text v-if="lastRound.attackCount" class="ui-note">实际出手 {{ lastRound.attackCount }} 次 · 追加伤害 {{ lastRound.extraDamage ?? 0 }}</text><text v-if="lastRound.curseDamage" class="ui-note stat-attack">反噬、流血或诅咒直接损失 {{ lastRound.curseDamage }} 点生命{{ result.playerWon ? '' : '；生命归零后不能靠回复复活' }}</text><text v-if="lastRound.enemyHealing" class="ui-note">存活敌人因宿命恢复 {{ lastRound.enemyHealing }} 点生命</text></view>
       <template v-if="result.playerWon">
         <view class="result-rewards">
-          <view class="result-reward-row"><text>战斗金币</text><text class="result-number stat-gold">+{{ result.goldEarned }}</text></view>
-          <text v-if="savedGold" class="result-saved">其中含保留 {{ result.savedSteps }} 步奖励 +{{ savedGold }} 金币（已计入）</text>
-          <view class="result-reward-row"><text>获得经验</text><text class="result-number stat-xp">+{{ result.xpEarned ?? 0 }} XP</text></view>
+          <view class="result-reward-row ui-entry"><text>战斗金币</text><text class="result-number stat-gold">+{{ result.goldEarned }}</text></view>
+          <text v-if="savedGold" class="result-saved">其中含击杀回合基础余 {{ result.savedSteps }} 步奖励 +{{ savedGold }} 金币（已计入；不累计之前回合）</text>
+          <view class="result-reward-row ui-entry"><text>获得经验</text><text class="result-number stat-xp">+{{ result.xpEarned ?? 0 }} XP</text></view>
         </view>
-        <view v-if="drops.length" class="result-drops"><text class="result-section-title">装备掉落 · 已放入背包</text><view v-for="drop in drops" :key="drop.key" class="result-drop"><text class="result-drop-name">{{ drop.item?.name ?? '未知装备' }}</text><text v-for="line in drop.lines" :key="line" class="result-drop-stat">{{ line }}</text></view></view>
+        <view v-if="drops.length" class="result-drops"><text class="result-section-title">装备掉落 · 已放入背包</text><view v-for="drop in drops" :key="drop.key" class="result-drop ui-entry"><text class="result-drop-name">{{ drop.item?.name ?? '未知装备' }}</text><text v-for="line in drop.lines" :key="line" class="result-drop-stat">{{ line }}</text></view></view>
         <view v-if="overflow > 0" class="result-overflow"><text class="result-section-title">溢出伤害 {{ overflow }} · 选择一种转化</text><view class="result-overflow-choices"><button role="button" class="result-convert result-convert-gold" @click="store.END_BATTLE('gold')"><text class="result-convert-value">+{{ overflow }}</text><text>金币</text></button><button role="button" class="result-convert result-convert-xp" @click="store.END_BATTLE('xp')"><text class="result-convert-value">+{{ Math.floor(overflow / 2) }}</text><text>经验</text></button></view></view>
         <button role="button" v-else class="ui-btn result-continue" @click="store.END_BATTLE()">{{ result.leveledUp ? '领取强化奖励' : '领取奖励并继续' }}</button>
         <text class="result-xp">Lv.{{ store.player.level }} · {{ store.player.xp }} / {{ store.player.xpToNext }} XP</text>
@@ -38,6 +40,7 @@ const drops = computed(() => (props.result.droppedEquipmentIds ?? (props.result.
 <style scoped lang="scss">
 .result-title { font-size: 42rpx; margin: 14rpx 0; }
 .result-summary { margin-bottom: 26rpx; }
+.result-last-round { padding: 16rpx; border: 1px solid var(--line); border-left: 3rpx solid var(--card-purple); border-radius: 10rpx; background: var(--surface-soft); margin-bottom: 20rpx; }
 .result-rewards { padding: 8rpx 0 16rpx; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .result-reward-row { display: flex; justify-content: space-between; align-items: baseline; gap: 20rpx; padding: 14rpx 0; color: var(--muted); font-size: 28rpx; }
 .result-number { font-size: 36rpx; font-weight: 800; }

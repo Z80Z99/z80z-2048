@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 
 export async function run() {
   const { loadProject } = await import('../harness.mjs')
-  const { layoutRoute, routeConnection, routeSegment, ROUTE_MAP_WIDTH } = loadProject('./core/routeLayout')
+  const { layoutRoute, routeConnection, routeSegment, ROUTE_MAP_WIDTH, ROUTE_NODE_HEIGHT } = loadProject('./core/routeLayout')
   const node = (id, layer, position, nextIds = [], extra = {}) => ({ id, layer, position, nextIds, type: 'battle', enemy: null, accessible: false, completed: false, ...extra })
   const route = [
     node('a', 1, 0, ['c'], { completed: true }),
@@ -32,6 +32,14 @@ export async function run() {
     assert.ok(item.x - item.radius >= 0 && item.x + item.radius <= ROUTE_MAP_WIDTH)
     assert.ok(item.y + item.radius < map.height)
     if (item.node.layer === 1) assert.ok(map.height - item.y >= 230, 'origin caption stays clear of first-layer labels')
+  }
+  // 状态文字只出现在相邻的“刚完成/可前往”两层，层距必须容得下整块节点，抖动也不能让文字压到上一层图标。
+  const layers = [...new Set(map.nodes.map(item => item.node.layer))].sort((a, b) => a - b)
+  for (let index = 0; index < layers.length - 1; index++) {
+    const lower = map.nodes.filter(item => item.node.layer === layers[index])
+    const upper = map.nodes.filter(item => item.node.layer === layers[index + 1])
+    const nearestGap = Math.min(...lower.map(item => item.y)) - Math.max(...upper.map(item => item.y))
+    assert.ok(nearestGap >= ROUTE_NODE_HEIGHT, `floor ${layers[index]} keeps state labels clear of floor ${layers[index + 1]}`)
   }
   for (const edge of map.edges) {
     const from = placed.get(edge.fromId)

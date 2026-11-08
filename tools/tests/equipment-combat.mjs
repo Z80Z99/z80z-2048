@@ -135,7 +135,7 @@ function player(overrides = {}) {
   return {
     hp: 80, maxHp: 100, attackMultiplier: 1, defenseMultiplier: 1,
     flatAttack: 0, flatDefense: 0, bonusTurns: 0, baseMaxTurns: 6,
-    spawnReduction: 0, enemyAtkDown: 0, goldBoost: 0, xpBoost: 0, baseSpeed: 3,
+    spawnArmor: 0, goldBoost: 0, xpBoost: 0, baseSpeed: 3,
     equipment: {}, inventory: [], gold: 17, xp: 2, level: 1, xpToNext: 25,
     ...overrides,
   }
@@ -150,7 +150,7 @@ function battle(overrides = {}) {
   return {
     grid: grid(), turnsUsed: 6, maxTurns: 6, totalAttack: 20, totalDefense: 12,
     enemyCurrentHp: enemy.hp, phase: 'round_delay', result: null, round: 1,
-    lastRoundResult: null, savedSteps: 0, fortifyUsed: false,
+    lastRoundResult: null, savedSteps: 0, fortifyUsed: false, mergeCount: 1,
     ...overrides, enemy,
   }
 }
@@ -300,10 +300,10 @@ function checkEquipmentIdsAndStats() {
   assert.equal(effective.baseSpeed, 3 + totals.spd, 'non-set speed is fixed')
   close(effective.goldBoost, 0.2 + totals.gold / 100, 'non-set real gold bonus')
   close(effective.xpBoost, 0.3 + totals.xp / 100, 'non-set real XP bonus')
-  const capped = freeze(player({ spawnReduction: 0.8 }))
-  assert.equal(equipment.getEffectivePlayer(capped).spawnReduction, 0.5)
-  assert.equal(capped.spawnReduction, 0.8, 'raw stacked spawn reduction is preserved')
-  assert.equal(equipment.getEffectivePlayer(player({ spawnReduction: -0.2 })).spawnReduction, 0)
+  const stacked = freeze(player({ spawnArmor: 1000.8 }))
+  assert.equal(equipment.getEffectivePlayer(stacked).spawnArmor, 1000.8)
+  assert.equal(stacked.spawnArmor, 1000.8, 'raw stacked spawn armor is preserved without a gameplay cap')
+  assert.equal(equipment.getEffectivePlayer(player({ spawnArmor: 0 })).spawnArmor, 0)
   assert.equal(equipment.getEffectivePlayer(player({ hp: 999 })).hp, 100)
   assert.equal(equipment.getEffectivePlayer(player({ hp: 0, equipment: equippedSet('holy') })).hp, 0, 'equipment never revives')
   const ids = [`${canonical}:1:100:copy2`, 'eq_tempest_pants_epic:1:100', 'eq_noset__helmet_rare:3:100']
@@ -393,13 +393,13 @@ function checkCombatSequencing() {
   const formula = combat.getBattlePreview(battle({
     enemy: { attack: 30, defense: 11, speed: 27 }, round: 3, totalAttack: 37,
     grid: grid([2, 4, 8, 16]), equipEffects: { enemyAtkDown: 0.3, enemySpdDown: 4, pierce: 0.4 },
-  }), player({ attackMultiplier: 1.3, defenseMultiplier: 1.2, flatAttack: 7, flatDefense: 4, spawnReduction: 0.2, enemyAtkDown: 4 }))
-  assert.equal(formula.enemyAttack, 22, 'linear enemy attack scaling then flat/percent debuffs')
-  assert.equal(formula.enemyDefense, 10, 'linear defense growth then pierce')
-  assert.equal(formula.enemySpeed, 25)
-  assert.equal(formula.defenseValue, 7, 'existing board defense divisor stays 6')
-  assert.equal(formula.enemyDamage, 45, 'existing floor(totalAttack * multiplier - defense) + flatAttack')
-  assert.equal(formula.playerDamage, 11)
+  }), player({ attackMultiplier: 1.3, defenseMultiplier: 1.2, flatAttack: 7, flatDefense: 4, spawnArmor: 0.2 }))
+  assert.equal(formula.enemyAttack, 23, 'linear enemy attack scaling (buffered after round 2) then equipment percent weakening only')
+  assert.equal(formula.enemyDefense, 8, 'linear defense growth then pierce')
+  assert.equal(formula.enemySpeed, 24)
+  assert.equal(formula.defenseValue, 14, 'board armor divisor 3 plus accumulated spawn armor')
+  assert.equal(formula.enemyDamage, 47, 'existing floor(totalAttack * multiplier - defense) + flatAttack')
+  assert.equal(formula.playerDamage, 11, 'ceil(23 * 15 / (15 + 14 + 4)) rational armor damage')
   assert.equal(formula.playerFirst, false)
   const slowed = combat.getBattlePreview(battle({ enemy: { speed: 2 }, equipEffects: { enemySpdDown: 4 } }), player())
   assert.equal(slowed.enemySpeed, 1)
@@ -433,7 +433,7 @@ function checkCombatSequencing() {
   assert.equal(cap.playerHpAfter, 80)
   const noHit = combat.resolveRound(battle({ totalAttack: 0, equipEffects: { lifesteal: 1 } }), player(), noRng)
   assert.equal(noHit.healing, 0)
-  assert.equal(noHit.playerActed, true, 'zero-damage attack is still an action')
+  assert.equal(noHit.playerActed, false, 'zero accumulated merge charge cannot attack even with flat equipment damage')
   const regen = combat.resolveRound(battle({ equipEffects: { regen: 0.1 } }), player(), noRng)
   assert.equal(regen.playerHpAfter, 70)
   assert.equal(regen.healing, 10, 'regen happens once at round end')
@@ -469,7 +469,7 @@ function checkFortifyAndAvoidance() {
   const next = combat.startNewRound({ ...state, fortifyUsed: first.fortifyUsed, enemyCurrentHp: first.enemyHpAfter }, noRng)
   assert.equal(next.fortifyUsed, true, 'new round preserves first-hit usage')
   const second = combat.resolveRound(next, player({ hp: first.playerHpAfter }), noRng)
-  assert.equal(second.playerDamage, 23, 'second round incoming attack is not halved')
+  assert.equal(second.playerDamage, 20, 'second round incoming attack is not halved (growth starts round 3)')
   assert.equal(second.reflectedDamage, 0, 'reflect is only on that first actual hit')
   assert.equal(second.fortifyUsed, true)
   assert.equal(second.fortifyTriggered, false)
@@ -489,13 +489,16 @@ function checkFortifyAndAvoidance() {
   assert.equal(dodge.avoidReason, 'dodge')
   assert.equal(dodge.enemyActed, true)
   assert.equal(dodgeRng.calls, 2)
-  const defense = combat.resolveRound(battle({ equipEffects: { ...effects, dodge: 0.1 } }), player({ flatDefense: 20 }), noRng)
-  assert.equal(defense.avoidReason, 'defense')
-  assert.equal(defense.enemyActed, true)
+  const armored = combat.resolveRound(battle({ equipEffects: effects }), player({ flatDefense: 20 }), noRng)
+  assert.equal(armored.avoidReason, null, 'ordinary positive attack is never completely blocked by armor')
+  assert.equal(armored.enemyActed, true)
+  assert.equal(armored.playerDamage, 5, 'ceil(ceil(20 * 15 / (15 + 20)) / 2): armor then first-hit halving')
+  assert.equal(armored.fortifyTriggered, true)
+  assert.equal(armored.reflectedDamage, 5)
   const kill = combat.resolveRound(battle({ enemyCurrentHp: 1, equipEffects: { ...effects, dodge: 0.1, skipChance: 0.2 } }), player(), noRng)
   assert.equal(kill.avoidReason, 'kill')
   assert.equal(kill.enemyActed, false)
-  for (const avoided of [skip, dodge, defense, kill]) {
+  for (const avoided of [skip, dodge, kill]) {
     assert.equal(avoided.playerDamage, 0)
     assert.equal(avoided.fortifyUsed, false, 'avoided damage does not consume first-hit fortify')
     assert.equal(avoided.fortifyTriggered, false)
@@ -529,7 +532,7 @@ function checkBattleApis() {
   }
   const notPlaying = freeze(battle())
   assert.equal(combat.processTurn(notPlaying, 'left', noRng), notPlaying)
-  const started = combat.initBattle(battle().enemy, 8, random.createRng(91), [8, 16])
+  const started = combat.initBattle(battle().enemy, 8, random.createRng(91), 24)
   assert.equal(started.maxTurns, 8)
   assert.equal(started.round, 1)
   assert.equal(started.fortifyUsed, false)
@@ -545,13 +548,14 @@ function checkBattleApis() {
   assert.equal(moved.totalDefense, 2)
   assert.equal(rng.calls, 2)
   assert.equal(moving.turnsUsed, 0)
-  const next = combat.startNewRound({ ...moved, savedSteps: 7, fortifyUsed: true }, random.createRng(92), [8])
+  const next = combat.startNewRound({ ...moved, savedSteps: 7, fortifyUsed: true }, random.createRng(92), 8)
   assert.equal(next.phase, 'playing')
   assert.equal(next.round, 2)
   assert.equal(next.turnsUsed, 0)
   assert.equal(next.totalAttack, 0)
   assert.equal(next.totalDefense, 0)
-  assert.equal(next.savedSteps, 7)
+  // 剩余步数按本轮 maxTurns − turnsUsed 重算（过载核心的依据），不再沿用上回合残留值。
+  assert.equal(next.savedSteps, 0)
   assert.equal(next.fortifyUsed, true)
 }
 

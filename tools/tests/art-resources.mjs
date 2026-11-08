@@ -23,15 +23,20 @@ export async function run() {
       paths.add(art.setEmblem(item.set))
     }
   }
-  for (const def of upgrade.UPGRADE_POOL) paths.add(art.upgradeArtwork(def.effect.type))
+  for (const def of upgrade.UPGRADE_POOL) {
+    assert.ok(Array.isArray(def.effects) && def.effects.length > 0, `${def.id}: effects array`)
+    assert.ok(!Object.hasOwn(def, 'effect'), `${def.id}: no legacy singular effect`)
+    assert.ok(art.CARD_ART_ICONS.includes(def.icon), `${def.id}: registered semantic artwork icon`)
+    paths.add(art.cardArtwork(def.icon))
+  }
   for (const stage of [1, 2, 3, 4, 20]) paths.add(art.stageArtwork(stage))
   paths.add('/static/scenes/camp.png')
   paths.add('/static/scenes/shop.png')
   assert.equal(art.monsterPortrait('not-a-real-enemy'), null)
   assert.equal(art.setEmblem('unknown'), null)
   assert.equal(art.setEmblem('__proto__'), null)
-  assert.equal(art.upgradeArtwork('unknown'), '/static/items/ward.png')
-  assert.equal(art.upgradeArtwork('__proto__'), '/static/items/ward.png')
+  assert.equal(art.cardArtwork('unknown'), '/static/items/ward.png')
+  assert.equal(art.cardArtwork('__proto__'), '/static/items/ward.png')
   assert.equal(art.equipmentArtwork('unknown'), '/static/items/armor.png')
   for (const source of paths) {
     const bytes = fs.readFileSync(path.join(root, source.slice(1)))

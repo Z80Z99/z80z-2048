@@ -13,7 +13,8 @@ export async function run() {
 
   // ── 1. equipCost / upgradeCost must never throw on undefined (crash source) ──
   assert.strictEqual(equipment.equipCost(undefined), 30, 'equipCost(undefined) defaults to common (30)');
-  assert.strictEqual(upgrade.upgradeCost(undefined), 20, 'upgradeCost(undefined) defaults to common (20)');
+  assert.strictEqual(upgrade.upgradeCost(undefined), null, 'unknown cards explicitly have no sale price');
+  assert.strictEqual(upgrade.upgradeCost(null), null, 'missing card definition is safe and not purchasable');
 
   // ── 2. compound-id lookup invariant: baseId prefix must find the definition ──
   // ShopScreen renders `ALL_EQUIPMENT.find(e => e.id === eid.split(':')[0])`.
@@ -25,9 +26,14 @@ export async function run() {
     assert.strictEqual(equipment.equipCost(found), equipment.equipCost(eq), 'cost derived from the resolved def matches');
   }
 
-  // ── 3. normal rarity costs unchanged (behavior preservation) ──
+  // ── 3. equipment rarity costs unchanged; cards use explicit class costs ──
+  assert.strictEqual(equipment.equipCost({ rarity: 'common' }), 30);
   assert.strictEqual(equipment.equipCost({ rarity: 'rare' }), 70);
   assert.strictEqual(equipment.equipCost({ rarity: 'epic' }), 120);
-  assert.strictEqual(upgrade.upgradeCost({ rarity: 'rare' }), 50);
-  assert.strictEqual(upgrade.upgradeCost({ rarity: 'epic' }), 80);
+  for (const [cardClass, cost] of [['white', 20], ['blue', 50], ['gold', 90], ['red', 0], ['purple', null], ['black', null], ['unknown', null]]) {
+    assert.strictEqual(upgrade.upgradeCost({ cardClass }), cost, `${cardClass}: explicit card price`);
+  }
+  for (const rarity of ['common', 'rare', 'epic']) {
+    assert.strictEqual(upgrade.upgradeCost({ rarity }), null, 'legacy equipment rarity cannot assign a card price');
+  }
 }

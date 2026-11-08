@@ -6,43 +6,45 @@ export interface EnemyEntry {
 }
 
 // ====== Stage 1: 地牢入口 ======
+// 前期平衡：防御整体减半（原 4~9 点对低蓄力玩家的减法过狠），攻击/HP 不动。
 const STAGE_1_NORMAL: EnemyEntry[] = [
   { def: { id: 'rat', name: '巨鼠', hp: 28, maxHp: 28, attack: 22, defense: 1, speed: 9, tier: 1 }, minLayer: 1 },
-  { def: { id: 'slime', name: '史莱姆', hp: 38, maxHp: 38, attack: 16, defense: 4, speed: 4, tier: 1 }, minLayer: 1 },
-  { def: { id: 'skeleton', name: '骷髅兵', hp: 44, maxHp: 44, attack: 14, defense: 6, speed: 3, tier: 1 }, minLayer: 2 },
+  { def: { id: 'slime', name: '史莱姆', hp: 38, maxHp: 38, attack: 16, defense: 2, speed: 4, tier: 1 }, minLayer: 1 },
+  { def: { id: 'skeleton', name: '骷髅兵', hp: 44, maxHp: 44, attack: 14, defense: 3, speed: 3, tier: 1 }, minLayer: 2 },
   { def: { id: 'bat', name: '蝙蝠', hp: 24, maxHp: 24, attack: 19, defense: 0, speed: 11, tier: 1 }, minLayer: 2 },
-  { def: { id: 'zombie', name: '僵尸', hp: 52, maxHp: 52, attack: 12, defense: 8, speed: 2, tier: 1 }, minLayer: 4 },
-  { def: { id: 'spider', name: '暗蛛', hp: 32, maxHp: 32, attack: 20, defense: 3, speed: 7, tier: 1 }, minLayer: 5 },
-  { def: { id: 'slime_large', name: '大型史莱姆', hp: 55, maxHp: 55, attack: 15, defense: 5, speed: 3, tier: 1 }, minLayer: 6 },
-  { def: { id: 'ghoul', name: '食尸鬼', hp: 40, maxHp: 40, attack: 20, defense: 3, speed: 6, tier: 1 }, minLayer: 3 },
-  { def: { id: 'crawler', name: '地穴爬行者', hp: 35, maxHp: 35, attack: 16, defense: 4, speed: 8, tier: 1 }, minLayer: 4 },
-  { def: { id: 'bone_archer', name: '骷髅弓箭手', hp: 30, maxHp: 30, attack: 22, defense: 2, speed: 6, tier: 1 }, minLayer: 5 },
-  { def: { id: 'mud_golem', name: '泥魔像', hp: 60, maxHp: 60, attack: 10, defense: 9, speed: 2, tier: 1 }, minLayer: 6 },
-  { def: { id: 'cave_troll', name: '洞穴巨魔', hp: 65, maxHp: 65, attack: 18, defense: 7, speed: 3, tier: 1 }, minLayer: 7 },
+  { def: { id: 'zombie', name: '僵尸', hp: 52, maxHp: 52, attack: 12, defense: 4, speed: 2, tier: 1 }, minLayer: 4 },
+  { def: { id: 'spider', name: '暗蛛', hp: 32, maxHp: 32, attack: 20, defense: 2, speed: 7, tier: 1 }, minLayer: 5 },
+  { def: { id: 'slime_large', name: '大型史莱姆', hp: 55, maxHp: 55, attack: 15, defense: 3, speed: 3, tier: 1 }, minLayer: 6 },
+  { def: { id: 'ghoul', name: '食尸鬼', hp: 40, maxHp: 40, attack: 20, defense: 2, speed: 6, tier: 1 }, minLayer: 3 },
+  { def: { id: 'crawler', name: '地穴爬行者', hp: 35, maxHp: 35, attack: 16, defense: 2, speed: 8, tier: 1 }, minLayer: 4 },
+  { def: { id: 'bone_archer', name: '骷髅弓箭手', hp: 30, maxHp: 30, attack: 22, defense: 1, speed: 6, tier: 1 }, minLayer: 5 },
+  { def: { id: 'mud_golem', name: '泥魔像', hp: 60, maxHp: 60, attack: 10, defense: 5, speed: 2, tier: 1 }, minLayer: 6 },
+  { def: { id: 'cave_troll', name: '洞穴巨魔', hp: 65, maxHp: 65, attack: 18, defense: 4, speed: 3, tier: 1 }, minLayer: 7 },
 ];
 
 const STAGE_1_ELITE: EnemyEntry[] = [
-  { def: { id: 'orc', name: '兽人战士', hp: 65, maxHp: 65, attack: 28, defense: 8, speed: 6, tier: 1 }, minLayer: 3 },
-  { def: { id: 'wraith', name: '幽灵', hp: 42, maxHp: 42, attack: 32, defense: 2, speed: 13, tier: 1 }, minLayer: 5 },
-  { def: { id: 'necromancer', name: '亡灵法师', hp: 38, maxHp: 38, attack: 30, defense: 5, speed: 8, tier: 1 }, minLayer: 4 },
+  { def: { id: 'orc', name: '兽人战士', hp: 65, maxHp: 65, attack: 28, defense: 4, speed: 6, tier: 1 }, minLayer: 3 },
+  { def: { id: 'wraith', name: '幽灵', hp: 42, maxHp: 42, attack: 32, defense: 1, speed: 13, tier: 1 }, minLayer: 5 },
+  { def: { id: 'necromancer', name: '亡灵法师', hp: 38, maxHp: 38, attack: 30, defense: 3, speed: 8, tier: 1 }, minLayer: 4 },
 ];
 
-const STAGE_1_BOSS: EnemyDef = { id: 'boss_rock', name: '岩石巨人', hp: 160, maxHp: 160, attack: 36, defense: 18, speed: 8, tier: 4 };
+const STAGE_1_BOSS: EnemyDef = { id: 'boss_rock', name: '岩石巨人', hp: 130, maxHp: 130, attack: 28, defense: 10, speed: 8, tier: 4 };
 
 // ====== Stage 2: 深渊回廊 ======
+// 前期平衡：普通怪防御整体约 −30%；boss 同步下调。
 const STAGE_2_NORMAL: EnemyEntry[] = [
-  { def: { id: 'golem', name: '石魔像', hp: 70, maxHp: 70, attack: 22, defense: 14, speed: 3, tier: 2 }, minLayer: 1 },
-  { def: { id: 'mage', name: '邪法师', hp: 50, maxHp: 50, attack: 30, defense: 8, speed: 8, tier: 2 }, minLayer: 1 },
+  { def: { id: 'golem', name: '石魔像', hp: 70, maxHp: 70, attack: 22, defense: 10, speed: 3, tier: 2 }, minLayer: 1 },
+  { def: { id: 'mage', name: '邪法师', hp: 50, maxHp: 50, attack: 30, defense: 6, speed: 8, tier: 2 }, minLayer: 1 },
   { def: { id: 'assassin', name: '暗影刺客', hp: 38, maxHp: 38, attack: 36, defense: 1, speed: 14, tier: 2 }, minLayer: 2 },
-  { def: { id: 'specter', name: '幽魂', hp: 45, maxHp: 45, attack: 34, defense: 4, speed: 11, tier: 2 }, minLayer: 3 },
-  { def: { id: 'fire_ele', name: '火元素', hp: 55, maxHp: 55, attack: 28, defense: 6, speed: 9, tier: 2 }, minLayer: 4 },
-  { def: { id: 'cursed_knight', name: '咒缚骑士', hp: 78, maxHp: 78, attack: 26, defense: 12, speed: 5, tier: 2 }, minLayer: 5 },
-  { def: { id: 'dark_mage', name: '暗法师', hp: 48, maxHp: 48, attack: 38, defense: 5, speed: 10, tier: 2 }, minLayer: 6 },
-  { def: { id: 'abyss_worm', name: '深渊蠕虫', hp: 65, maxHp: 65, attack: 24, defense: 10, speed: 4, tier: 2 }, minLayer: 3 },
-  { def: { id: 'shadow_beast', name: '暗影兽', hp: 50, maxHp: 50, attack: 34, defense: 4, speed: 10, tier: 2 }, minLayer: 4 },
-  { def: { id: 'iron_golem', name: '铁魔像', hp: 85, maxHp: 85, attack: 20, defense: 15, speed: 2, tier: 2 }, minLayer: 5 },
-  { def: { id: 'soul_eater', name: '噬魂者', hp: 42, maxHp: 42, attack: 38, defense: 3, speed: 12, tier: 2 }, minLayer: 6 },
-  { def: { id: 'flame_wyrm', name: '烈焰幼龙', hp: 72, maxHp: 72, attack: 32, defense: 8, speed: 8, tier: 2 }, minLayer: 7 },
+  { def: { id: 'specter', name: '幽魂', hp: 45, maxHp: 45, attack: 34, defense: 3, speed: 11, tier: 2 }, minLayer: 3 },
+  { def: { id: 'fire_ele', name: '火元素', hp: 55, maxHp: 55, attack: 28, defense: 4, speed: 9, tier: 2 }, minLayer: 4 },
+  { def: { id: 'cursed_knight', name: '咒缚骑士', hp: 78, maxHp: 78, attack: 26, defense: 8, speed: 5, tier: 2 }, minLayer: 5 },
+  { def: { id: 'dark_mage', name: '暗法师', hp: 48, maxHp: 48, attack: 38, defense: 4, speed: 10, tier: 2 }, minLayer: 6 },
+  { def: { id: 'abyss_worm', name: '深渊蠕虫', hp: 65, maxHp: 65, attack: 24, defense: 7, speed: 4, tier: 2 }, minLayer: 3 },
+  { def: { id: 'shadow_beast', name: '暗影兽', hp: 50, maxHp: 50, attack: 34, defense: 3, speed: 10, tier: 2 }, minLayer: 4 },
+  { def: { id: 'iron_golem', name: '铁魔像', hp: 85, maxHp: 85, attack: 20, defense: 11, speed: 2, tier: 2 }, minLayer: 5 },
+  { def: { id: 'soul_eater', name: '噬魂者', hp: 42, maxHp: 42, attack: 38, defense: 2, speed: 12, tier: 2 }, minLayer: 6 },
+  { def: { id: 'flame_wyrm', name: '烈焰幼龙', hp: 72, maxHp: 72, attack: 32, defense: 6, speed: 8, tier: 2 }, minLayer: 7 },
 ];
 
 const STAGE_2_ELITE: EnemyEntry[] = [
@@ -51,7 +53,7 @@ const STAGE_2_ELITE: EnemyEntry[] = [
   { def: { id: 'plague_bringer', name: '瘟疫使者', hp: 55, maxHp: 55, attack: 36, defense: 6, speed: 11, tier: 2 }, minLayer: 5 },
 ];
 
-const STAGE_2_BOSS: EnemyDef = { id: 'boss_dragon', name: '远古巨龙', hp: 200, maxHp: 200, attack: 50, defense: 22, speed: 14, tier: 4 };
+const STAGE_2_BOSS: EnemyDef = { id: 'boss_dragon', name: '远古巨龙', hp: 170, maxHp: 170, attack: 44, defense: 14, speed: 14, tier: 4 };
 
 // ====== Stage 3: 终焉之间 ======
 const STAGE_3_NORMAL: EnemyEntry[] = [
@@ -267,55 +269,74 @@ export const ROUND_DEF_BONUS = 3;
 export const ROUND_SPD_BONUS = 1;
 
 // ====== Enemy Upgrade Cards ======
-// Enemies inherit player upgrade cards, 1 per stage starting from S2
-import { UPGRADE_POOL } from './upgrade';
-
-export function assignEnemyUpgrades(stage: number, rng: () => number): string[] {
-  const count = stage <= 1 ? 0 : stage - 1;
-  if (count <= 0) return [];
-  const pool = UPGRADE_POOL.filter(u =>
-    u.effect.type !== 'heal' && u.effect.type !== 'bonus_turns' && u.effect.type !== 'starting_tile' && u.effect.type !== 'gold_boost' && u.effect.type !== 'enemy_atk_down'
-  );
-  const result: string[] = [];
-  for (let i = 0; i < count && pool.length > 0; i++) {
-    const idx = Math.floor(rng() * pool.length);
-    result.push(pool[idx].id);
-    pool.splice(idx, 1);
-  }
-  return result;
+// 敌人独立使用旧版十三种强化；玩家六色卡牌重设计绝不能改变敌人数值或抽选顺序。
+type EnemyUpgradeType = 'attack_multiplier' | 'defense_multiplier' | 'spawn_reduction' | 'max_hp'
+interface EnemyUpgradeDef {
+  readonly id: string
+  readonly name: string
+  readonly type: EnemyUpgradeType
+  readonly value: number
 }
 
-// 敌人沿用玩家强化名称，但属性算法不同；展示必须与 applyEnemyUpgradeStats 对齐。
+export const ENEMY_UPGRADE_POOL: readonly Readonly<EnemyUpgradeDef>[] = Object.freeze([
+  { id: 'atk_up_1', name: '攻击强化', type: 'attack_multiplier', value: 0.2 },
+  { id: 'def_up_1', name: '防御强化', type: 'defense_multiplier', value: 0.2 },
+  { id: 'max_hp_1', name: '生命训练', type: 'max_hp', value: 10 },
+  { id: 'spawn_red_1', name: '灵活身法', type: 'spawn_reduction', value: 0.1 },
+  { id: 'max_hp_3', name: '生命强化', type: 'max_hp', value: 20 },
+  { id: 'atk_up_2', name: '强力攻击', type: 'attack_multiplier', value: 0.35 },
+  { id: 'def_up_2', name: '铜墙铁壁', type: 'defense_multiplier', value: 0.35 },
+  { id: 'max_hp_2', name: '顽强生命', type: 'max_hp', value: 30 },
+  { id: 'spawn_red_2_5', name: '灵巧闪避', type: 'spawn_reduction', value: 0.18 },
+  { id: 'atk_up_3', name: '毁灭之力', type: 'attack_multiplier', value: 0.5 },
+  { id: 'def_up_3', name: '不朽之盾', type: 'defense_multiplier', value: 0.5 },
+  { id: 'spawn_red_2', name: '幻影步法', type: 'spawn_reduction', value: 0.25 },
+  { id: 'max_hp_4', name: '不灭之躯', type: 'max_hp', value: 50 },
+].map(def => Object.freeze(def as EnemyUpgradeDef)))
+const ENEMY_UPGRADE_BY_ID = new Map(ENEMY_UPGRADE_POOL.map(def => [def.id, def]))
+
+export function assignEnemyUpgrades(stage: number, rng: () => number): string[] {
+  const count = stage <= 1 ? 0 : Math.min(stage - 1, ENEMY_UPGRADE_POOL.length)
+  if (count <= 0) return []
+  const pool = [...ENEMY_UPGRADE_POOL]
+  const result: string[] = []
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const idx = Math.floor(rng() * pool.length)
+    result.push(pool[idx].id)
+    pool.splice(idx, 1)
+  }
+  return result
+}
+
+export function getEnemyUpgradeName(upgradeId: string): string {
+  return ENEMY_UPGRADE_BY_ID.get(upgradeId)?.name ?? '未知敌人强化'
+}
+
+// 展示与独立的旧版属性算法对齐，而不是借用玩家的同名新卡牌描述。
 export function getEnemyUpgradeDescription(upgradeId: string): string {
-  const upgrade = UPGRADE_POOL.find(u => u.id === upgradeId)
+  const upgrade = ENEMY_UPGRADE_BY_ID.get(upgradeId)
   if (!upgrade) return '未知敌人强化'
-  const { type, value } = upgrade.effect
-  if (!Number.isFinite(value)) return '敌人强化数值无效'
+  const { type, value } = upgrade
   const percent = (amount: number) => `${amount >= 0 ? '+' : ''}${Number(amount.toFixed(2))}%`
   switch (type) {
     case 'attack_multiplier': return `攻击${percent(value * 100)}`
     case 'defense_multiplier':
     case 'spawn_reduction': return `防御${percent(value * 100)}`
     case 'max_hp': return `生命上限${percent(value)}`
-    case 'enemy_atk_down': return `攻击${percent(-value * 100)}`
-    default: return '该强化不改变敌人属性'
   }
 }
 
-// Apply enemy upgrade effects to stats
 export function applyEnemyUpgradeStats(upgradeIds: string[], atk: number, def: number, spd: number, hp: number): { atk: number; def: number; spd: number; hp: number } {
-  let a = atk, d = def, s = spd, h = hp;
+  let a = atk, d = def, h = hp
   for (const id of upgradeIds) {
-    const u = UPGRADE_POOL.find(x => x.id === id);
-    if (!u) continue;
-    switch (u.effect.type) {
-      case 'attack_multiplier': a = Math.floor(a * (1 + u.effect.value)); break;
-      case 'defense_multiplier': d = Math.floor(d * (1 + u.effect.value)); break;
-      case 'spawn_reduction': d = Math.floor(d * (1 + u.effect.value)); break;
-      case 'max_hp': h = Math.floor(h * (1 + u.effect.value / 100)); break;
-      case 'enemy_atk_down': a = Math.floor(a * (1 - u.effect.value)); break;
-      case 'gold_boost': break; // just means more gold on death
+    const upgrade = ENEMY_UPGRADE_BY_ID.get(id)
+    if (!upgrade) continue
+    switch (upgrade.type) {
+      case 'attack_multiplier': a = Math.floor(a * (1 + upgrade.value)); break
+      case 'defense_multiplier':
+      case 'spawn_reduction': d = Math.floor(d * (1 + upgrade.value)); break
+      case 'max_hp': h = Math.floor(h * (1 + upgrade.value / 100)); break
     }
   }
-  return { atk: a, def: d, spd: s, hp: h };
+  return { atk: a, def: d, spd, hp: h }
 }

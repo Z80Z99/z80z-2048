@@ -126,12 +126,12 @@ export function spawnTileWithValue(grid: Cell[][], rng: () => number, value: num
   return newGrid
 }
 
-export function spawnTile(grid: Cell[][], rng: () => number): SpawnResult {
+export function spawnTile(grid: Cell[][], rng: () => number, fourChance = 0.1): SpawnResult {
   const empty = emptyPositions(grid)
   if (empty.length === 0) return { grid, spawnedValue: 0, spawned: false }
   reserveIds(grid)
   const { r, c } = empty[Math.floor(rng() * empty.length)]
-  const value = rng() < 0.9 ? 2 : 4
+  const value = rng() < 1 - fourChance ? 2 : 4
   const newGrid = grid.map(row => row.map(copyCell))
   newGrid[r][c] = createCell(value, true)
   return { grid: newGrid, spawnedValue: value, spawned: true }
@@ -143,9 +143,12 @@ export function initGrid(rng: () => number): Cell[][] {
 }
 
 // 回合间只改变数值，保留棋子身份；新的回合不重播上次合并特效。
-export function halveGridTiles(grid: Cell[][]): Cell[][] {
-  return grid.map(row => row.map(cell => ({
-    ...resetCell(cell),
-    value: cell.value === 0 ? 0 : Math.max(2, Math.floor(cell.value / 2)),
-  })))
+// protectChance > 0 时每个非空方块消耗一次 rng，命中则本回合不减半（减半护佑）。
+export function halveGridTiles(grid: Cell[][], rng: () => number, protectChance = 0): Cell[][] {
+  return grid.map(row => row.map(cell => {
+    const reset = resetCell(cell)
+    if (cell.value === 0) return { ...reset, value: 0 }
+    if (protectChance > 0 && rng() < protectChance) return { ...reset, value: cell.value }
+    return { ...reset, value: Math.max(2, Math.floor(cell.value / 2)) }
+  }))
 }

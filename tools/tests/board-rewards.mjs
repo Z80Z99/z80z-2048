@@ -4,7 +4,8 @@ export async function run() {
   const { loadProject } = await import('../harness.mjs')
   const board = loadProject('./core/board')
   const { createRng } = loadProject('./core/random')
-  const { pickUpgrades, UPGRADE_POOL } = loadProject('./core/upgrade')
+  const { pickUpgrades, UPGRADE_POOL, CARD_CLASSES, NORMAL_CARD_CLASSES } = loadProject('./core/upgrade')
+  const { rollRewardChoices } = loadProject('./store/helpers')
   const grid = board.createEmptyGrid()
   grid[0][0].value = 2
   grid[0][2].value = 2
@@ -30,14 +31,30 @@ export async function run() {
   const result = board.spawnTile(left.grid, createRng(4))
   assert.equal(values(result.grid), values(left.grid) + result.spawnedValue)
 
-  // 奖励池有限终止、Boss 三选一不会被普通奖励的两张史诗上限卡住。
-  const boss = pickUpgrades(() => 0, [], {}, 3, true, 1, 'epic')
+  // 六色奖励有限终止：Boss 按金卡分类三选一，不再有史诗数量或持有上限。
+  assert.deepEqual(CARD_CLASSES, ['white', 'blue', 'gold', 'red', 'purple', 'black'])
+  assert.deepEqual(NORMAL_CARD_CLASSES, ['white', 'blue', 'gold'])
+  for (const def of UPGRADE_POOL) {
+    assert.ok(!Object.hasOwn(def, 'rarity'), `${def.id}: cards do not use equipment rarity`)
+    assert.ok(!Object.hasOwn(def, 'maxStacks'), `${def.id}: no per-card stack cap`)
+  }
+  const boss = pickUpgrades(() => 0, { count: 3, excludeHeal: true, allowedClasses: ['gold'] })
   assert.equal(boss.length, 3)
-  assert.ok(boss.every(u => u.rarity === 'epic'))
-  const exhausted = Object.fromEntries(UPGRADE_POOL.map(u => [u.id, u.maxStacks]))
-  assert.deepEqual(pickUpgrades(() => 0, [], exhausted, 3, true), [])
-  const capped = pickUpgrades(() => 0, [], {}, 5, true)
-  assert.ok(capped.filter(u => u.rarity === 'epic').length <= 2)
-  const maxHpOwned = pickUpgrades(createRng(7), ['max_hp_1'], { max_hp_1: 1 }, 30, true, 1)
-  assert.ok(maxHpOwned.every(u => u.effect.type !== 'heal'), 'full HP never re-enables heal cards')
+  assert.deepEqual(boss.map(u => u.id), ['gold_combo', 'gold_merge_armor', 'gold_carry'])
+  assert.ok(boss.every(u => u.cardClass === 'gold' && u.kind === 'persistent'))
+  const allGold = pickUpgrades(() => 0, { count: 10, allowedClasses: ['gold'] })
+  assert.equal(allGold.length, 8, 'all eight gold cards are eligible, with no old two-epic cap')
+  assert.equal(new Set(allGold.map(u => u.id)).size, allGold.length)
+  const owned = UPGRADE_POOL.map(def => ({ def, count: 1000000 }))
+  const repeatable = rollRewardChoices(createRng(7), owned, { count: UPGRADE_POOL.length + 5, excludeHeal: true })
+  const safePersistent = UPGRADE_POOL.filter(u => NORMAL_CARD_CLASSES.includes(u.cardClass) && u.kind === 'persistent')
+  assert.deepEqual(repeatable.map(u => u.id).sort(), safePersistent.map(u => u.id).sort(), 'large owned counts never exhaust future rewards')
+  assert.equal(new Set(repeatable.map(u => u.id)).size, repeatable.length, 'one offer still contains unique IDs')
+  assert.ok(repeatable.every(u => !['red', 'purple', 'black'].includes(u.cardClass)), 'safe rewards exclude risk, curse and doom')
+  for (const count of [Infinity, NaN, -1, 0]) {
+    assert.deepEqual(pickUpgrades(() => { throw new Error('invalid count consumed RNG') }, { count }), [])
+  }
+  assert.deepEqual(pickUpgrades(() => { throw new Error('empty pool consumed RNG') }, { allowedClasses: [] }), [])
+  const maxHpOwned = rollRewardChoices(createRng(7), [{ def: UPGRADE_POOL.find(u => u.id === 'max_hp_1'), count: 1 }], { count: 30, excludeHeal: true, hpRatio: 1 })
+  assert.ok(maxHpOwned.every(u => u.kind !== 'instant' && u.effects.every(effect => effect.type !== 'heal')), 'full HP never re-enables heal cards')
 }

@@ -1,0 +1,3 @@
+# 历史 JSON 原始字节参与回归哈希，所有平台检出时必须保持 LF。
+tools/*.json text eol=lf
+tools/baselines/*.json text eol=lf

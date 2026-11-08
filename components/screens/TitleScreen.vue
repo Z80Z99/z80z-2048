@@ -1,29 +1,30 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useGameStore } from '../../store/gameStore'
 import { DEBUG_ENABLED } from '../../store/debugActions'
+import { useMotionPreference } from '../../composables/useMotionPreference'
+import { useModalMotion } from '../../composables/usePanelMotion'
 import BestiaryPanel from '../BestiaryPanel.vue'
 
 const emit = defineEmits<{ 'open-debug': []; 'open-rules': [] }>()
 const store = useGameStore()
-const showBestiary = ref(false)
+const bestiary = useModalMotion(useMotionPreference())
 </script>
 
 <template>
   <view class="screen title-screen">
     <view class="title-top"><text class="title-edition">2048 · 地牢冒险</text><button role="button" class="title-theme" @click="store.TOGGLE_THEME()">{{ store.theme === 'dark' ? '浅色模式' : '深色模式' }}</button></view>
-    <view class="title-main-content">
+    <view class="title-main-content ui-entry">
       <view class="title-gate" aria-hidden="true"><view class="title-gate-inner"><view class="title-rune"><text>2</text><text>4</text><text>8</text><text class="title-rune-bright">16</text></view><view class="title-stair title-stair-one" /><view class="title-stair title-stair-two" /><view class="title-stair title-stair-three" /></view></view>
       <view class="title-brand"><text class="ui-kicker">每次合并，都是一次抉择</text><text class="title-logo">Z80Z</text><text class="title-tagline">把数字化为力量，向地牢深处进发。</text></view>
       <view class="title-actions">
         <button role="button" class="ui-btn title-start" @click="store.START_RUN()"><text>开始冒险</text><text class="title-start-arrow">→</text></button>
-        <view class="title-secondary"><button role="button" class="ui-btn ui-btn-secondary" @click="showBestiary = true">怪物图鉴</button><button role="button" class="ui-btn ui-btn-secondary" @click="store.GO_TO_META_SHOP()">永久升级</button></view>
+        <view class="title-secondary"><button role="button" class="ui-btn ui-btn-secondary" @click="bestiary.open()">怪物图鉴</button><button role="button" class="ui-btn ui-btn-secondary" @click="store.GO_TO_META_SHOP()">永久升级</button></view>
         <button role="button" class="title-rules" @click="emit('open-rules')">第一次来？查看冒险指南</button>
       </view>
       <view class="title-footer"><view class="title-footer-rule" /><text>{{ store.meta.totalRuns }} 次冒险 · {{ store.meta.totalGold }} 灵魂碎片</text><view class="title-footer-rule" /></view>
       <button role="button" v-if="DEBUG_ENABLED" class="title-dev" @click="emit('open-debug')">开发调试</button>
     </view>
-    <BestiaryPanel v-if="showBestiary" @close="showBestiary = false" />
+    <view v-if="bestiary.mounted.value" class="ui-modal-host" :class="{ 'ui-motion-closing': bestiary.closing.value }"><BestiaryPanel @close="bestiary.close()" /></view>
   </view>
 </template>
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useGameStore } from '../store/gameStore'
-import { ENEMIES, getEnemyIcon, getEnemyFallbackIcon } from '../core/enemy'
+import { ENEMIES, getEnemyIcon, getEnemyFallbackIcon, getEnemyUpgradeName, getEnemyUpgradeDescription } from '../core/enemy'
 import type { EnemyDef } from '../types'
 
 const emit = defineEmits<{ close: [] }>()
@@ -43,6 +43,7 @@ function imageIcon(enemy: EnemyDef) { return /^(\/|\.\/|data:image)/.test(portra
       <view v-for="group in groups" :key="group.name" class="bestiary-group"><text class="bestiary-group-title">{{ group.name }}</text>
         <view v-for="enemy in group.enemies" :key="enemy.id" class="bestiary-card" :class="{ 'bestiary-locked': !unlocked(enemy.id) }">
           <view class="bestiary-card-main"><view class="bestiary-portrait"><template v-if="unlocked(enemy.id)"><image v-if="imageIcon(enemy)" class="bestiary-image" :src="portrait(enemy)" mode="aspectFit" @error="failedPortraits[enemy.id] = true" /><text v-else>{{ portrait(enemy) }}</text></template><text v-else>?</text></view><view class="bestiary-identity"><text class="bestiary-name">{{ unlocked(enemy.id) ? enemy.name : '未发现的生物' }}</text><view v-if="unlocked(enemy.id)" class="bestiary-stats"><text class="stat-hp">生命 {{ enemy.maxHp }}</text><text class="stat-attack">攻击 {{ enemy.attack }}</text><text class="stat-defense">防御 {{ enemy.defense }}</text><text class="stat-speed">速度 {{ enemy.speed }}</text></view><text v-else class="ui-note">击败后解锁记录</text></view></view>
+          <view v-if="unlocked(enemy.id) && enemy.enemyUpgrades?.length" class="bestiary-traits"><text v-for="id in enemy.enemyUpgrades" :key="id" class="ui-note">{{ getEnemyUpgradeName(id) }}：{{ getEnemyUpgradeDescription(id) }}</text></view>
           <view v-if="unlocked(enemy.id)" class="bestiary-card-footer"><view class="bestiary-kills"><text>{{ kills(enemy.id) }} / {{ goal(enemy.id) }} 次击杀</text><view class="bestiary-progress"><view :style="{ width: `${progress(enemy.id)}%` }" /></view></view><button role="button" class="bestiary-claim" :disabled="!claimable(enemy.id)" @click="store.CLAIM_BESTIARY_REWARD('enemy', enemy.id)">{{ claimable(enemy.id) ? '领取 3 碎片' : '再遇，再战' }}</button></view>
         </view>
       </view>
@@ -73,6 +74,7 @@ function imageIcon(enemy: EnemyDef) { return /^(\/|\.\/|data:image)/.test(portra
 .bestiary-identity { flex: 1; min-width: 0; }
 .bestiary-name { display: block; font-size: 30rpx; font-weight: 800; line-height: 1.4; color: var(--text); margin-bottom: 10rpx; }
 .bestiary-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6rpx 14rpx; font-size: 24rpx; }
+.bestiary-traits { margin-top: 12rpx; padding: 12rpx 0; border-top: 1px solid var(--line); }
 .bestiary-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; margin-top: 18rpx; padding-top: 16rpx; border-top: 1px solid var(--line); }
 .bestiary-kills { flex: 1; min-width: 0; color: var(--muted); font-size: 24rpx; }
 .bestiary-kills .bestiary-progress { margin-top: 8rpx; }

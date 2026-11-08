@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { EquipSlot } from '../core/equipment'
-import type { UpgradeEffect, UpgradeRarity } from '../types'
-import { equipmentArtwork, upgradeArtwork, setEmblem } from '../utils/artwork'
+import type { EquipRarity } from '../types'
+import { equipmentArtwork, setEmblem } from '../utils/artwork'
 
 const props = withDefaults(defineProps<{
   slot?: EquipSlot
   setId?: string
-  upgradeType?: UpgradeEffect['type']
-  rarity?: UpgradeRarity
+  rarity?: EquipRarity
   size?: 'small' | 'normal' | 'large'
   showQuality?: boolean
 }>(), { rarity: 'common', size: 'normal', showQuality: true })
-const source = computed(() => props.upgradeType ? upgradeArtwork(props.upgradeType) : equipmentArtwork(props.slot))
+const source = computed(() => equipmentArtwork(props.slot))
 const badge = computed(() => setEmblem(props.setId))
 const imageFailed = ref(false)
 const badgeFailed = ref(false)

@@ -16,7 +16,10 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export type NodeType = 'start' | 'battle' | 'elite' | 'shop' | 'rest' | 'boss' | 'event';
 
-export type UpgradeRarity = 'common' | 'rare' | 'epic';
+export type EquipRarity = 'common' | 'rare' | 'epic';
+// 仅用于旧装备接口互操作，卡牌不得使用该稀有度。
+export type UpgradeRarity = EquipRarity;
+export type CardClass = 'white' | 'blue' | 'gold' | 'red' | 'purple' | 'black';
 
 // ---- 2048 Board ----
 
@@ -66,6 +69,10 @@ export interface RoundResult {
   avoidReason?: 'dodge' | 'skip' | 'defense' | 'kill' | null;
   fortifyUsed?: boolean;
   fortifyTriggered?: boolean;
+  curseDamage?: number;
+  extraDamage?: number;
+  enemyHealing?: number;
+  attackCount?: number;
 }
 
 export interface BattleState {
@@ -84,6 +91,19 @@ export interface BattleState {
   equipEffects?: Partial<EquipSetEffects>;
   fortifyUsed?: boolean;
   totalTurns?: number;
+  cardModifiers?: CardModifiers;
+  roundModifiers?: Partial<CardModifiers>;
+  battleModifiers?: Partial<CardModifiers>;
+  startingPointsPending?: number;
+  startingPointsGranted?: number;
+  startingPointsPlaced?: number;
+  comboStreak?: number;
+  mergeCount?: number;
+  mechanicArmor?: number;
+  carryArmor?: number;
+  lastMergedSum?: number;
+  lastMoveDamage?: number;
+  baseTurns?: number;
 }
 
 export type CombatAttribute = 'attack' | 'defense' | 'speed';
@@ -159,13 +179,71 @@ export type UpgradeEffect =
   | { type: 'enemy_atk_down'; value: number }
   | { type: 'gold_boost'; value: number };
 
+export interface CardModifiers {
+  attackBonus: number;
+  defenseBonus: number;
+  maxHpBonus: number;
+  goldBonus: number;
+  xpBonus: number;
+  bonusTurns: number;
+  mergeCoefficient: number;
+  spawnArmor: number;
+  startingPoints: number;
+  comboBonus: number;
+  mergeArmor: number;
+  armorCarry: number;
+  lifestealRating: number;
+  burstCoefficient: number;
+  vulnerability: number;
+  bleed: number;
+  extraStrikeRating: number;
+  backlash: number;
+  burn: number;
+  healingPenalty: number;
+  chargeLoss: number;
+  soulRecoil: number;
+  enemyRegen: number;
+  comboGrace: number;
+  executeRating: number;
+  critRating: number;
+  savedStepsCharge: number;
+  chargeStart: number;
+  spawnLuck: number;
+  halveShield: number;
+  greedRating: number;
+  heavyLegs: number;
+  armorErosion: number;
+  enemyRage: number;
+}
+
+export interface CardEffect {
+  type: keyof CardModifiers | 'heal';
+  value: number;
+  polarity: 'positive' | 'negative';
+  scope: 'stat' | 'parameter' | 'mechanic';
+  description: string;
+}
+
 export interface UpgradeDef {
   id: string;
   name: string;
   description: string;
-  rarity: UpgradeRarity;
-  effect: UpgradeEffect;
-  maxStacks: number;
+  cardClass: CardClass;
+  kind: 'persistent' | 'instant';
+  effects: CardEffect[];
+  icon: string;
+}
+
+export interface ConsumableDef {
+  id: string;
+  name: string;
+  description: string;
+  cardClass: 'blue' | 'gold' | 'red';
+  duration: 'round' | 'battle' | 'instant';
+  icon: string;
+  price: number;
+  effects: CardEffect[];
+  cleanse?: boolean;
 }
 
 export interface ActiveUpgrade {
@@ -184,8 +262,7 @@ export interface PlayerStats {
   flatDefense: number;
   bonusTurns: number;
   baseMaxTurns: number;
-  spawnReduction: number;
-  enemyAtkDown: number;
+  spawnArmor: number;
   goldBoost: number;
   xpBoost: number;
   baseSpeed: number;
@@ -225,7 +302,7 @@ export interface MetaUpgradeDef {
 
 export interface RewardRequest {
   reason: 'start' | 'levelup' | 'elite' | 'boss';
-  minRarity?: UpgradeRarity;
+  allowedClasses?: CardClass[];
 }
 
 export interface GameState {
@@ -244,13 +321,18 @@ export interface GameState {
   shopUpgrades: (string | null)[];
   shopEquipment: (string | null)[];
   shopHeals: (string | null)[];
+  consumableCounts: Record<string, number>;
+  shopConsumables: (string | null)[];
+  restUsed: boolean;
+  restResult: string | null;
+  eventBlackConfirmed: boolean;
   shopRefreshCost: number;
   shopRefreshCount: number;
   shopRemoveCost: number;
   shopRemoveUsed: boolean;
   stage: number;
   gameEvent: { id: string; title: string; icon: string; desc: string; choices: { label: string; tooltip?: string; effect: Record<string, any> }[] } | null;
-  eventResult: { label: string; desc: string; choiceIndex: number; effect: Record<string, any> } | null;
+  eventResult: { label: string; desc: string; choiceIndex: number; effect: Record<string, any>; requiresBlackConfirmation?: boolean } | null;
   meta: MetaState;
   runSeed: number;
   runOutcome: 'victory' | 'defeat' | null;

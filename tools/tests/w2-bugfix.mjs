@@ -59,9 +59,11 @@ export async function run() {
     speed: 0,
     enemyUpgrades: [],
   };
+  store.battle.baseTurns = 6;
   store.battle.maxTurns = 10;
   store.battle.turnsUsed = 0;
-  store.battle.savedSteps = 0;
+  store.battle.round = 3;
+  store.battle.savedSteps = 11; // Prior rounds must not inflate killing-round rewards.
   store.player.hp = 100;
   store.player.maxHp = 100;
   store.player.gold = 0;
@@ -72,10 +74,13 @@ export async function run() {
   store.END_TURN_EARLY();
 
   // ── Then: use the real, additive treasure reward multipliers ─────
-  // Gold = floor(15 * (1 + .40 gear + .25 set)) + 10 saved steps * 2 = 44.
+  // Gold = floor(15 * (1 + .40 gear + .25 set)) + 6 unused base steps * 2 = 36.
+  // The four extra steps and eleven saved steps from prior rounds earn nothing.
   // XP = floor((8 + floor(9999 / 8)) * (1 + .30 set)) = 1634.
-  assert.equal(store.player.gold, 44, 'treasure gold includes gear + set percentages, not doubling');
-  assert.equal(store.battle.result.goldEarned, 44, 'recorded gold matches the amount awarded');
+  assert.equal(store.player.gold, 36, 'treasure gold includes gear + set percentages and unused base steps, not doubling');
+  assert.equal(store.battle.result.goldEarned, 36, 'recorded gold matches the amount awarded');
+  assert.equal(store.battle.result.savedSteps, 6, 'only unused base steps in the killing round count');
+  assert.equal(store.battle.result.totalRounds, 3, 'prior rounds are retained but do not accumulate step gold');
   assert.equal(store.battle.result.xpEarned, 1634, 'treasure grants its actual +30% XP bonus');
 
   // ── And: bestiary meta updated (was missing on old END_TURN_EARLY) ──

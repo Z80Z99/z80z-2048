@@ -44,25 +44,29 @@ export async function run() {
   {
     // Given: a seeded Mulberry32 RNG with seed=42
     const rng = random.createRng(42);
-    // When: pickUpgrades(rng, [], {}, 3, true, 1)
-    const result = upgrade.pickUpgrades(rng, [], {}, 3, true, 1);
+    // When: full-HP rewards exclude instant healing and use the safe sixcolor pool.
+    const result = upgrade.pickUpgrades(rng, { count: 3, excludeHeal: true, hpRatio: 1 });
     // Then: exact 3 ids are stable across runs
     assert.strictEqual(result.length, 3, 'pickUpgrades count');
     assert.deepStrictEqual(
       result.map(u => u.id),
-      ['spawn_red_2', 'bonus_turn_1', 'atk_up_3'],
-      'pickUpgrades seeded ids'
+      ['start_tile_1', 'spawn_luck_1', 'gold_1'],
+      'pickUpgrades seeded sixcolor ids'
     );
+    assert.deepStrictEqual(result.map(u => u.cardClass), ['blue', 'blue', 'white']);
+    const gold = upgrade.pickUpgrades(random.createRng(42), { count: 3, allowedClasses: ['gold'] });
+    assert.deepStrictEqual(gold.map(u => u.id), ['gold_lifesteal', 'gold_execute', 'gold_combo_grace'], 'seeded boss gold ids');
+    assert.ok(gold.every(u => u.cardClass === 'gold' && u.kind === 'persistent'));
   }
 
-  // ── 3. price ternaries (rarity → cost) ────────────────────────
+  // ── 3. card class prices / unchanged equipment rarity prices ──
   {
-    // Given: the CURRENT inline cost ternaries in BUY_SHOP_UPGRADE
-    //   common: 20, rare: 50, epic: 80
-    const upgradeCosts = { common: 20, rare: 50, epic: 80 };
-    assert.strictEqual(upgradeCosts.common, 20, 'upgrade common cost');
-    assert.strictEqual(upgradeCosts.rare, 50, 'upgrade rare cost');
-    assert.strictEqual(upgradeCosts.epic, 80, 'upgrade epic cost');
+    // Approved redesign: white 20, blue 50, gold 90; red is a risk grant,
+    // not a normal sale. Curses, doom and unknown definitions have no price.
+    for (const [cardClass, cost] of [['white', 20], ['blue', 50], ['gold', 90], ['red', 0], ['purple', null], ['black', null], ['unknown', null]]) {
+      assert.strictEqual(upgrade.upgradeCost({ cardClass }), cost, `card ${cardClass} cost`);
+    }
+    assert.strictEqual(upgrade.upgradeCost(undefined), null);
 
     // Given: the CURRENT inline cost ternaries in BUY_SHOP_EQUIP
     //   common: 30, rare: 70, epic: 120

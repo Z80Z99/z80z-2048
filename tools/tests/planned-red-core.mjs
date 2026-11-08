@@ -21,22 +21,35 @@ export async function run() {
     assert.deepStrictEqual(r2, { xp: 14, level: 2, next: 37 });
   }
 
-  // ── 2. upgradeCost / equipCost / rarityText ───────────────────────
+  // ── 2. sixcolor card costs / unchanged equipment rarity costs ────
   {
     const upgrade = loadProject('./core/upgrade');
     const equipment = loadProject('./core/equipment');
 
-    assert.strictEqual(upgrade.upgradeCost({ rarity: 'common' }), 20);
-    assert.strictEqual(upgrade.upgradeCost({ rarity: 'rare' }), 50);
-    assert.strictEqual(upgrade.upgradeCost({ rarity: 'epic' }), 80);
+    for (const [cardClass, cost] of [['white', 20], ['blue', 50], ['gold', 90], ['red', 0], ['purple', null], ['black', null]]) {
+      assert.strictEqual(upgrade.upgradeCost({ cardClass }), cost);
+    }
+    assert.strictEqual(upgrade.upgradeCost(undefined), null);
+    assert.strictEqual(upgrade.upgradeCost({ cardClass: 'unknown' }), null);
 
     assert.strictEqual(equipment.equipCost({ rarity: 'common' }), 30);
     assert.strictEqual(equipment.equipCost({ rarity: 'rare' }), 70);
     assert.strictEqual(equipment.equipCost({ rarity: 'epic' }), 120);
 
-    assert.strictEqual(upgrade.rarityText('common'), '普通');
-    assert.strictEqual(upgrade.rarityText('rare'), '稀有');
-    assert.strictEqual(upgrade.rarityText('epic'), '史诗');
+    for (const [cardClass, text] of [['white', '白色·属性'], ['blue', '蓝色·参数'], ['gold', '金色·机制'], ['red', '红色·风险'], ['purple', '紫色·诅咒'], ['black', '黑色·宿命']]) {
+      assert.strictEqual(upgrade.cardClassText(cardClass), text);
+    }
+    assert.strictEqual(upgrade.cardClassText('unknown'), '未知卡牌');
+    for (const [id, amount] of [['heal_1', 12], ['heal_2', 30]]) {
+      const heal = upgrade.cardById(id);
+      assert.strictEqual(heal.cardClass, 'white');
+      assert.strictEqual(heal.kind, 'instant', 'heals are immediate, not held cards');
+      assert.strictEqual(heal.effects.length, 1);
+      assert.strictEqual(heal.effects[0].type, 'heal');
+      assert.strictEqual(heal.effects[0].value, amount);
+      assert.strictEqual(heal.effects[0].polarity, 'positive');
+      assert.ok(!Object.hasOwn(heal, 'effect') && !Object.hasOwn(heal, 'rarity') && !Object.hasOwn(heal, 'maxStacks'));
+    }
   }
 
   // ── 3. resolveRound determinism contract ──────────────────────────

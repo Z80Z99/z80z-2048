@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, inject } from 'vue'
+import ExpandPanel from './ExpandPanel.vue'
+import { useFeedback } from '../composables/useFeedback'
+import { useMotionPreference } from '../composables/useMotionPreference'
 import type { EnemyDef } from '../types'
-import { getEnemyIcon, getEnemyFallbackIcon, getEnemyUpgradeDescription } from '../core/enemy'
-import { UPGRADE_POOL } from '../core/upgrade'
+import { getEnemyIcon, getEnemyFallbackIcon, getEnemyUpgradeDescription, getEnemyUpgradeName } from '../core/enemy'
 
 const props = defineProps<{ enemy: EnemyDef; currentHp: number; attack: number; defense: number; speed: number; round: number; kind?: string }>()
 const hpPercent = computed(() => Math.max(0, Math.min(100, props.currentHp / Math.max(1, props.enemy.maxHp) * 100)))
@@ -11,13 +13,19 @@ watch(() => props.enemy.id, () => { portraitFailed.value = false })
 const portrait = computed(() => portraitFailed.value ? getEnemyFallbackIcon(props.enemy.id) : getEnemyIcon(props.enemy))
 const portraitIsImage = computed(() => /^(\/|\.\/|data:image)/.test(portrait.value))
 const rank = computed(() => props.kind === 'boss' || props.enemy.id.startsWith('boss_') ? '守关首领' : props.kind === 'elite' ? '精英敌人' : '遭遇敌人')
-const traits = computed(() => (props.enemy.enemyUpgrades ?? []).map(id => UPGRADE_POOL.find(upgrade => upgrade.id === id)).filter(Boolean))
+const traits = computed(() => (props.enemy.enemyUpgrades ?? []).map(id => ({ id, name: getEnemyUpgradeName(id) })))
+const reduced = useMotionPreference()
+const damageFeedback = useFeedback(600)
+const showHelp = inject<((key: string) => void) | null>('show-attribute-help', null)
+const explain = (key: string) => showHelp?.(key)
 const showTraits = ref(false)
 const hit = ref(false)
 let hitTimer: ReturnType<typeof setTimeout> | undefined
 watch(() => props.currentHp, (hp, oldHp) => {
   if (hp >= oldHp) return
   if (hitTimer) clearTimeout(hitTimer)
+  damageFeedback.show(`−${oldHp - hp}`)
+  if (reduced.value) return
   hit.value = true
   hitTimer = setTimeout(() => { hit.value = false }, 260)
 })
@@ -37,26 +45,27 @@ onUnmounted(() => { if (hitTimer) clearTimeout(hitTimer) })
             <text class="enemy-name">{{ enemy.name }}</text>
             <button role="button" class="enemy-traits-toggle" :aria-expanded="showTraits" aria-controls="enemy-stat-details" @click="showTraits = !showTraits">{{ traits.length ? `能力 ${traits.length}` : '详情' }} {{ showTraits ? '−' : '+' }}</button>
           </view>
-          <view class="enemy-hp-row"><text class="enemy-rank">{{ rank }}</text><text class="enemy-hp-num">生命 {{ currentHp }} / {{ enemy.maxHp }}</text></view>
+          <view class="enemy-hp-row" role="button" aria-label="查看敌人生命说明" @click="explain('enemy.hp')"><text class="enemy-rank">{{ rank }}</text><text class="enemy-hp-num">生命 {{ currentHp }} / {{ enemy.maxHp }}</text></view>
           <view class="enemy-hp-track"><view class="enemy-hp-fill" :style="{ width: `${hpPercent}%` }" /></view>
         </view>
       </view>
       <view class="enemy-stats">
-        <view class="enemy-stat"><text class="enemy-stat-label">攻击</text><text class="enemy-stat-value stat-attack">{{ attack }}</text></view>
-        <view class="enemy-stat"><text class="enemy-stat-label">有效防御</text><text class="enemy-stat-value stat-defense">{{ defense }}</text></view>
-        <view class="enemy-stat"><text class="enemy-stat-label">速度</text><text class="enemy-stat-value stat-speed">{{ speed }}</text></view>
+        <view class="enemy-stat" role="button" aria-label="查看敌人攻击说明" @click="explain('enemy.attack')"><text class="enemy-stat-label">攻击</text><text class="enemy-stat-value stat-attack">{{ attack }}</text></view>
+        <view class="enemy-stat" role="button" aria-label="查看敌人防御说明" @click="explain('enemy.defense')"><text class="enemy-stat-label">防御</text><text class="enemy-stat-value stat-defense">{{ defense }}</text></view>
+        <view class="enemy-stat" role="button" aria-label="查看敌人速度说明" @click="explain('enemy.speed')"><text class="enemy-stat-label">速度</text><text class="enemy-stat-value stat-speed">{{ speed }}</text></view>
       </view>
-      <view v-if="showTraits" id="enemy-stat-details" class="enemy-traits">
-        <text class="enemy-growth">当前数值已计入第 {{ round }} 回合成长与削弱效果；有效防御已计入你的穿透效果。</text>
+      <ExpandPanel :open="showTraits" :revision="round"><view id="enemy-stat-details" class="enemy-traits">
+        <text class="enemy-growth">当前数值已包含第 {{ round }} 回合的成长和削弱；防御已扣除你的穿透效果。</text>
         <text v-if="!traits.length" class="enemy-growth">该敌人没有额外强化能力。</text>
-        <view v-for="trait in traits" :key="trait!.id" class="enemy-trait"><text class="enemy-trait-name">{{ trait!.name }}</text><text class="enemy-trait-desc">{{ getEnemyUpgradeDescription(trait!.id) }}</text></view>
-      </view>
+        <view v-for="trait in traits" :key="trait.id" class="enemy-trait"><text class="enemy-trait-name">{{ trait.name }}</text><text class="enemy-trait-desc">{{ getEnemyUpgradeDescription(trait.id) }}</text></view>
+      </view></ExpandPanel>
+      <text v-if="damageFeedback.text.value" :key="damageFeedback.revision.value" class="enemy-damage-float ui-feedback" role="status">{{ damageFeedback.text.value }}</text>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
-.enemy-card { padding: 12rpx 16rpx; margin-bottom: 12rpx; border-left: 4rpx solid var(--attack); }
+.enemy-card { position: relative; padding: 12rpx 16rpx; margin-bottom: 12rpx; border-left: 4rpx solid var(--attack); }
 .enemy-header { display: flex; align-items: center; gap: 14rpx; }
 .enemy-portrait { display: flex; align-items: center; justify-content: center; width: 76rpx; height: 86rpx; flex-shrink: 0; box-sizing: border-box; border: 1px solid var(--line); border-radius: 30rpx 30rpx 10rpx 10rpx; background: var(--surface-raised); box-shadow: inset 0 0 0 5rpx var(--surface-soft); }
 .enemy-portrait-boss { border-color: var(--accent); background: var(--accent-soft); }
@@ -81,6 +90,8 @@ onUnmounted(() => { if (hitTimer) clearTimeout(hitTimer) })
 .enemy-trait { margin: 10rpx 0; }
 .enemy-trait-name { color: var(--xp); font-weight: 700; font-size: 26rpx; margin-right: 12rpx; }
 .enemy-trait-desc { color: var(--muted); font-size: 26rpx; line-height: 1.6; }
+.enemy-body { position: relative; }
+.enemy-damage-float { position: absolute; left: 22rpx; top: 0; padding: 4rpx 8rpx; background: var(--surface); color: var(--attack); border-radius: 7rpx; font-size: 25rpx; font-weight: 800; pointer-events: none; }
 .enemy-hit { animation: enemy-hit 260ms ease-out; }
 @media (prefers-reduced-motion: reduce) { .enemy-hit { animation: none; } .enemy-hp-fill { transition: none; } }
 </style>

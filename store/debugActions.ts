@@ -15,6 +15,7 @@ interface DebugContext extends GameState {
   _showNextReward(): boolean
   _grantUpgrade(def: UpgradeDef): boolean
   _addEquipment(id: string): string | null
+  _addConsumable(id: string, count?: number): boolean
   _resolveKill(battle: BattleState, result: RoundResult, hp: number): void
   saveMetaState(): void
 }
@@ -42,6 +43,7 @@ export const debugActions = {
     const def = UPGRADE_POOL.find(u => u.id === id)
     if (def) this._grantUpgrade(def)
   }),
+  DEBUG_ADD_CONSUMABLE: debugAction(function (id: string) { this._addConsumable(id) }),
   DEBUG_UNLOCK_ALL_ENEMIES: debugAction(function () { this.meta.unlockedEnemies = ENEMIES.map(e => e.id) }),
   DEBUG_ADD_KILLS: debugAction(function (amount: number) {
     for (const enemy of ENEMIES) this.meta.enemyKills[enemy.id] = Math.max(0, (this.meta.enemyKills[enemy.id] || 0) + amount)
@@ -66,7 +68,8 @@ export const debugActions = {
   }),
   DEBUG_GO_REST: debugAction(function () {
     if (this.battle) return
-    this._heal(Math.floor(this.effectivePlayer.maxHp * 0.3))
+    this.restUsed = false
+    this.restResult = null
     this.screen = 'rest'
   }),
   DEBUG_GO_BOSS: debugAction(function () { if (!this.battle) this.screen = 'boss_choice' }),

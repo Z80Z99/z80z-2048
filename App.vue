@@ -41,10 +41,20 @@ onLaunch(() => {
   --rarity-common: var(--muted);
   --rarity-rare: var(--defense);
   --rarity-epic: var(--xp);
+  --card-white: #f4f5f7;
+  --card-blue: #43a8ff;
+  --card-gold: #ffcf33;
+  --card-red: #ff5b62;
+  --card-purple: #c76bff;
+  --card-black: #111318;
+  --card-black-outline: #c3c8d2;
+  --card-black-label: #e3e7ee;
   --tile-stone: #3b4137;
   --tile-slate: #505449;
   --tile-text: #fff4df;
   --tile-time: 150ms;
+  --ui-motion-time: 180ms;
+  --ui-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --viewport-height: 100vh;
   /* #ifdef H5 */
@@ -97,6 +107,14 @@ onLaunch(() => {
   --defense: #2b6097;
   --speed: #1f6969;
   --xp: #76509b;
+  --card-white: #fff;
+  --card-blue: #086bd8;
+  --card-gold: #a66b00;
+  --card-red: #c9233d;
+  --card-purple: #8526c7;
+  --card-black: #17191e;
+  --card-black-outline: #17191e;
+  --card-black-label: #17191e;
   --gold-soft: rgba(136, 89, 9, 0.07);
   --hp-soft: rgba(34, 107, 72, 0.07);
   --attack-soft: rgba(179, 60, 53, 0.07);
@@ -132,6 +150,16 @@ onLaunch(() => {
   --tile-stone: #e4cfc0;
   --tile-slate: #d6b59c;
 }
+
+/* 六色卡牌与装备品质独立；黑卡以高对比轮廓和文字在深色主题中可辨。 */
+.card-tone { --card-color: var(--card-white); }
+.card-white { --card-color: var(--card-white); }
+.card-blue { --card-color: var(--card-blue); }
+.card-gold { --card-color: var(--card-gold); }
+.card-red { --card-color: var(--card-red); }
+.card-purple { --card-color: var(--card-purple); }
+.card-black { --card-color: var(--card-black-outline); --card-label-color: var(--card-black-label); }
+.card-frame { border-left-color: var(--card-color) !important; border-top-color: var(--card-color) !important; }
 
 /* 公共原语：只用类选择器，便于编译进 uni-app / 微信组件。 */
 .screen { width: 100%; min-height: var(--viewport-height); box-sizing: border-box; padding: 32rpx 28rpx calc(152rpx + var(--safe-bottom)); background: var(--bg); }
@@ -187,6 +215,18 @@ onLaunch(() => {
 @media (max-height: 560px) { .art-scene { height: 80rpx; } }
 
 /* 动画集中定义，避免重复 keyframes 覆盖及微信组件作用域差异。 */
+.ui-entry { animation: ui-rise-in 220ms var(--ui-motion-ease) both; }
+.ui-feedback { animation: ui-feedback-pop 220ms ease-out; }
+.ui-press { transition: transform 100ms ease, background-color 120ms ease; }
+.ui-press:active { transform: scale(0.97); }
+.ui-modal-host { display: contents; }
+.ui-modal-host .ui-overlay, .ui-overlay { transition: opacity var(--ui-motion-time) ease; }
+.ui-modal-host .ui-sheet, .ui-modal-host .ui-dialog, .ui-overlay .ui-sheet, .ui-overlay .ui-dialog { transition: transform var(--ui-motion-time) var(--ui-motion-ease), opacity var(--ui-motion-time) ease; }
+.ui-motion-closing .ui-overlay, .ui-overlay.ui-motion-closing { opacity: 0; animation: none; }
+.ui-motion-closing .ui-dialog, .ui-motion-closing .ui-sheet { transform: translateY(24rpx); opacity: 0; animation: none; }
+.ui-motion-closing [role="button"], .ui-motion-closing input { pointer-events: none; }
+@keyframes ui-feedback-pop { 0% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 1; } }
+
 @keyframes ui-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ui-rise-in { from { opacity: 0; transform: translateY(16rpx); } to { opacity: 1; transform: translateY(0); } }
 @keyframes tile-appear { from { opacity: 0; transform: scale(0.65); } to { opacity: 1; transform: scale(1); } }
@@ -195,6 +235,11 @@ onLaunch(() => {
 @keyframes enemy-hit { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5rpx); } 65% { transform: translateX(4rpx); } }
 @media (prefers-reduced-motion: reduce) {
   .game-container { --tile-time: 0ms; }
-  .ui-overlay, .ui-dialog, .ui-sheet, .ui-btn { animation: none; transition: none; }
+  .ui-overlay, .ui-dialog, .ui-sheet, .ui-btn, .ui-entry, .ui-feedback, .ui-press { animation: none; transition: none; }
+  .ui-btn:active, .ui-press:active { transform: none; }
 }
+.motion-reduced { --ui-motion-time: 0ms; }
+.motion-reduced .ui-overlay, .motion-reduced .ui-dialog, .motion-reduced .ui-sheet, .motion-reduced .ui-btn, .motion-reduced .ui-entry, .motion-reduced .ui-feedback, .motion-reduced .ui-press { animation: none; transition: none; }
+.zcode-motion-reduced .ui-overlay, .zcode-motion-reduced .ui-dialog, .zcode-motion-reduced .ui-sheet, .zcode-motion-reduced .ui-entry, .zcode-motion-reduced .ui-feedback, .zcode-motion-reduced .ui-press { animation: none; transition: none; }
+.motion-reduced .ui-btn:active, .motion-reduced .ui-press:active { transform: none; }
 </style>

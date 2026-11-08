@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
+import { useFeedback } from '../composables/useFeedback'
 import { useGameStore } from '../store/gameStore'
 import { equipmentById, formatEquipStats, computeEquipBonuses, getSetData } from '../core/equipment'
 import type { EquipSlot, SortMode } from '../core/equipment'
@@ -12,7 +13,9 @@ const locked = computed(() => store.screen === 'battle' || Boolean(store.eventRe
 const lockMessage = computed(() => store.screen === 'battle' ? '战斗期间可查看装备；战斗结束后才能更换或卸下。' : '事件结果等待确认，继续前进后才能更换或卸下装备。')
 const sortOpen = ref(false)
 const activeTab = ref<'inventory' | 'sets'>('inventory')
-const notice = ref('')
+const feedback = useFeedback()
+const touchedSlot = ref<EquipSlot | null>(null)
+const showAttributeHelp = inject<(key: string) => void>('show-attribute-help', () => {})
 const slotDefs: { key: EquipSlot; name: string }[] = [
   { key: 'helmet', name: '头盔' }, { key: 'armor', name: '铠甲' },
   { key: 'gloves', name: '手套' }, { key: 'pants', name: '护腿' }, { key: 'boots', name: '战靴' },
@@ -40,20 +43,26 @@ const setGroups = computed(() => {
   }
   return [...counts].map(([id, count]) => ({ id, count, data: getSetData(id) })).filter(group => group.data)
 })
-const economy = computed(() => {
-  const effects = setBonuses.value.setEffects
-  return `金币 +${Math.round(player.value.goldBoost * 100)}%${effects.doubleGold ? ' · 结算翻倍' : ''} / 经验 +${Math.round(player.value.xpBoost * 100)}%${effects.doubleXp ? ' · 结算翻倍' : ''}`
-})
 function isEquipped(id: string) { return Object.values(store.player.equipment).includes(id) }
 function equip(id: string) {
   if (locked.value) return
+  const def = equipmentById(id)
+  if (!def) return
+  const before = store.player.equipment[def.slot]
   store.EQUIP_ITEM(id)
-  notice.value = `已装备 ${equipmentById(id)?.name ?? '装备'}`
+  if (store.player.equipment[def.slot] === id && before !== id) {
+    touchedSlot.value = def.slot
+    feedback.show(`已装备 ${def.name}`)
+  }
 }
 function unequip(slot: EquipSlot) {
   if (locked.value) return
+  const before = store.player.equipment[slot]
   store.UNEQUIP_ITEM(slot)
-  notice.value = '装备已放回背包'
+  if (before && !store.player.equipment[slot]) {
+    touchedSlot.value = slot
+    feedback.show('装备已卸下，仍在背包中')
+  }
 }
 </script>
 
@@ -62,16 +71,17 @@ function unequip(slot: EquipSlot) {
     <view class="ui-sheet eq-panel" @click.stop>
       <view class="ui-sheet-header"><view><text class="ui-kicker">冒险者行装</text><text class="ui-sheet-title">装备与背包</text></view><button role="button" class="ui-close" @click="emit('close')">关闭</button></view>
       <view class="eq-effective">
-        <text class="eq-effective-label">实际属性 · 已计入装备与套装</text>
-        <view class="eq-stats"><text class="stat-hp">生命 {{ player.hp }}/{{ player.maxHp }}</text><text class="stat-attack">攻击 ×{{ player.attackMultiplier.toFixed(2) }}{{ player.flatAttack ? ` +${player.flatAttack}` : '' }}</text><text class="stat-defense">防御 ×{{ player.defenseMultiplier.toFixed(2) }}{{ player.flatDefense ? ` +${player.flatDefense}` : '' }}</text><text class="stat-speed">速度 {{ Number(player.baseSpeed.toFixed(2)) }}</text></view>
-        <text class="eq-economy">{{ economy }}</text>
+        <text class="eq-effective-label">实际属性 · 已计入白卡、装备与套装</text>
+        <view class="eq-stats"><view role="button" tabindex="0" class="stat-hp ui-press" @click="showAttributeHelp('player.hp')">生命 {{ player.hp }}/{{ player.maxHp }}</view><view role="button" tabindex="0" class="stat-attack ui-press" @click="showAttributeHelp('player.attack')">攻击 ×{{ player.attackMultiplier.toFixed(2) }}{{ player.flatAttack ? ` +${player.flatAttack}` : '' }}</view><view role="button" tabindex="0" class="stat-defense ui-press" @click="showAttributeHelp('player.defense')">防御 ×{{ player.defenseMultiplier.toFixed(2) }}{{ player.flatDefense ? ` +${player.flatDefense}` : '' }}</view><view role="button" tabindex="0" class="stat-speed ui-press" @click="showAttributeHelp('player.speed')">速度 {{ Number(player.baseSpeed.toFixed(2)) }}</view></view>
+        <view class="eq-economy"><view role="button" tabindex="0" @click="showAttributeHelp('player.gold')">金币 +{{ Math.round(player.goldBoost * 100) }}%{{ setBonuses.setEffects.doubleGold ? ' · 结算翻倍' : '' }}</view><view role="button" tabindex="0" @click="showAttributeHelp('player.xp')">经验 +{{ Math.round(player.xpBoost * 100) }}%{{ setBonuses.setEffects.doubleXp ? ' · 结算翻倍' : '' }}</view></view>
+        <text class="eq-effective-label">点属性查看说明。装备品质与卡牌颜色不同，紫框史诗装备不是诅咒。</text>
       </view>
       <text v-if="locked" class="eq-locked">{{ lockMessage }}</text>
-      <text v-else-if="notice" class="eq-notice" role="status">{{ notice }}</text>
+      <text v-else-if="feedback.text.value" :key="feedback.revision.value" class="eq-notice ui-feedback" role="status">{{ feedback.text.value }}</text>
       <scroll-view class="ui-scroll" scroll-y>
         <text class="eq-section-title">已装备</text>
         <view class="eq-slots">
-          <view v-for="slot in equipped" :key="slot.key" class="eq-slot art-card" :class="slot.item ? `eq-rarity-${slot.item.rarity}` : 'eq-slot-empty'">
+          <view v-for="slot in equipped" :key="slot.key" class="eq-slot art-card" :class="[slot.item ? `eq-rarity-${slot.item.rarity}` : 'eq-slot-empty', { 'ui-feedback': feedback.text.value && touchedSlot === slot.key }]">
             <view class="eq-slot-mark"><ItemIcon :slot="slot.item?.slot ?? slot.key" :set-id="slot.item?.set" :rarity="slot.item?.rarity" :show-quality="Boolean(slot.item)" :size="slot.item ? 'normal' : 'small'" /><text class="eq-slot-kind">{{ slot.name }}</text></view>
             <view class="eq-slot-main"><text class="eq-item-name">{{ slot.item ? slot.item.name : '空置' }}</text><text v-if="slot.item" class="eq-item-meta">Lv.{{ slot.item.level }} · {{ rarityLabels[slot.item.rarity] }}</text><text v-for="line in slot.item?.lines ?? []" :key="line" class="eq-item-stat">{{ line }}</text></view>
             <button role="button" v-if="slot.item" class="eq-small-btn" :disabled="locked" @click="unequip(slot.key)">卸下</button>
@@ -164,4 +174,7 @@ function unequip(slot: EquipSlot) {
 .eq-set-active { color: var(--hp); }
 .eq-bottom-space { height: 36rpx; }
 @media (max-width: 360px) { .eq-inventory { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .eq-notice, .eq-slot { animation: none; } }
+.eq-economy { display: flex; flex-wrap: wrap; gap: 10rpx 18rpx; }
+.eq-stats [role='button'], .eq-economy [role='button'] { cursor: pointer; }
 </style>

@@ -2,7 +2,10 @@ import type { RouteNode } from '../types'
 
 // 纯展示坐标；固定 rpx 画幅随 uni-app 缩放，不读取或消耗玩法随机数。
 export const ROUTE_MAP_WIDTH = 640
-export const ROUTE_ROW_HEIGHT = 156
+export const ROUTE_ROW_HEIGHT = 176
+/** 图标＋类型文字＋状态文字的最大高度；相邻层至少留出这段距离，避免“刚完成/可前往”压到上层图标。 */
+export const ROUTE_NODE_HEIGHT = 144
+const ROUTE_JITTER = 7
 const TOP_MARGIN = 144
 const BOTTOM_MARGIN = 260
 
@@ -88,7 +91,7 @@ export function layoutRoute(route: RouteNode[], currentNodeId: string | null = n
     for (const [index, node] of sorted.entries()) {
       const noise = hash(node.id)
       const x = sorted.length === 1 ? ROUTE_MAP_WIDTH / 2 : (ROUTE_MAP_WIDTH - spread) / 2 + spread * index / (sorted.length - 1) + (noise % 29 - 14)
-      const y = TOP_MARGIN + (maxLayer - layer) * ROUTE_ROW_HEIGHT + (node.type === 'boss' ? 0 : Math.floor(noise / 29) % 27 - 13)
+      const y = TOP_MARGIN + (maxLayer - layer) * ROUTE_ROW_HEIGHT + (node.type === 'boss' ? 0 : Math.floor(noise / 29) % (ROUTE_JITTER * 2 + 1) - ROUTE_JITTER)
       const state: RouteVisualState = node.id === currentNodeId ? 'current' : node.completed ? 'visited' : node.accessible ? 'available' : reachable.has(node.id) ? 'future' : 'abandoned'
       nodes.push({ node, x, y, radius: node.type === 'boss' ? 68 : 43, state })
     }

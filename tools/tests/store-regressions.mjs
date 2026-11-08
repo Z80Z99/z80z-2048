@@ -93,7 +93,7 @@ export async function run() {
     assert.equal(store.player.inventory.length, 1)
   }
 
-  // 较早回合省下的步数，在最后用满步数击杀时仍计入奖励。
+  // 较早回合或额外步数不再制造省步金币，最后用满步数击杀只领基础奖励。
   {
     const store = fresh()
     combat(store, { hp: 1000 })
@@ -108,8 +108,8 @@ export async function run() {
     store.battle.grid[0][1].value = 2
     store.SLIDE('left')
     assert.equal(store.battle.result.playerWon, true)
-    assert.equal(store.battle.result.goldEarned, 27)
-    assert.equal(store.battle.result.savedSteps, 6)
+    assert.equal(store.battle.result.goldEarned, 15)
+    assert.equal(store.battle.result.savedSteps, 0)
   }
 
   // 敌方先手致死后不能靠反击或击杀回血复活，结算不可重复领碎片。
@@ -145,7 +145,7 @@ export async function run() {
     assert.equal(store.screen, 'reward')
     assert.equal(store.rewardReason, type)
     assert.ok(store.rewardQueue.length >= 2)
-    if (type === 'boss') assert.ok(store.rewardChoices.every(u => u.rarity === 'epic'))
+    if (type === 'boss') assert.ok(store.rewardChoices.every(u => u.cardClass === 'gold'))
     for (let i = 0; store.screen === 'reward' && i < 20; i++) store.SKIP_REWARD()
     assert.equal(store.screen, type === 'boss' ? 'boss_choice' : 'route')
     assert.equal(store.rewardQueue.length, 0)
@@ -157,34 +157,34 @@ export async function run() {
     }
   }
 
-  // 商店上限/治疗/刷新/移除规则也由 store 校验，不靠按钮隐藏。
+  // 无限叠加、治疗、刷新和移除规则也由 store 校验。
   {
     const store = fresh()
     store.screen = 'shop'
     store.player.gold = 1000
     const def = UPGRADE_POOL.find(u => u.id === 'atk_up_1')
-    for (let i = 0; i < def.maxStacks; i++) assert.equal(store._grantUpgrade(def), true)
+    assert.equal(store._grantUpgrade(def, 1000), true)
     store.shopUpgrades = [def.id, null, null]
     store.BUY_SHOP_UPGRADE(0)
-    assert.equal(store.player.gold, 1000)
+    assert.equal(store.player.gold, 980)
+    assert.equal(store.upgrades.find(u => u.def.id === def.id).count, 1001)
+    assert.equal(store.player.attackMultiplier, 1, 'base stats never absorb card effects')
     store.shopHeals = ['heal_1']
     store.BUY_SHOP_HEAL(0)
-    assert.equal(store.player.gold, 1000)
+    assert.equal(store.player.gold, 980)
     store.SHOP_REMOVE_UPGRADE(def.id)
-    assert.equal(store.upgrades.find(u => u.def.id === def.id).count, def.maxStacks - 1, 'remove only one stack')
-    assert.ok(Math.abs(store.player.attackMultiplier - 1.8) < 1e-9)
+    assert.equal(store.upgrades.find(u => u.def.id === def.id).count, 1000, 'remove only one stack')
+    assert.equal(store.effectivePlayer.attackMultiplier, 81)
     assert.equal(store.shopRemoveUsed, true)
     store.REFRESH_SHOP()
     assert.equal(store.shopRemoveUsed, true)
     assert.equal(store.shopRefreshCount, 1)
     assert.equal(store.shopRefreshCost, 20)
-    store._grantUpgrade(UPGRADE_POOL.find(u => u.id === 'spawn_red_1'))
-    store._grantUpgrade(UPGRADE_POOL.find(u => u.id === 'spawn_red_2'))
-    store._grantUpgrade(UPGRADE_POOL.find(u => u.id === 'spawn_red_2'))
-    assert.ok(Math.abs(store.player.spawnReduction - 0.6) < 1e-9)
-    assert.equal(store.effectivePlayer.spawnReduction, 0.5)
-    store._reverseUpgradeEffect(UPGRADE_POOL.find(u => u.id === 'spawn_red_1'))
-    assert.equal(store.effectivePlayer.spawnReduction, 0.5)
+    store._grantUpgrade(UPGRADE_POOL.find(u => u.id === 'spawn_red_1'), 1000)
+    assert.equal(store.cardModifiers.spawnArmor, 200)
+    store.shopRemoveUsed = false
+    store.SHOP_REMOVE_UPGRADE('spawn_red_1')
+    assert.ok(Math.abs(store.cardModifiers.spawnArmor - 199.8) < 1e-9)
   }
 
   // 不依赖时钟或全局 Math.random，所有正式动作按节点/回合/次数作用域抽签。

@@ -1,16 +1,18 @@
 import { defineStore } from 'pinia'
-import type { BattleState, GameState, PlayerStats, RewardRequest, RoundResult, UpgradeDef } from '../types'
+import type { BattleState, CardClass, CardModifiers, GameState, PlayerStats, RewardRequest, RoundResult, UpgradeDef } from '../types'
 import { createRng, createScopedRng } from '../core/random'
-import { initBattle, processTurn, resolveRound, startNewRound, getBattlePreview } from '../core/battle'
+import { initBattle, processTurn, resolveRound, startNewRound, getBattlePreview, getCombinedCardModifiers } from '../core/battle'
 import { generateRoute } from '../core/route'
 import { ENEMIES, getBestiaryId } from '../core/enemy'
 import { ALL_EQUIPMENT, computeEquipBonuses, getEffectivePlayer, rollEquipEffects, equipmentById, makeEquipId, sortInventory, equipCost } from '../core/equipment'
 import type { EquipSlot, SortMode } from '../core/equipment'
 import { pickEvent, resolveEventEffect, buildEventResult, getEventChoiceDisabledReason } from '../core/events'
-import type { EventEffect } from '../core/events'
-import { getMetaUpgrades, UPGRADE_POOL, upgradeCost } from '../core/upgrade'
+import type { EventChoiceContext, EventEffect } from '../core/events'
+import { getMetaUpgrades, UPGRADE_POOL, upgradeCost, cardById, canRemoveCard, validateCard } from '../core/upgrade'
+import { collectCardModifiers, deriveCardPlayer, modifiersFromEffects } from '../core/cardEffects'
+import { consumableById, consumableUseDisabledReason } from '../core/consumables'
 import { createInitialState } from './initialState'
-import { getStartingTileBonuses, applyMetaUpgrades, rollRewardChoices, buildShop } from './helpers'
+import { applyMetaUpgrades, rollRewardChoices, buildShop, instantSupplyCost } from './helpers'
 import { debugActions } from './debugActions'
 import { gainXp } from '../core/progress'
 import { loadMeta, saveMeta } from '../utils/storage'
@@ -19,15 +21,28 @@ function addBonus(current: number, amount: number): number {
   return Math.round((current + amount) * 1e10) / 1e10
 }
 
+function safeCount(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0
+}
+
 export const useGameStore = defineStore('game', {
   state: (): GameState => createInitialState(),
 
   getters: {
+    cardModifiers(state): CardModifiers { return collectCardModifiers(state.upgrades) },
+    activeCardModifiers(state): CardModifiers { return state.battle ? getCombinedCardModifiers(state.battle) : collectCardModifiers(state.upgrades) },
+    cardPlayer(state): PlayerStats { return deriveCardPlayer(state.player, state.upgrades) },
     effectivePlayer(state): PlayerStats {
-      return getEffectivePlayer(state.player, state.battle?.equipEffects)
+      return getEffectivePlayer(deriveCardPlayer(state.player, state.upgrades), state.battle?.equipEffects)
     },
     battlePreview(state): ReturnType<typeof getBattlePreview> | null {
-      return state.battle ? getBattlePreview(state.battle, state.player) : null
+      return state.battle ? getBattlePreview(state.battle, deriveCardPlayer(state.player, state.upgrades)) : null
+    },
+    eventContext(state): EventChoiceContext {
+      return {
+        ...state.player,
+        purpleLayers: state.upgrades.reduce((sum, card) => sum + (canRemoveCard(card.def, 'cleanse') ? card.count : 0), 0),
+      }
     },
   },
 
@@ -51,31 +66,47 @@ export const useGameStore = defineStore('game', {
       const node = this.route.find(n => n.id === nodeId)
       if (!node || !node.accessible || node.completed) return
       if (['battle', 'elite', 'boss'].includes(node.type) && !node.enemy) return
+      let prepared: BattleState | null = null
+      if (node.enemy && ['battle', 'elite', 'boss'].includes(node.type)) {
+        if (!this._canGrantCards([])) return
+        const effects = rollEquipEffects(computeEquipBonuses(this.player.equipment).setEffects, createScopedRng(this.runSeed, this.stage, node.id, 'equipment', 1))
+        const player = getEffectivePlayer(this.cardPlayer, effects)
+        const turns = Math.max(1, player.baseMaxTurns + player.bonusTurns + (effects.extraTurns || 0) - this.cardModifiers.heavyLegs)
+        if (!Number.isSafeInteger(turns) || turns < 1) return
+        prepared = {
+          ...initBattle(node.enemy, turns, createScopedRng(this.runSeed, this.stage, node.id, 'board', 1), this.cardModifiers.startingPoints, this.cardModifiers),
+          equipEffects: effects, fortifyUsed: false, totalTurns: 0, baseTurns: player.baseMaxTurns,
+        }
+      }
+      // 商店与营地可在“选定下一层前”反复进出；战斗类进入即完成。
+      const reenterable = ['shop', 'rest'].includes(node.type)
+      const isReentry = this.currentNodeId === nodeId
       this.route = this.route.map(n => ({
         ...n,
-        completed: n.completed || n.id === nodeId,
-        accessible: node.nextIds.includes(n.id),
+        completed: n.completed || (!reenterable && n.id === nodeId),
+        accessible: (reenterable && n.id === nodeId) || node.nextIds.includes(n.id),
       }))
       this.currentNodeId = nodeId
 
-      if (node.enemy && ['battle', 'elite', 'boss'].includes(node.type)) {
-        const effects = rollEquipEffects(computeEquipBonuses(this.player.equipment).setEffects, this._rng('equipment', 1))
-        const player = getEffectivePlayer(this.player, effects)
-        this.battle = {
-          ...initBattle(node.enemy, player.baseMaxTurns + player.bonusTurns + (effects.extraTurns || 0), this._rng('board', 1), getStartingTileBonuses(this.upgrades)),
-          equipEffects: effects, fortifyUsed: false, totalTurns: 0,
-        }
+      if (prepared) {
+        this.battle = prepared
         this.screen = 'battle'
       } else if (node.type === 'shop') {
-        Object.assign(this, buildShop(this._rng('shop', 0), this.stage, this.upgrades))
-        this.shopRefreshCount = 0
+        if (!isReentry) {
+          Object.assign(this, buildShop(this._rng('shop', 0), this.stage, this.upgrades))
+          this.shopRefreshCount = 0
+        }
         this.screen = 'shop'
       } else if (node.type === 'rest') {
-        this._heal(Math.floor(this.effectivePlayer.maxHp * 0.3))
+        if (!isReentry) {
+          this.restUsed = false
+          this.restResult = null
+        }
         this.screen = 'rest'
       } else if (node.type === 'event') {
         this.gameEvent = pickEvent(this.stage, this._rng('event'))
         this.eventResult = null
+        this.eventBlackConfirmed = false
         this.screen = 'event'
       }
     },
@@ -83,9 +114,9 @@ export const useGameStore = defineStore('game', {
     eventChoiceDisabledReason(choiceIndex: number): string | null {
       const choice = this.gameEvent?.choices[choiceIndex]
       if (!choice) return '该选项不可用'
-      const disabled = getEventChoiceDisabledReason(choice.effect as EventEffect, this.player)
+      const disabled = getEventChoiceDisabledReason(choice.effect as EventEffect, this.eventContext)
       if (disabled) return disabled
-      if (this.eventResult?.choiceIndex === choiceIndex) return getEventChoiceDisabledReason(this.eventResult.effect as EventEffect, this.player)
+      if (this.eventResult?.choiceIndex === choiceIndex) return getEventChoiceDisabledReason(this.eventResult.effect as EventEffect, this.eventContext)
       return null
     },
 
@@ -93,15 +124,48 @@ export const useGameStore = defineStore('game', {
       if (this.screen !== 'event' || !this.gameEvent || this.eventResult) return
       if (this.eventChoiceDisabledReason(choiceIndex)) return
       const choice = this.gameEvent.choices[choiceIndex]
-      const effect = resolveEventEffect(choice.effect as EventEffect, this.stage, this._rng('event-choice', choiceIndex), this.player)
-      this.eventResult = { label: choice.label, desc: buildEventResult(effect), choiceIndex, effect }
+      const effect = resolveEventEffect(choice.effect as EventEffect, this.stage, this._rng('event-choice', choiceIndex), this.eventContext)
+      this.eventBlackConfirmed = false
+      this.eventResult = { label: choice.label, desc: buildEventResult(effect), choiceIndex, effect, requiresBlackConfirmation: effect.type === 'card_trade' && effect.requiresBlackConfirmation }
+    },
+
+    CONFIRM_BLACK_EVENT() {
+      if (this.screen === 'event' && this.eventResult?.requiresBlackConfirmation) this.eventBlackConfirmed = true
     },
 
     APPLY_EVENT() {
       if (this.screen !== 'event' || !this.gameEvent || !this.eventResult) return
       const { choiceIndex, effect: eff } = this.eventResult
-      if (this.eventChoiceDisabledReason(choiceIndex) || getEventChoiceDisabledReason(eff as EventEffect, this.player)) return
+      if (this.eventChoiceDisabledReason(choiceIndex) || getEventChoiceDisabledReason(eff as EventEffect, this.eventContext)) return
+      const hasBlack = (eff.cardGrants ?? []).some((grant: { id: string }) => cardById(grant.id)?.cardClass === 'black')
+      if ((hasBlack || this.eventResult.requiresBlackConfirmation) && !this.eventBlackConfirmed) return
       switch (eff.type) {
+        case 'card_trade': {
+          const grants: { id: string; count: number }[] = eff.cardGrants ?? []
+          const supplies: { id: string; count: number }[] = eff.consumableGrants ?? []
+          const aggregatedCards = new Map<string, number>()
+          const aggregatedSupplies = new Map<string, number>()
+          for (const grant of grants) aggregatedCards.set(grant.id, (aggregatedCards.get(grant.id) ?? 0) + grant.count)
+          for (const grant of supplies) aggregatedSupplies.set(grant.id, (aggregatedSupplies.get(grant.id) ?? 0) + grant.count)
+          const cardBatch = [...aggregatedCards].map(([id, count]) => ({ id, count }))
+          if (!grants.every(grant => safeCount(grant.count)) || !this._canGrantCards(cardBatch) ||
+            !supplies.every(grant => safeCount(grant.count)) || ![...aggregatedSupplies].every(([id, count]) =>
+              consumableById(id) && safeCount(count) && Number.isSafeInteger((this.consumableCounts[id] ?? 0) + count))) return
+          const cost = eff.cost ?? 0, hpCost = eff.hpCost ?? 0, gold = eff.gold ?? 0
+          if (![cost, hpCost, gold].every(value => Number.isFinite(value) && value >= 0) || this.player.gold < cost || this.player.hp <= hpCost) return
+          const removesPurple = eff.removesPurple ?? 0
+          const purpleLayers = this.upgrades.reduce((sum, card) => sum + (canRemoveCard(card.def, 'cleanse') ? card.count : 0), 0)
+          if (removesPurple > 0 && (!Number.isSafeInteger(removesPurple) || purpleLayers < removesPurple)) return
+          this.player.gold += gold - cost
+          this.player.hp -= hpCost
+          for (const grant of cardBatch) this._grantUpgrade(cardById(grant.id)!, grant.count)
+          for (const [id, count] of aggregatedSupplies) this._addConsumable(id, count)
+          for (let index = 0; index < removesPurple; index++) {
+            const target = this.upgrades.find(card => canRemoveCard(card.def, 'cleanse'))?.def.id
+            if (!target || !this._removeCardLayer(target, 'cleanse')) return
+          }
+          break
+        }
         case 'gold': this.player.gold += eff.value ?? 0; break
         case 'heal': this._heal(Math.floor(this.effectivePlayer.maxHp * (eff.value ?? 10) / 100)); break
         case 'gold_heal':
@@ -143,6 +207,7 @@ export const useGameStore = defineStore('game', {
       this._clampHp()
       this.gameEvent = null
       this.eventResult = null
+      this.eventBlackConfirmed = false
       if (!this._showNextReward()) this.screen = 'route'
     },
 
@@ -152,6 +217,18 @@ export const useGameStore = defineStore('game', {
       const updated = processTurn(before, direction, this._rng('spawn', before.round, before.turnsUsed))
       if (updated === before) return
       updated.totalTurns = (before.totalTurns || 0) + updated.turnsUsed - before.turnsUsed
+      const moveDamage = updated.lastMoveDamage ?? 0
+      if (moveDamage > 0) {
+        this.player.hp = Math.max(0, this.player.hp - moveDamage)
+        if (this.player.hp <= 0) {
+          this._resolvePlayerDeath(updated, {
+            playerDamage: 0, enemyDamage: 0, enemyHpAfter: updated.enemyCurrentHp,
+            overflowDamage: 0, playerFirst: false, playerSpeed: this.effectivePlayer.baseSpeed,
+            enemySpeed: updated.enemy.speed, playerHpAfter: 0, playerActed: false, enemyActed: false, curseDamage: moveDamage,
+          })
+          return
+        }
+      }
       if (updated.phase === 'round_delay') this._settleRound(updated)
       else this.battle = updated
     },
@@ -161,7 +238,8 @@ export const useGameStore = defineStore('game', {
       const b = this.battle
       const remaining = b.maxTurns - b.turnsUsed
       if (remaining <= 0) return
-      this._settleRound({ ...b, phase: 'round_delay', savedSteps: b.savedSteps + remaining })
+      const savedSteps = Math.max(0, (b.baseTurns ?? this.player.baseMaxTurns) - b.turnsUsed)
+      this._settleRound({ ...b, phase: 'round_delay', savedSteps })
     },
 
     SHOW_ROUND() { if (this.battle?.phase === 'round_delay') this.battle.phase = 'round_end' },
@@ -171,9 +249,12 @@ export const useGameStore = defineStore('game', {
       if (this.screen !== 'battle' || !this.battle || this.battle.phase !== 'round_end') return
       const round = this.battle.round + 1
       const effects = rollEquipEffects(computeEquipBonuses(this.player.equipment).setEffects, this._rng('equipment', round))
+      const player = getEffectivePlayer(this.cardPlayer, effects)
+      const battle = startNewRound(this.battle, this._rng('board', round), this.cardModifiers.startingPoints)
       this.battle = {
-        ...startNewRound(this.battle, this._rng('board', round), getStartingTileBonuses(this.upgrades)),
-        equipEffects: effects,
+        ...battle, equipEffects: effects, cardModifiers: this.cardModifiers,
+        maxTurns: Math.max(1, player.baseMaxTurns + player.bonusTurns + (effects.extraTurns || 0) + (battle.battleModifiers?.bonusTurns ?? 0) - this.cardModifiers.heavyLegs),
+        baseTurns: player.baseMaxTurns,
       }
     },
 
@@ -204,15 +285,15 @@ export const useGameStore = defineStore('game', {
       this._showNextReward()
     },
 
-    PICK_UPGRADE(upgradeId: string) {
-      if (this.screen !== 'reward') return
+    PICK_UPGRADE(upgradeId: string, generation = this.rewardRollCount) {
+      if (this.screen !== 'reward' || generation !== this.rewardRollCount) return
       const chosen = this.rewardChoices.find(u => u.id === upgradeId)
       if (!chosen || !this._grantUpgrade(chosen)) return
       this._consumeReward()
     },
 
-    SKIP_REWARD() {
-      if (this.screen === 'reward') this._consumeReward()
+    SKIP_REWARD(generation = this.rewardRollCount) {
+      if (this.screen === 'reward' && generation === this.rewardRollCount) this._consumeReward()
     },
 
     GAME_OVER() {
@@ -226,7 +307,64 @@ export const useGameStore = defineStore('game', {
     },
 
     GO_TO_META_SHOP() { if (this.screen === 'title' || this.screen === 'gameover') this.screen = 'meta' },
-    GO_TO_ROUTE() { if (this.screen === 'shop' || this.screen === 'rest') this.screen = 'route' },
+    GO_TO_ROUTE() {
+      // 商店与营地都可先回到地图再决定；选了下一层后才真正离开。
+      if (this.screen === 'shop' || this.screen === 'rest') this.screen = 'route'
+    },
+
+    REST_HEAL() {
+      if (this.screen !== 'rest' || this.restUsed || this.runOutcome) return
+      const before = this.player.hp
+      this._heal(Math.floor(this.effectivePlayer.maxHp * 0.3))
+      this.restUsed = true
+      this.restResult = `营地恢复 ${this.player.hp - before} 点生命。`
+    },
+
+    consumableDisabledReason(id: string): string | null {
+      const def = consumableById(id)
+      if (!def) return '道具不存在'
+      if (!safeCount(this.consumableCounts[id] ?? 0)) return '没有该道具'
+      if (this.runOutcome) return '本次冒险已结束'
+      if (this.eventResult) return '先确认当前事件'
+      const purple = this.upgrades.some(card => card.def.cardClass === 'purple' && card.count > 0)
+      return consumableUseDisabledReason(def, this.screen, this.battle?.phase, purple)
+    },
+
+    USE_CONSUMABLE(id: string, targetCardId?: string) {
+      if (this.consumableDisabledReason(id)) return
+      const def = consumableById(id)!
+      if (def.cleanse) {
+        const target = targetCardId ?? this.upgrades.find(card => canRemoveCard(card.def, 'cleanse'))?.def.id
+        if (!target || !this._removeCardLayer(target, 'cleanse')) return
+      } else {
+        if (!this.battle || this.battle.phase !== 'playing') return
+        const additions = modifiersFromEffects(def.effects)
+        const key = def.duration === 'battle' ? 'battleModifiers' : 'roundModifiers'
+        const next = { ...(this.battle[key] ?? {}) }
+        for (const [field, value] of Object.entries(additions)) {
+          const modifier = field as keyof CardModifiers
+          const total = addBonus(next[modifier] ?? 0, value)
+          if (!Number.isFinite(total)) return
+          next[modifier] = total
+        }
+        const extraTurns = additions.bonusTurns ?? 0
+        if (!Number.isSafeInteger(this.battle.maxTurns + extraTurns)) return
+        this.battle = { ...this.battle, [key]: next, maxTurns: this.battle.maxTurns + extraTurns }
+      }
+      this.consumableCounts[id]--
+      if (!this.consumableCounts[id]) delete this.consumableCounts[id]
+    },
+
+    BUY_SHOP_CONSUMABLE(slot: number) {
+      if (this.screen !== 'shop') return
+      const id = this.shopConsumables[slot]
+      const def = id ? consumableById(id) : undefined
+      if (!id || !def || this.player.gold < def.price || !this._addConsumable(id)) return
+      this.player.gold -= def.price
+      this.shopConsumables[slot] = null
+    },
+
+    shopHealPrice(id: string | null): number { return instantSupplyCost(id ? cardById(id) : undefined) },
 
     BUY_META_UPGRADE(upgradeId: string) {
       if (this.screen !== 'meta') return
@@ -240,10 +378,11 @@ export const useGameStore = defineStore('game', {
     BUY_SHOP_UPGRADE(slot: number) {
       if (this.screen !== 'shop') return
       const uid = this.shopUpgrades[slot]
-      const def = UPGRADE_POOL.find(u => u.id === uid)
-      if (!def || this.player.gold < upgradeCost(def)) return
+      const def = cardById(uid ?? '')
+      const cost = def ? upgradeCost(def) : null
+      if (!def || !['white', 'blue', 'gold'].includes(def.cardClass) || cost === null || this.player.gold < cost) return
       if (!this._grantUpgrade(def)) return
-      this.player.gold -= upgradeCost(def)
+      this.player.gold -= cost
       this.shopUpgrades[slot] = null
     },
 
@@ -259,12 +398,11 @@ export const useGameStore = defineStore('game', {
 
     BUY_SHOP_HEAL(slot: number) {
       if (this.screen !== 'shop' || this.player.hp >= this.effectivePlayer.maxHp) return
-      const def = UPGRADE_POOL.find(u => u.id === this.shopHeals[slot] && u.effect.type === 'heal')
-      if (!def) return
-      const cost = Math.floor(def.effect.value * 1.5)
-      if (this.player.gold < cost) return
+      const def = cardById(this.shopHeals[slot] ?? '')
+      if (!def || def.kind !== 'instant') return
+      const cost = instantSupplyCost(def)
+      if (this.player.gold < cost || !this._grantUpgrade(def)) return
       this.player.gold -= cost
-      this._heal(def.effect.value)
       this.shopHeals[slot] = null
     },
 
@@ -276,20 +414,15 @@ export const useGameStore = defineStore('game', {
       this.shopUpgrades = built.shopUpgrades
       this.shopEquipment = built.shopEquipment
       this.shopHeals = built.shopHeals
+      this.shopConsumables = built.shopConsumables
       this.shopRefreshCount = nextCount
       this.shopRefreshCost += 10
     },
 
     SHOP_REMOVE_UPGRADE(upgradeId: string) {
       if (this.screen !== 'shop' || this.shopRemoveUsed || this.player.gold < this.shopRemoveCost) return
-      const idx = this.upgrades.findIndex(u => u.def.id === upgradeId)
-      if (idx < 0) return
-      const rem = this.upgrades[idx]
-      if (rem.def.effect.type === 'heal') return
+      if (!this._removeCardLayer(upgradeId, 'shop')) return
       this.player.gold -= this.shopRemoveCost
-      this._reverseUpgradeEffect(rem.def)
-      if (rem.count > 1) rem.count--
-      else this.upgrades.splice(idx, 1)
       this.shopRemoveUsed = true
     },
 
@@ -336,7 +469,7 @@ export const useGameStore = defineStore('game', {
     },
 
     _settleRound(updated: BattleState) {
-      const result = resolveRound(updated, this.player, this._rng('combat', updated.round, updated.turnsUsed))
+      const result = resolveRound(updated, this.cardPlayer, this._rng('combat', updated.round, updated.turnsUsed))
       const hpAfter = result.playerHpAfter ?? Math.max(0, this.player.hp - result.playerDamage)
       this.player.hp = hpAfter
       this.battle = { ...updated, enemyCurrentHp: result.enemyHpAfter, lastRoundResult: result, fortifyUsed: result.fortifyUsed ?? updated.fortifyUsed }
@@ -348,17 +481,19 @@ export const useGameStore = defineStore('game', {
       const nodeType = this.route.find(n => n.id === this.currentNodeId)?.type
       const rewardMult = nodeType === 'boss' ? 3 : nodeType === 'elite' ? 2 : 1
       const effects = updated.equipEffects || {}
-      const player = getEffectivePlayer(this.player, effects)
-      const enemyGoldBoost = (updated.enemy.enemyUpgrades || []).some(id => UPGRADE_POOL.find(u => u.id === id)?.effect.type === 'gold_boost') ? 0.5 : 0
-      let baseGold = Math.floor(updated.enemy.tier * 15 * (1 + player.goldBoost + enemyGoldBoost)) * rewardMult
+      const player = getEffectivePlayer(this.cardPlayer, effects)
+      const enemyGoldBoost = 0
+      const greed = getCombinedCardModifiers(updated).greedRating
+      let baseGold = Math.floor(updated.enemy.tier * 15 * (1 + player.goldBoost + enemyGoldBoost) * (1 + greed)) * rewardMult
       let xpEarned = Math.floor((updated.enemy.tier * 8 + Math.floor(updated.totalAttack / 8)) * (1 + player.xpBoost)) * rewardMult
       if (effects.doubleGold) baseGold *= 2
       if (effects.doubleXp) xpEarned *= 2
-      const goldEarned = baseGold + updated.savedSteps * 2
+      const savedSteps = updated.turnsUsed < updated.maxTurns ? Math.max(0, (updated.baseTurns ?? this.player.baseMaxTurns) - updated.turnsUsed) : 0
+      const goldEarned = baseGold + savedSteps * 2
       this.player.hp = playerHpAfter
       this.player.gold += goldEarned
       if (nodeType === 'boss' || nodeType === 'elite') {
-        this.rewardQueue.push({ reason: nodeType, minRarity: nodeType === 'boss' ? 'epic' : 'rare' })
+        this.rewardQueue.push({ reason: nodeType, allowedClasses: nodeType === 'boss' ? ['gold'] : ['blue', 'gold'] })
       }
       const levels = this._gainXp(xpEarned)
       const rng = this._rng('loot')
@@ -385,7 +520,7 @@ export const useGameStore = defineStore('game', {
         result: {
           playerWon: true, playerDamageDealt: roundRes.enemyDamage, playerDamageTaken: roundRes.playerDamage,
           goldEarned, totalRounds: updated.round, xpEarned, overflowDamage: roundRes.overflowDamage,
-          leveledUp: levels > 0, savedSteps: updated.savedSteps,
+          leveledUp: levels > 0, savedSteps,
           droppedEquipment: droppedEquipmentIds[0] ?? null, droppedEquipmentIds,
         },
       }
@@ -457,7 +592,7 @@ export const useGameStore = defineStore('game', {
         const request: RewardRequest = this.rewardQueue[0]
         const player = this.effectivePlayer
         this.rewardChoices = rollRewardChoices(this._rng('reward', this.rewardRollCount++), this.upgrades, {
-          excludeHeal: player.hp >= player.maxHp, hpRatio: player.hp / player.maxHp, minRarity: request.minRarity,
+          excludeHeal: player.hp >= player.maxHp, hpRatio: player.hp / player.maxHp, allowedClasses: request.allowedClasses,
         })
         if (this.rewardChoices.length) {
           this.rewardReason = request.reason
@@ -482,52 +617,70 @@ export const useGameStore = defineStore('game', {
       this.screen = boss ? 'boss_choice' : 'route'
     },
 
-    _grantUpgrade(def: UpgradeDef): boolean {
-      if (def.effect.type === 'heal') {
+    _canGrantCards(grants: { id: string; count: number }[]): boolean {
+      const next = this.upgrades.map(card => ({ ...card }))
+      for (const grant of grants) {
+        const def = cardById(grant.id)
+        if (!def || def.kind !== 'persistent' || !validateCard(def) || !safeCount(grant.count)) return false
+        const existing = next.find(card => card.def.id === grant.id)
+        const count = (existing?.count ?? 0) + grant.count
+        if (!Number.isSafeInteger(count)) return false
+        if (existing) existing.count = count
+        else next.push({ def, count })
+      }
+      const modifiers = collectCardModifiers(next)
+      const player = deriveCardPlayer(this.player, next)
+      return Object.values(modifiers).every(value => Number.isFinite(value) && value >= 0) &&
+        Number.isSafeInteger(modifiers.startingPoints) && modifiers.startingPoints % 2 === 0 &&
+        Number.isSafeInteger(player.baseMaxTurns + player.bonusTurns) && Number.isSafeInteger(player.maxHp)
+    },
+
+    _grantUpgrade(def: UpgradeDef, count = 1): boolean {
+      if (!validateCard(def) || !safeCount(count)) return false
+      if (def.kind === 'instant') {
         if (this.player.hp >= this.effectivePlayer.maxHp) return false
-        this._heal(def.effect.value)
+        const amount = def.effects.filter(effect => effect.type === 'heal').reduce((sum, effect) => sum + effect.value * count, 0)
+        this._heal(amount)
         return true
       }
-      const existing = this.upgrades.find(u => u.def.id === def.id)
-      if ((existing?.count ?? 0) >= def.maxStacks) return false
-      if (existing) existing.count++
-      else this.upgrades.push({ def, count: 1 })
-      this._applyUpgradeEffect(def)
+      if (!this._canGrantCards([{ id: def.id, count }])) return false
+      const existing = this.upgrades.find(card => card.def.id === def.id)
+      if (existing) existing.count += count
+      else this.upgrades.push({ def, count })
+      const gainedHp = def.effects.filter(effect => effect.type === 'maxHpBonus').reduce((sum, effect) => sum + effect.value * count, 0)
+      if (gainedHp) this._heal(gainedHp)
+      if (this.battle) {
+        this.battle.cardModifiers = this.cardModifiers
+        const effective = getEffectivePlayer(this.cardPlayer, this.battle.equipEffects)
+        this.battle.maxTurns = Math.max(1, effective.baseMaxTurns + effective.bonusTurns + (this.battle.equipEffects?.extraTurns ?? 0) +
+          (this.battle.roundModifiers?.bonusTurns ?? 0) + (this.battle.battleModifiers?.bonusTurns ?? 0) - this.cardModifiers.heavyLegs)
+      }
+      return true
+    },
+
+    _addConsumable(id: string, count = 1): boolean {
+      if (!consumableById(id) || !safeCount(count)) return false
+      const total = (this.consumableCounts[id] ?? 0) + count
+      if (!Number.isSafeInteger(total)) return false
+      this.consumableCounts[id] = total
+      return true
+    },
+
+    _removeCardLayer(id: string, method: 'shop' | 'cleanse'): boolean {
+      const index = this.upgrades.findIndex(card => card.def.id === id)
+      if (index < 0 || !canRemoveCard(this.upgrades[index].def, method)) return false
+      if (this.upgrades[index].count > 1) this.upgrades[index].count--
+      else this.upgrades.splice(index, 1)
+      this._clampHp()
       return true
     },
 
     _heal(amount: number) {
-      if (this.player.hp > 0) this.player.hp = Math.min(this.effectivePlayer.maxHp, this.player.hp + Math.max(0, amount))
+      if (!Number.isFinite(amount) || amount <= 0 || this.player.hp <= 0) return
+      const effective = Math.floor(amount / (1 + this.activeCardModifiers.healingPenalty))
+      this.player.hp = Math.min(this.effectivePlayer.maxHp, this.player.hp + effective)
     },
 
     _clampHp() { this.player.hp = Math.max(0, Math.min(this.effectivePlayer.maxHp, this.player.hp)) },
-
-    _applyUpgradeEffect(def: UpgradeDef, count = 1) {
-      const value = def.effect.value * count
-      switch (def.effect.type) {
-        case 'attack_multiplier': this.player.attackMultiplier += value; break
-        case 'defense_multiplier': this.player.defenseMultiplier += value; break
-        case 'bonus_turns': this.player.bonusTurns += value; break
-        case 'heal': this._heal(value); break
-        case 'max_hp': this.player.maxHp += value; this._heal(value); break
-        case 'spawn_reduction': this.player.spawnReduction = addBonus(this.player.spawnReduction, value); break
-        case 'enemy_atk_down': this.player.enemyAtkDown += value; break
-        case 'gold_boost': this.player.goldBoost += value; break
-      }
-    },
-
-    _reverseUpgradeEffect(def: UpgradeDef, count = 1) {
-      const value = def.effect.value * count
-      switch (def.effect.type) {
-        case 'attack_multiplier': this.player.attackMultiplier -= value; break
-        case 'defense_multiplier': this.player.defenseMultiplier -= value; break
-        case 'bonus_turns': this.player.bonusTurns -= value; break
-        case 'max_hp': this.player.maxHp = Math.max(10, this.player.maxHp - value); break
-        case 'spawn_reduction': this.player.spawnReduction = Math.max(0, addBonus(this.player.spawnReduction, -value)); break
-        case 'enemy_atk_down': this.player.enemyAtkDown = Math.max(0, this.player.enemyAtkDown - value); break
-        case 'gold_boost': this.player.goldBoost = Math.max(0, this.player.goldBoost - value); break
-      }
-      this._clampHp()
-    },
   },
 })
