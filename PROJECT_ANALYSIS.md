@@ -2,7 +2,7 @@
 
 > **本文件的用途**：供所有 AI 代理在执行任何任务前读取，建立对游戏规则、机制、代码结构与开发约定的完整认知。读完本文应能回答"游戏怎么玩、每个系统怎么运作、改某处要动哪些文件"。
 >
-> **效力与时效**：主体保留 2026-11-07 的系统解析；2026-11-08 按当前源码静态核对 25 事件扩充、卡池数量与规则版本（本次仅文档，不跑测试／构建）。行号引用格式 `文件:行号`，代码继续演进后行号可能漂移——**若文档与代码冲突，一律以代码为准**，并用搜索定位新位置。卡牌数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)，全部事件选项、成本、精确奖励和限制见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。
+> **效力与时效**：主体保留 2026-11-07 的系统解析；2026-11-12 按当前源码核对 34 个强制事件（113 选项 × 3 档随机 = 339 档）、47 个卡池定义与规则版本 `sixcolor-v3-flat-defense`（新增固定减伤卡组：坚甲/守拙/磨砺之盾/棘盾契约；详见 §5.2、§6 与 §19）。行号引用格式 `文件:行号`，代码继续演进后行号可能漂移——**若文档与代码冲突，一律以代码为准**，并用搜索定位新位置。卡牌数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)，全部事件选项、成本、精确奖励和限制见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。
 
 ---
 
@@ -13,7 +13,7 @@
 3. [核心循环与状态机](#3-核心循环与状态机)
 4. [棋盘机制](#4-棋盘机制)
 5. [战斗公式全集](#5-战斗公式全集)
-6. [六色强化卡体系（37 张）](#6-六色强化卡体系)
+6. [六色强化卡体系（47 张）](#6-六色强化卡体系)
 7. [消耗品](#7-消耗品)
 8. [装备系统](#8-装备系统)
 9. [敌人系统](#9-敌人系统)
@@ -56,7 +56,7 @@
 | `npm run build:h5` | `node tools/build.mjs build h5` | H5 正式构建 |
 | `npm run preview:h5` | `node tools/build.mjs preview h5` | 预览服务（默认端口 4173） |
 | `npm run build:mp-weixin` | `node tools/build.mjs build mp-weixin` | 微信构建 + 自动压图 + 包体校验（≤2 MiB） |
-| `npm test` | `node tools/run-tests.mjs` | 27 组测试，必须全绿 |
+| `npm test` | `node tools/run-tests.mjs` | 30 组测试，必须全绿 |
 | `npm run typecheck` | `tsc -p tools/tsconfig.check.json` | 类型检查（0 错误） |
 | `npm run simulate` | `node tools/simulate.mjs` | 固定种子整局模拟 + SHA-256 基线 |
 | `npm run parity` | `node tools/parity.mjs` | 200 种子统计平价 |
@@ -73,10 +73,10 @@
 | `core/board.ts` | 4×4 棋盘纯逻辑：滑动、合并（mergedFrom）、生成（spawnTile）、回合减半（halveGridTiles）、起始点放置 | 棋盘行为、生成概率 |
 | `core/battle.ts` | 战斗纯函数：processTurn（滑动回合）、getBattlePreview（伤害预估）、resolveRound（结算）、startNewRound、getCombinedCardModifiers | 战斗公式、新机制消费点 |
 | `core/cardEffects.ts` | 卡牌效果系统：EFFECT_RULES 校验表、validateCard（六色约束）、collectCardModifiers（聚合）、deriveCardPlayer（白卡→属性） | 新增效果键、卡牌校验规则 |
-| `core/upgrade.ts` | UPGRADE_POOL（37 张卡定义）、pickUpgrades（加权抽卡）、upgradeCost、cardClassText/Description | 加卡、改卡价、抽卡权重 |
+| `core/upgrade.ts` | UPGRADE_POOL（47 张卡定义）、pickUpgrades（加权抽卡）、upgradeCost、cardClassText/Description | 加卡、改卡价、抽卡权重 |
 | `core/equipment.ts` | 345 件装备生成、套装效果（EquipSetEffects）、computeEquipBonuses、getEffectivePlayer | 装备/套装/掉落品质 |
 | `core/enemy.ts` | 76 条图鉴敌人、分层出现、词缀系统（13 条）、无尽生成、每回合成长常量 | 敌人、词缀、难度曲线 |
-| `core/events.ts` | 25 个事件（94 选）、19 种既有效果类型校验与缓存结算、getEventChoiceDisabledReason、描述生成 | 事件数据、阶段池、效果类型；详见 EVENTS_GUIDE |
+| `core/events.ts` | 34 个强制事件（112 选 × 3 档）、15 种效果类型校验、`resolveEventOutcome` 加权抽档、`buildEventResult` 描述生成 | 事件数据、阶段池、三档结果；详见 EVENTS_GUIDE |
 | `core/consumables.ts` | 5 种消耗品定义与使用场景校验 | 消耗品 |
 | `core/route.ts` | 路线生成（10+1 层、分支连线 makeEnemy 接敌人系统） | 路线结构、敌人分布 |
 | `core/routeLayout.ts` | 地图纯展示坐标（状态着色、层距、抖动） | 地图视觉 |
@@ -86,9 +86,9 @@
 | `store/helpers.ts` | buildShop、rollRewardChoices、applyMetaUpgrades、xpToNext | 商店构造、奖励抽取 |
 | `store/initialState.ts` | 初始状态（玩家属性、runState 字段） | 新增全局状态字段 |
 | `store/debugActions.ts` | 开发调试动作（__DEV__ 才生效） | 调试功能 |
-| `components/screens/*.vue` | 10 个屏幕：Title/Route/Battle/Reward/Shop/Rest/Meta/GameOver/BossChoice + EventPanel | 屏幕级 UI |
+| `components/screens/*.vue` | 屏幕组件：Title/Route/Battle/Reward/Shop/Rest/Meta/GameOver/BossChoice（9 个）＋ 根 components 下 EventPanel，共 10 个屏幕 | 屏幕级 UI |
 | `components/*.vue` | Board/Tile（棋盘渲染与动效）、CardIcon/CardDetails/ItemIcon/MapIcon、CardDetails（效果文案渲染）、ExpandPanel、StatusBar、EnemyDisplay、BattleItems（战斗道具栏）、ConsumablesPanel、UpgradesPanel、EquipmentPanel、GameRulesPanel、AttributeHelp、ResultModal、DebugPanel、BestiaryPanel | 面板与展示组件 |
-| `composables/` | useSwipe（触摸+指针+键盘）、usePanelMotion（弹层开合状态机）、useFeedback（提示）、useMotionPreference（减少动态）、useBoardEffects? — 见 utils | 交互模式 |
+| `composables/` | useSwipe（触摸+指针手势）、usePanelMotion（弹层开合状态机）、useFeedback（提示）、useMotionPreference（减少动态，系统偏好监听仅 H5）；键盘方向键在 Board 组件内监听 | 交互模式 |
 | `utils/boardEffects.ts` | 棋盘动效数据层：buildBoardRenderPlan、slideAttackDelta、formatAttackGain、动效预算常量 | 棋盘特效、浮字 |
 | `utils/displayText.ts` | summarizeEffect/summarizeCard/summarizeConsumable（效果→通俗文案）、getActualHealGained、cardClassHelp | 效果文案 |
 | `utils/attributeInfo.ts` | 属性说明弹窗内容（11 个属性键） | 属性说明 |
@@ -128,7 +128,7 @@
 | reward | _showNextReward()（队列非空时自动） | PICK_UPGRADE / SKIP_REWARD（FIFO，一份一份） |
 | shop | SELECT_NODE(shop) | GO_TO_ROUTE()（可随时离开，节点可重入） |
 | rest | SELECT_NODE(rest) | GO_TO_ROUTE()（未休整也可离开） |
-| event | SELECT_NODE(event) | 无中途退出——必须选一个选项；每个交易事件含 type:'none' 安全出口 |
+| event | SELECT_NODE(event) → CHOOSE_EVENT → LEAVE_EVENT | 无中途退出——必须选一个选项，点选即结算；没有安全出口 |
 | boss_choice | boss 战胜利奖励队列耗尽后 | BOSS_DEFEATED('continue'→下一阶段 / 'end'→胜利结算) |
 | meta | 标题页 GO_TO_META_SHOP | 购买/返回 |
 | gameover | 死亡 / 主动结算 | START_RUN 重开 |
@@ -163,8 +163,8 @@
 
 ### 4.1 滑动与合并
 
-- `slideGrid(grid, direction)`：整行/列推移，相邻等值合并一次；合并格 `value×2`、`mergedFrom=[idA,idB]`、`mergedSum += 合并后数值`（`core/board.ts` mergeLine）。
-- 一次滑动最多合并一次（新生成的格子不再参与）。
+- `slideGrid(grid, direction)`：整行/列推移，相邻等值合并；合并格 `value×2`、`mergedFrom=[idA,idB]`、`mergedSum += 合并后数值`（`core/board.ts` mergeLine）。
+- **同一方块在一次滑动中最多参与一次合并**（新生成的格子不再参与）；不同配对可以同次合并——如 `[2,2,2,2]` 向左滑出 `[4,4,0,0]`（mergedSum=8、两个合并格）。
 - 只有棋盘发生移动才消耗步数（`moved=false` 直接返回原状态，不耗步、不生成）。
 
 ### 4.2 生成
@@ -229,9 +229,10 @@ incoming      = max(1, ceil(armorDamage × (1 + vulnerability)))
 ### 5.3 出手伤害（enemyDamage，对敌）
 
 ```
-enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防)) + flatAttack    （totalAttack>0 才出手）
+enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAttack)    （totalAttack>0 才出手）
 ```
-- **算例**：蓄力 50、攻击倍率 1.5、敌防 20 → floor(75−20)=55。
+- **固定攻击加在 floor 之后、下限截断之内**：蓄力 10、倍率 1、敌防 100、固定攻击 5 → max(0, floor(−90)+5)=0，不会穿透防御白嫖伤害。
+- **算例**：蓄力 50、攻击倍率 1.5、敌防 20 → floor(55)+0=55。
 - 蓄力为 0 时**不会仅靠装备固定攻击出手**。
 
 ### 5.4 结算附加机制（resolveRound attack 闭包内）
@@ -265,7 +266,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防)) + flatAt
 
 ## 6. 六色强化卡体系
 
-**35 张持续卡 + 2 张即时治疗 = 37 个定义**（`core/upgrade.ts` 的 UPGRADE_POOL 长度 37，含即时卡；5 种携带道具另计）。逐卡数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)，事件获取渠道详单见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)，此处给体系规则 + 全部 37 个定义的速查表。
+**45 张持续卡 + 2 张即时治疗 = 47 个定义**（`core/upgrade.ts` 的 UPGRADE_POOL 长度 47，含即时卡；5 种携带道具另计）。逐卡数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)，事件获取渠道详单见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)，此处给体系规则 + 全部 47 个定义的速查表。
 
 ### 6.1 六色职责与规则
 
@@ -283,15 +284,15 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防)) + flatAt
 - 效果数值恒为正；正负语义由 type 定义（validateCardEffect 拒绝 value≤0）。
 - 红卡的"强正面"由 isStrongMechanic 白名单判定（burst/extraStrike/execute/greed ≥1，lifesteal ≥0.5）。
 
-### 6.2 全卡速查（37 张；公式化说明）
+### 6.2 全卡速查（47 张；公式化说明）
 
 **白（7）**：攻击强化 攻倍率+8%/层 ｜ 防御强化 防+8%/层 ｜ 生命训练 maxHp+8 获得时等量回血 ｜ 淘金者 金币+3%/层 ｜ 均衡训练 攻+5% 且防+5%/层 ｜ 血脉坚韧 maxHp+6 且防+3%/层 ｜ 见多识广 战斗经验+10%/层
 
 **蓝（7）**：快速思考 每回合+1步 ｜ 强力攻击 合并蓄力系数+10%/层 ｜ 灵活身法 生成护甲系数+0.2/层 ｜ 开局优势 每回合+4点起始方块 ｜ 蓄力起步 开局自带3点蓄力/层 ｜ 幸运生成 4 概率=10%+90%×评级÷(1+评级) ｜ 减半护佑 不减半概率=评级÷(1+评级)
 
-**金（8）**：连锁战意 连锁每层+4蓄力 ｜ 锻甲合流 合并数值25%→机制护甲 ｜ 护甲传承 保留评级+0.25 ｜ 生命汲取 吸血评级+0.08 ｜ 连锁回响 未合并回合连锁按比例保留 ｜ 猎手印记 斩杀线=最大生命×评级÷(1+评级) ｜ 致命节奏 暴击率=评级÷(1+评级) ｜ 过载核心 剩余每步→2蓄力
+**金（13）**：连锁战意 连锁每层+4蓄力 ｜ 锻甲合流 合并数值25%→机制护甲 ｜ 护甲传承 保留评级+0.25 ｜ 生命汲取 吸血评级+0.08 ｜ 连锁回响 未合并回合连锁按比例保留 ｜ 猎手印记 斩杀线=最大生命×评级÷(1+评级) ｜ 致命节奏 暴击率=评级÷(1+评级) ｜ 过载核心 剩余每步→2蓄力 ｜ 战魂图腾 每击败一个敌人攻倍率+2%（整局累积） ｜ 英魂宝珠 每击败一个敌人最大生命+3并回复（受治疗衰减） ｜ 熔炼掌握 每累计合并100点方块数值攻倍率+1% ｜ 挥金如土 每累计主动支付25金币攻倍率+1%（购买/交易/赌注计入，意外损失不计） ｜ 百战老兵 每进入一场战斗攻倍率+1% ｜ 磨砺之盾 每累计承受30点伤害固定减伤+1
 
-**红（5，均可来自狂战祭坛；猎魔契约也可来自星界棋局）**：狂战契约 爆发+100%/承伤+30% ｜ 血之契约 吸血0.5/流血3 ｜ 双刃赌局 追加攻击1/反噬4 ｜ 猎魔契约 斩杀线50%/承伤+25% ｜ 贪婪之约 金币×(1+评级)/灼烧4
+**红（7，均可来自狂战祭坛；猎魔契约也可来自星界棋局）**：狂战契约 爆发+100%/承伤+30% ｜ 血之契约 吸血0.5/流血3 ｜ 双刃赌局 追加攻击1/反噬4 ｜ 猎魔契约 斩杀线50%/承伤+25% ｜ 贪婪之约 金币×(1+评级)/灼烧4 ｜ 浴血狂怒 当前生命每降10%攻+6%（满血无加成）/承伤+25% ｜ 棘盾契约 受击按评级概率反弹(2×层数+本次减免量)/攻击散失+0.3
 
 **紫（5，诅咒）**：灼烧 每回合−2/层 ｜ 衰败 治疗衰减+0.2/层 ｜ 散能 蓄力散失+0.15/层 ｜ 迟滞 每回合步数−1/层（保底1） ｜ 脆甲 侵蚀+0.15/层（抵扣传承）
 
@@ -307,9 +308,9 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防)) + flatAt
 | elite 奖励 | 蓝+金 | _resolveKill |
 | boss 奖励 | 仅金 | _resolveKill |
 | 商店（3 槽） | 白/蓝/金，价 20/50/90 | buildShop |
-| 狂战祭坛（S1+） | 5 种红卡任选一份，或安全离开 | events.ts risk_shrine |
+| 狂战祭坛（S1+） | 6 种红卡必选其一（强制选择，无安全离开） | events.ts risk_shrine |
 | 诅咒藏书室（S2+） | 金卡+紫诅咒配对交易（5 组） | cursed_archive |
-| 深渊契约（S3+） | 金卡+黑宿命配对交易（3 组，需额外确认） | abyss_contract |
+| 深渊契约（S3+） | 金卡+黑宿命配对交易（3 组，黑卡三档都给、点选即生效无确认） | abyss_contract |
 | 流浪的净化师（S2+） | 40 金净化一层紫卡 | cleansing_hermit |
 | 信使／训练室（S1+） | `xp_1`；`balanced_1`／`def_up_1`／`vigor_1`，金币或固定生命成本 | lost_messenger／training_room |
 | 镜面水池（S2+） | `spawn_luck_1`／`halve_shield_1`／`atk_up_2` 各30金，或即时治疗 | mirror_pool |
@@ -348,7 +349,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防)) + flatAt
 | berserk_potion | 狂战药剂 | 45 | 本回合 | 爆发 +100% / 承伤 +30% |
 | cleanse_potion | 净化药剂 | 50 | 即时 | 移除一层紫卡 |
 
-**使用场景**：战斗药剂/卷轴只能在 `phase==='playing'` 使用（不耗步数）；净化只能在 route/shop/rest；`eventResult` 未确认时一律禁用；事件结果确认前不能使用任何道具。临时效果写进 `battleModifiers`（战斗级）或 `roundModifiers`（回合级），回合/战斗结束清除。
+**使用场景**：战斗药剂/卷轴只能在 `phase==='playing'` 使用（不耗步数）；净化只能在 route/shop/rest；`eventResult` 展示期间一律禁用（结果页只能离开）。临时效果写进 `battleModifiers`（战斗级）或 `roundModifiers`（回合级），回合/战斗结束清除。
 
 ---
 
@@ -438,50 +439,46 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防)) + flatAt
 
 ## 10. 事件系统
 
-**25 个事件、94 个选项**（`core/events.ts:90–414` EVENTS），原15个保留＋10个新事件各4–5选。按 `stageMin <= stage` 累计解锁，`pickEvent`（`core/events.ts:623–628`）在当前池内均匀抽取，不做跨节点去重。
+**34 个事件、112 个选项 × 3 档随机结果 = 336 档**（`core/events.ts` EVENTS）。全部为**强制奇遇**：点选即结算（结果页只做展示），收获不预告；每事件至少有一个选项的**全部三档**零依赖金币/生命/持有物，避免死锁。按 `stageMin <= stage` 累计解锁，`pickEvent` 在当前池内均匀抽取，不做跨节点去重。逐项三档概率表由 `tools/gen-events-guide.mjs` 自动生成到 EVENTS_GUIDE.md。
 
-| 解锁阶段 | 原有事件 | 新增事件（精确 ID） | 本阶段新增／累计池 |
+| 解锁阶段 | 既有事件 | 强制奇遇（精确 ID） | 本阶段新增／累计池 |
 |---|---|---|---|
-| S1+ | 宝箱、治愈之泉、暗影祭坛、陨落战士、狂战祭坛 | `abandoned_camp`／`lost_messenger`／`training_room`／`statue_purse` | 9／S1 9 |
-| S2+ | 赌徒的邀约、远古卷轴、看似平静的地面、诅咒藏书室、炼金补给、流浪的净化师 | `mirror_pool`／`abandoned_clock`／`roaming_smith`／`cleansing_altar` | 10／S2 19 |
-| S3+ | 神秘黑匣、垂死商人、远古锻造台、深渊契约 | `astral_chess`／`crimson_garden` | 6／S3及以后25 |
+| S1+ | 宝箱、治愈之泉、暗影祭坛、陨落战士、狂战祭坛、废弃营地、迷路的信使、机关训练室、石像的口袋 | `sinking_bridge`／`screaming_well`／`starving_ambush` | 12／S1 12 |
+| S2+ | 赌徒的邀约、远古卷轴、看似平静的地面、诅咒藏书室、炼金补给、流浪的净化师、镜面水池、废弃钟楼、游荡铸匠、断咒祭坛 | `collapsing_shrine`／`cursed_bargain`／`midnight_auction`／`greed_trial` | 14／S2 26 |
+| S3+ | 神秘黑匣、垂死商人、远古锻造台、深渊契约、星界棋局、猩红药圃 | `spirit_bargain`／`doom_gate` | 8／S3及以后34 |
 
-**所有25事件逐项 label／成本／精确卡与道具 ID×数量／效果／概率／stageMin**，以及装备随机 ID 规则与源码职责引用见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。这里只保留引擎概要，避免重复维护全表。
+**所有34事件逐项 label／成本／精确卡与道具 ID×数量／效果／概率／stageMin**，以及装备随机 ID 规则与源码职责引用见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。这里只保留引擎概要，避免重复维护全表。
 
 **核心原则**：
-1. **只能选一个、预览尚未生效**——`RESOLVE_EVENT`（`store/gameStore.ts:123–130`）一次掷骰并缓存 `eventResult`，不扣费、不发奖、不净化；`APPLY_EVENT`（`:136–211`）才应用，绝不重掷。应用结束清空事件，重复点击不重复发奖。
-2. **每个含交易的事件恰好一个 `type:'none'` 安全离开选项**；这是首次选择时的出口，不是预览后的取消。当前无取消／返回选项列表 action：已有预览时 RESOLVE 拒绝换选，`GO_TO_ROUTE`（`:311–314`）只允许商店／营地退出。
-3. **黑卡确认**——交易含黑卡时须 `CONFIRM_BLACK_EVENT`（`:132–134`）再 APPLY，确认标记本身不发卡。黑卡是否需要确认由实际卡定义推导；当前描述器残留的“可取消”文案并无 action 支持，不应当作功能。
-4. **预检与整份应用**——`getEventChoiceDisabledReason`／`getCardTradeDisabledReason`（`core/events.ts:465–548`）检查金币、生命、紫层、精确奖励定义与数量及装备条件；APPLY 还做批量安全累计预检。金币不得用未得奖励抵押；交易 `hpCost` 要求 `hp - hpCost >= 1`，不够则禁用，不是支付到1点的截断。
-5. **机关损血保底**——`disarm`／`sprint` 失败走 `hp_reduce`，`max(1, hp - value)` 至少留1点（`store/gameStore.ts:181–185`）；不套交易 `hpCost` 禁用规则，也不将此保底推广到可致死的战斗诅咒损血。
-6. **净化顺序**——APPLY 的 `removesPurple` 循环（`:163–166`）每次找持有列表首张合法紫卡，`_removeCardLayer`（`:670–676`）每次减一层，多层先减同张；两层净化不保证影响两种卡。黑卡不能净化，也不计入可净化层数。
-7. **即时回血不走卡 grant**——复用事件 `heal`／`gold_heal`／`heal_curse`；`_canGrantCards`（`:621–637`）只接受持续卡，所以不能用 `heal_1`／`heal_2` instant grant 冒充。百分比治疗基于有效总上限，受治疗衰减；上限诅咒先治疗，再降低基础上限（最低10）并夹当前生命。
-8. **重铸与入库**——`getReforgeEligibleItem`（`core/events.ts:416–426`）取背包首件未装备普通装备，同 ID 有穿戴份数时全部排除；随机装备缓存精确 compound ID，入背包不自动穿戴；携带道具入库不自动使用。
+1. **只能选一个、点选即结算**——`CHOOSE_EVENT`（`store/gameStore.ts`）在一次确定性作用域 RNG（`event-choice` + 选项序号）内完成 1 次分支抽取 + 档内结算（金币区间再抽 1 次、随机装备抽 3 次、重铸抽 4 次），立即扣费、发奖、净化并缓存 `eventResult`（含 `outcomeLabel`/`tone`）；结果页只做展示，`LEAVE_EVENT` 清空事件并接奖励队列或回路线。随机只抽一次，不可重选。
+2. **强制选择、无安全离开**——所有事件标记 `forced: true`。防死锁规则：每事件至少有一个选项的**全部三档**零依赖（设计、`events-forced` 与 `events-expansion` 测试都强制这一点）。`GO_TO_ROUTE` 只允许商店／营地退出；事件页离开只能走 `LEAVE_EVENT`。
+3. **黑卡直接生效**——没有确认步骤；黑卡作为固定代价出现在相关选项的全部三档中（变的只是额外收获），点选后直接入手且本局不可解除。结果页以「■ 含黑卡 · 本局不可解除」标记。
+4. **预检与可行档剔除**——`resolveEventOutcome` 先按当前资源过滤不可行档（金币/生命/紫层不足等），再在可行档内按权重归一化抽取，因此结算中途不会因资源不足失败；整档全部不可行的选项在选项层禁用并显示首档原因。`CHOOSE_EVENT` 内保留 fail-fast invariant（批量安全累计、净化目标、重铸目标），失败抛 `事件结算失败（id）：原因`。金币不得用未得奖励抵押；交易 `hpCost` 要求 `hp - hpCost >= 1`。
+5. **损血保底**——`hp_reduce` 类档位 `max(1, hp - value)` 至少留 1 点；不套交易 `hpCost` 禁用规则，也不将此保底推广到可致死的战斗诅咒损血。
+6. **净化顺序**——结算的 `removesPurple` 循环每次找持有列表首张合法紫卡，`_removeCardLayer` 每次减一层，多层先减同张；两层净化不保证影响两种卡。黑卡不能净化，也不计入可净化层数。
+7. **即时回血不走卡 grant**——复用事件 `heal`／`gold_heal`／`heal_curse`；`_canGrantCards` 只接受持续卡，不能用 `heal_1`／`heal_2` instant grant 冒充。百分比治疗基于有效总上限，受治疗衰减；上限诅咒先治疗，再降低基础上限（最低10）并夹当前生命。
+8. **重铸与入库**——`getReforgeEligibleItem` 取背包首件未装备普通装备，同 ID 有穿戴份数时全部排除；随机装备缓存精确 compound ID，入背包不自动穿戴；携带道具入库不自动使用。
 
-**既有复用链**：EVENTS 数据 → `cardTradeChoice`（`core/events.ts:73–88`）或原效果定义 → 预检 → `resolveEventEffect`（`:638–693`）缓存 → EventPanel 展示／黑卡确认 → gameStore APPLY → `_grantUpgrade`／`_addConsumable`／`_removeCardLayer`／`_heal`。新增10事件复用现有效果类型，没有新增战斗效果键；精确职责路径详见指南第4节。
+**既有复用链**：EVENTS 数据（`pick`/`tradeO`/`o` 助手）→ `resolveEventOutcome`（`core/events.ts`）加权抽档 → `resolveEventEffect` 档内结算 → `CHOOSE_EVENT` invariant + 落地 → `eventResult` 展示 → `LEAVE_EVENT` 清理 → `_grantUpgrade`/`_addConsumable`/`_removeCardLayer`/`_heal`。所有事件复用现有效果类型，没有新增战斗效果键。
 
-**19 种效果类型**（EFFECT_FIELDS 白名单，未知 type 在选项校验／resolve 时报“事件效果不受支持”）：
+**15 种效果类型**（EFFECT_FIELDS 白名单，未知 type 在选项校验／resolve 时报“事件效果不受支持”；三档化后 `gamble`/`disarm`/`sprint`/`heal_mixed`/`heal.curse` 分支已摊平为显式档位并剪除）：
 
 | type | 字段 | 语义 |
 |---|---|---|
-| none | — | 安全离开 |
-| gold | value | ±金币（唯一允许负值） |
-| heal | value(+curse,curse_hp) | 回复总生命上限 value%；roll 命中 curse% 转为 heal_curse |
+| none | — | 无事发生（「空档」档位载荷） |
+| gold | value | ±金币（唯一允许负值，付费档用它表达） |
+| heal | value | 回复总生命上限 value% |
 | hp_reduce | value | 扣固定生命（留1） |
 | maxhp_down / maxhp_down_pct | value | 本局基础上限 −value%（最低10），夹当前生命 |
 | maxhp_up | value | 本局基础上限 +value |
 | xp | value | 直接经验，可能接升级奖励队列 |
 | hp_reduce_pct | value(+atk_mult,def_mult) | 当前生命 −value% 换倍率（留1） |
-| heal_curse | heal, curse_hp | 先按原总上限回 heal%，再降基础上限 curse_hp% |
-| gold_heal | heal, gold | 回血＋金币（heal_mixed 折算成它） |
+| heal_curse | heal, curse_hp | 先按原总上限回 heal%，再降基础上限 curse_hp%（curse_hp 必须为正） |
+| gold_heal | heal, gold | 回血＋金币 |
 | gold_xp | gold, xp | 金币＋直接经验 |
-| heal_mixed | heal, bonus_gold | 回血＋随机金币 |
-| disarm | gold_win, hp_lose | 50% 金币／50% 固定损血（留1） |
-| sprint | hp_dmg(+safe) | safe% 无事，否则扣血（留1） |
-| gamble | cost, win_chance, win_rarity | 预付足额赌注，输赢只扣一次 |
-| drop_equip | rarity/cost | 随机品质装备×1，缓存精确 ID |
+| drop_equip | rarity/cost | 随机品质装备×1（结算时 roll 具体 ID），缓存精确 ID |
 | reforge | sell_price, new_rarity, cost | 消耗背包首件未装备 common → 金币＋新品质装备×1 |
-| card_trade | grants, consumableGrants, cost, hpCost, gold, removesPurple | 精确持续卡／道具数量、紫层净化；缓存用 cardGrants，黑卡额外确认 |
+| card_trade | grants, consumableGrants, cost, hpCost, gold, removesPurple | 精确持续卡／道具数量、紫层净化；缓存用 cardGrants；无确认字段 |
 
 ---
 
@@ -556,9 +553,9 @@ doubleGold（套装结构支持）再 ×2。溢出伤害可选 1:1 金币或 2:1
 
 ## 14. 测试与基线基建
 
-### 14.1 27 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
+### 14.1 30 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
 
-board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（原有事件分层与契约）、events-expansion（10新事件46选项独立契约、支付/净化/重铸/黑卡/治疗真实动作回归）、map-icons（图标资产）、null-safe-costs、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集）、sixcolor-store（store 流程）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
+art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集）、sixcolor-store（store 流程）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
 
 ### 14.2 harness 原理与写法
 
@@ -569,18 +566,18 @@ board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-dom
 
 | 位置 | 内容 |
 |---|---|
-| `tools/tests/card-domain.mjs:19-21` | 池长 37、id 去重、即时卡数 |
-| `tools/tests/card-domain.mjs` expected 表 + 聚合断言 | 每张卡首效果 + 34 键×1000 层聚合值 |
-| `tools/tests/display-text.mjs:42` + expected 表 | 池长 37 + 每卡文案逐字断言 |
-| `tools/tests/card-events.mjs` expected 表 | 每个交易事件的 grants 清单 |
-| `tools/tests/events-progression.mjs` tradeEvents 契约 | 每事件交易数/允许类/代价 |
-| `tools/tests/board-rewards.mjs` | 金卡数 8 等 |
+| `tools/tests/card-domain.mjs:19-21` | 池长 43、id 去重、即时卡数 |
+| `tools/tests/card-domain.mjs` expected 表 + 聚合断言 | 每张卡首效果 + 40 键×1000 层聚合值 |
+| `tools/tests/display-text.mjs:63` + expected 表 | 池长 43 + 每卡文案逐字断言 |
+| `tools/tests/card-events.mjs` channel/obtainable 清单 | 每个交易事件的获取渠道与可获取断言 |
+| `tools/tests/events-progression.mjs` 阶段计数与逐项契约 | 每阶段事件数/结构/结算回归 |
+| `tools/tests/board-rewards.mjs` | 金卡数 13 等 |
 | `tools/tests/characterization.mjs` + `planned-red-store.mjs` | seed42 固定抽卡表 |
-| `tools/simulate.mjs` cardScore/eventScore | 新效果键的机器人权重 |
+| `tools/simulate.mjs` cardScore/outcomeScore/choiceScore | 新效果键的机器人权重 |
 
 ### 14.4 基线工作流（玩法改动评估，录制需单独批准）
 
-当前 `tools/simulate.mjs:21` 的 `RULE_VERSION` 为 **`sixcolor-v2-events25`**；parity／多策略工具从它导入版本。`tools/baselines/sixcolor-v1-*.json` 与历史 snapshot／parity 文件保留，不覆写。规则版本切换不等于基线已录制，也不是自动 record 的授权。
+当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v3-flat-defense`**（2026-11-12：新增固定减伤线性通道——坚甲/守拙/磨砺之盾/棘盾契约；更早版本基线保留作对比）。parity／多策略工具从它导入版本。`tools/baselines/` 下所有历史基线（sixcolor-v1-\*、v2 各版本）保留，不覆写。规则版本切换不等于基线已录制，也不是自动 record 的授权。
 
 玩法改动按任务授权做测试与只读验证；缺失新版本基线时先报告缺失，可用 `--report-only` 查看当前实际结果：
 
@@ -598,14 +595,14 @@ node tools/simulate.mjs --update-baseline
 node tools/parity.mjs record
 ```
 
-默认 check 只读，缺失／不匹配会失败；录制写当前版本／配置命名空间，同版本同配置会写既有目标，不能盲目每次规则改动都 record，更不能重录掩盖失败或重复种子不一致。回复说明行为与哈希变化原因、测量口径和未验证项，不把旧通关率改名为新率。**本轮27组测试、类型/SFC、H5/微信构建以及新版固定种子、200种子和五策略50＋50种子回归已通过。v2基线已按本轮批准流程单独记录并默认复验通过，原v1基线SHA-256保持不变。**
+默认 check 只读，缺失／不匹配会失败；录制写当前版本／配置命名空间，同版本同配置会写既有目标，不能盲目每次规则改动都 record，更不能重录掩盖失败或重复种子不一致。回复说明行为与哈希变化原因、测量口径和未验证项，不把旧通关率改名为新率。**本轮（sixcolor-v3-flat-defense）30组测试、类型/SFC 检查已通过；新版本基线尚未录制，模拟与统计以 `--report-only` 结果如实报告，待差异审阅并批准后单独录制；更早版本基线原样保留。**
 
 ---
 
 ## 15. UI 架构
 
 - **单页外壳** `pages/index/index.vue`：按 `store.screen` 切 10 个屏幕；悬浮工具栏（规则/装备/强化[战斗]/道具[非战斗]/主题/调试）。
-- **弹层模式**：`useModalMotion(reduced)` 返回 `{mounted, closing, open, close, reset, onTransitionEnd}`；宿主写法 = `v-if="x.mounted.value"` + `ui-motion-closing` 类 + `@click.capture/@keydown.capture blockClosing` + `@transitionend`；全局 `inputBlocked` 把所有弹层 mounted OR 起来 provide 给棋盘/道具栏阻断输入。**收起动画期间保留遮罩与阻断**。
+- **弹层模式**：`useModalMotion(reduced)` 返回 `{mounted, closing, open, close, reset, onTransitionEnd}`；宿主写法 = `v-if="x.mounted.value"` + `ui-motion-closing` 类 + `@click.capture/@keydown.capture blockClosing` + `@transitionend`；页面外壳把自身挂载的六个弹层（规则/装备/强化/道具/主题/调试）mounted OR 成全局 `inputBlocked` provide 给棋盘/道具栏阻断输入（各屏幕内部的弹层自行阻断自身交互）。**收起动画期间保留遮罩与阻断**。
 - **棋盘动效**：150ms 移动门 + 280ms 冲击 + 最多 64 装饰节点；浮字"攻击 +X"经 `formatAttackGain` 保留两位小数（浮点尾巴不外露）；减少动态效果时浮字改静态文字（数值反馈不丢失），装饰全部关闭。
 - **reduced-motion 三层**：`prefers-reduced-motion` 媒体查询、`.motion-reduced`（容器类）、`.zcode-motion-reduced`（H5 documentElement 类）。
 - **属性说明**：点生命/攻/防/速/步数/金币/经验/敌人属性 → AttributeHelp 弹窗（第一层通俗值+当前量，展开"怎么算"看公式）；数据源 effectivePlayer/activeCardModifiers/battlePreview。
@@ -629,8 +626,8 @@ node tools/parity.mjs record
 2. **代码改动验证**：按任务授权跑单测／类型／相关UI与只读simulate／parity；玩法差异需解释。纯文档任务若明确要求不跑test/build则只静态核对；基线录制须另经审阅与批准（§14.4），不随规则变更自动record。
 3. **哈希锚点纪律**：SHA-256 变化必须给出原因与 parity 证明，不得静默重录。
 4. **无限叠加原则**：任何卡不得设层数上限；概率/比例走评级曲线逼近 100%（唯一例外：步数保底 1）。
-5. **红/紫/黑获取铁律**：每种风险卡都必须有正常游戏获取事件；每个交易事件恰好一个安全出口。
-6. **事件预览缓存**：掷骰只在 RESOLVE_EVENT，APPLY 不重掷。
+5. **红/紫/黑获取铁律**：每种风险卡都必须有正常游戏获取事件；事件强制选择（无安全出口），但每个事件必须至少有一个不依赖金币、生命或持有物的可用选项。
+6. **事件点选即结算**：`CHOOSE_EVENT` 在一次确定性作用域抽签内完成分支抽取与档内结算并缓存 `eventResult`；不重抽、不重掷，重复选择不重复发奖。
 7. **文案禁词**：summarizeEffect 输出禁"评级/系数/强力收益/正面收益/负面代价"；事件文本禁"不详/永久/半价/可欠债/稀有以上/损失 N 步/跳过一次地图移动"。
 8. **数值文本通俗化**：面向玩家的文案给"实际值/百分比"，公式细节收进"怎么算"。
 9. **C 盘备份目录只读**；开发只动 `E:\Zcode project\z80z-2048`。
@@ -654,11 +651,11 @@ node tools/parity.mjs record
 
 ### 18.2 加一个事件
 
-在 `core/events.ts` EVENTS 加定义（精确id、stageMin、choices；交易用既有 `cardTradeChoice`，即时治疗用 `heal`，机关／装备／重铸复用原效果）→ 检查 preview／APPLY职责与成本预检 → 按实际数据同步事件计数、阶段累计池及相关测试（card-events／events-progression等）→ 文档同步 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md) 全部选项、本文§6／§10与 SIXCOLOR_RULES／README入口。只有新效果字段才走§18.3；规则版本与是否录制基线按§14.4分别决定。当前25事件复用19类效果，无需为新增来源扩战斗机制。
+在 `core/events.ts` EVENTS 加定义（精确id、stageMin、choices；三档用既有 `pick`/`tradeO`/`o` 助手，即时治疗用 `heal`，机关／装备／重铸复用原效果）→ 检查选项门禁（`getEventChoiceDisabledReasonForChoice`）与结算职责（`CHOOSE_EVENT` fail-fast）→ 按实际数据同步事件计数、阶段累计池及相关测试（events-expansion 字面量契约／events-progression等）→ `node tools/gen-events-guide.mjs --write` 重新生成 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md) 并同步本文§6／§10与 SIXCOLOR_RULES／README入口。只有新效果字段才走§18.3；规则版本与是否录制基线按§14.4分别决定。当前34事件复用15类效果，无需为新增来源扩战斗机制。
 
 ### 18.3 加一个效果字段（如 removesPurple）
 
-events.ts：EFFECT_FIELDS 白名单 → cardTradeChoice/结算透传 → getCardTradeDisabledReason 校验（context 缺字段时给禁用原因）→ describeCardTrade 文案 → gameStore APPLY_EVENT 原子预检+应用 → 测试同步。
+events.ts：EFFECT_FIELDS 白名单 → `pick`/`tradeO`/`o` 助手与结算透传 → getCardTradeDisabledReason 校验（context 缺字段时给禁用原因）→ resolveEventEffect/gameStore `CHOOSE_EVENT` 点选即结算（invariant fail-fast）→ 测试同步。
 
 ### 18.4 调一个数值
 
@@ -670,7 +667,7 @@ events.ts：EFFECT_FIELDS 白名单 → cardTradeChoice/结算透传 → getCard
 
 ### 18.6 发版检查单
 
-tests 27/27 → tsc 0 错 → SFC 编译 → simulate/parity 基线 → `build h5` + `build mp-weixin`（包体 ≤2MiB）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
+tests 30/30 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
 
 ---
 
@@ -678,7 +675,9 @@ tests 27/27 → tsc 0 错 → SFC 编译 → simulate/parity 基线 → `build h
 
 - **微信真机未实测**：编译通过 ≠ 真机性能/兼容验证；所有"微信可用"结论仅到编译级。
 - **模拟 ≠ 真人平衡**：tools 里的五种策略（baseline/corner/attack/defense/economy）是固定算法，通关率不代表真人。
-- **2026-11-07 前期平衡包（历史实测，不是25事件新率）**（针对“前期玩家数值追不上怪物”的实测3~10倍倒挂）：防御公式÷6→÷3、敌人回合成长前两回合缓冲、stage1/2敌防与boss数值下调（岩石巨人130/28/10、远古巨龙170/44/14）。当时attack策略打过stage1 boss 26/50（52%）、stage2 boss 14/50（28%）、整局胜利8~15/50（改前5）；baseline当时仍全灭。这些样本保留历史口径，不能迁移为 `sixcolor-v2-events25` 的通关率，扩充后需独立测量。原目标口径：boss击杀/存活比≤1.5x；stage3+高压是后期曲线设计。
+- **2026-11-07 前期平衡包（历史实测，不是当前规则的通关率）**（针对“前期玩家数值追不上怪物”的实测3~10倍倒挂）：防御公式÷6→÷3、敌人回合成长前两回合缓冲、stage1/2敌防与boss数值下调（岩石巨人130/28/10、远古巨龙170/44/14）。当时attack策略打过stage1 boss 26/50（52%）、stage2 boss 14/50（28%）、整局胜利8~15/50（改前5）；baseline当时仍全灭。这些样本保留历史口径，不能迁移为 `sixcolor-v2-forced-events-r2` 的通关率，扩充后需独立测量。原目标口径：boss击杀/存活比≤1.5x；stage3+高压是后期曲线设计。
+- **2026-11-09 三档随机事件（sixcolor-v2-random-events，历史实测口径同上）**：34 事件全部改为每选项 3 种随机结果（主题化档名、点选即结算、收获不预告、黑卡免确认）。与前版 `sixcolor-v2-forced-events-r2` 五策略 50+50 对比：baseline 3→2 / 2→2、corner 12→12 / 17→13、attack 15→14 / 19→19、defense 14→12 / 14→11、economy 11→11 / 11→10（checkpoint/holdout 通关数），整体**略变难**（收益事件档位略抠、付费落空档引入），attack/corner/economy 基本持平；200 种子 parity 17 胜（前版 20）、全部 valid、0 invalid slides。三档波动大于前版单点结算，真人体感差异会大于算法差异。
+- **2026-11-10 一致性修复（sixcolor-v2-consistency-fixes，前一版本）**：①浴血狂怒换算修正——`lowHpFury` 参数 6 现按“每损失 10% 生命攻击倍率 +6 个百分点”计（半血单层 +0.30，修正前错误地 +30）；②事件负金币档标记主动支付并经 `_spendGold` 计入“挥金如土”（修正前绕过消费统计），意外损失不计；③选项代价摘要 `summarizeChoiceCost` 由 UI 与文档生成器共用，代价列不再全部显示“无”；④微信包体超 2MiB 构建失败真正生效。新基线待审阅批准后录制。
 - **无尽模式**：stage≥4 程序生成，数值随 stage 线性放大，没有"通关终点"——平衡数据只覆盖 stage1~3 为主。
 - **局内不自动存档**：刷新/关页即弃局（设计如此）；只有局外 meta 持久化。
 - 浏览器验证基于 H5；微信端共享逻辑但渲染层（skyline/webview 差异）未覆盖。
@@ -699,5 +698,5 @@ tests 27/27 → tsc 0 错 → SFC 编译 → simulate/parity 基线 → `build h
 | 灵魂碎片 | 局外货币：结算获得，买永久升级/图鉴奖励 |
 | pending 点数 | 起始方块没放完的余额，空位出现后继续放置 |
 | 可再次进入 | 商店/营地在选定下一层前的重入状态（不标 completed） |
-| 黑卡确认 | 深渊契约类交易的二段确认（CONFIRM_BLACK_EVENT） |
+| 点选即结算 | 事件选项点击后一次抽签结算（`CHOOSE_EVENT`），无预览/确认步骤；结果页只做展示 |
 | ui-entry / ui-feedback | 全局入场动画与成功提示类（App.vue 公共原语） |

@@ -2,7 +2,7 @@
 
 本文件为 AI 协作代理在本仓库工作时必须遵守的约定。执行任何改动前先读本文件。
 
-> **系统知识库**：游戏规则、全部机制公式、系统数值、测试与基线工作流、标准任务手册见 [PROJECT_ANALYSIS.md](./PROJECT_ANALYSIS.md)。做任务安排前先读它；卡牌数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)。若文档与代码冲突，以代码为准并回填文档。
+> **系统知识库**：全部文档的合并阅读入口见 [MASTER_DOC.md](./MASTER_DOC.md)；游戏规则、机制公式、测试与基线工作流、标准任务手册见 [PROJECT_ANALYSIS.md](./PROJECT_ANALYSIS.md)。做任务安排前先读它；卡牌数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)。若文档与代码冲突，以代码为准并回填文档（先改源文档，再用 `tools/gen-master-doc.mjs --write` 同步总文档）。
 
 ## 项目简介
 
@@ -12,7 +12,7 @@ Z80Z：基于 2048 玩法的 Roguelike 爬塔微信小程序（uni-app Vue 3 + P
 - `store/`：Pinia 状态（gameStore 游戏流程 + helpers 纯函数）
 - `components/`：UI 组件（`screens/` 下按屏幕拆分）
 - `pages/index/`：唯一页面（屏幕切换外壳）
-- `tools/`：测试基建（无构建链路，逻辑测试跑在 Node 上）
+- `tools/`：测试、模拟、统计与官方构建/压图/上传入口（逻辑测试跑在 Node 上，无构建链路依赖）
 - `manifest.json` 的 appid 必须保持占位符 `touristappid`
 
 ## 测试与验证（改动后必跑）
@@ -21,7 +21,7 @@ Z80Z：基于 2048 玩法的 Roguelike 爬塔微信小程序（uni-app Vue 3 + P
 node tools/run-tests.mjs                   # TDD 单测，必须全绿
 node tools/simulate.mjs                    # 固定种子整局模拟；SHA-256 为回归锚点
 node tools/parity.mjs                      # 200 种子统计平价（数值分布改动需证明无偏差）
-node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检查，错误数不得超过 tools/tsc-baseline.txt
+node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检查，必须 0 错误
 ```
 
 规则：`simulate.mjs` 的 SHA-256 哈希是行为回归锚点——除明确授权的改动外不得变化；变化时必须给出平价证明。

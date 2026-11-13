@@ -7,8 +7,8 @@
 - **2048 战斗**：每回合基础 6 步。合并产出的数字累计为攻击，盘面数字之和折算为防御，空格越多速度越快。回合后方块减半，最低为 2。
 - **先后手结算**：速度相同时玩家先手；先手致死会阻止后手行动。闪避、吸血、回复、首击减伤和反弹分别结算并显示原因。
 - **路线爬塔**：每阶段 10 层加 1 个首领层，纸质墨线地图包含真实分叉与汇合，只能进入虚线相连的节点。三阶段后进入无尽模式。
-- **装备与成长**：20 套套装、5 部位、3 品质，另有 15 款非套装装备。强化采用白／蓝／金／红／紫／黑六种作用分类，35 张持续卡可无限叠加，另有 2 种即时补给（卡池共 37 个定义）和 5 种携带道具；装备品质与强化分类独立。
-- **事件选择**：25 个事件，阶段累计池为 S1 9／S2 19／S3+ 25；新增 10 个事件各 4–5 选。每次只能选一个，预览缓存结果但尚不应用，点「继续前进」才 APPLY；黑卡还须额外确认，当前无预览后取消 action。金币、交易生命成本、紫卡层数或重铸装备不足时禁用，不会隐式欠债。全部选项、成本和奖励见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。
+- **装备与成长**：20 套套装、5 部位、3 品质，另有 15 款非套装装备。强化采用白／蓝／金／红／紫／黑六种作用分类，45 张持续卡可无限叠加，另有 2 种即时补给（卡池共 47 个定义）和 5 种携带道具；装备品质与强化分类独立。
+- **事件选择**：34 个强制奇遇，阶段累计池为 S1 12／S2 26／S3+ 34；每个选项有 **3 种随机结果**（权重和 100，收获不预告），点选即结算并在结果页展示本次档位与收获。不可行档抽取时自动剔除，仅三档全部不可行才整项禁用；每事件至少有一个三档全零依赖的选项，0 金残血也能推进，不会隐式欠债；主动支付计入挥金如土成长，意外损失不计；黑卡点选直接生效且本局不可解除。全部选项、代价与三档概率见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。
 - **种子复现**：同一初始存档、种子和操作序列得到相同游戏结果；随机按节点、回合和刷新次数隔离。UI 动画 ID 不属于玩法结果。
 
 ## 开发与构建
@@ -62,13 +62,13 @@ node tools/simulate.mjs --update-baseline
 node tools/parity.mjs record
 ```
 
-当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v2-events25`**，parity／多策略工具复用该版本；新录制使用 v2 命名空间。`tools/baselines/sixcolor-v1-*.json` 以及旧 `baseline.snapshot.json`、`parity-before.json`、`parity-after.json` 均保留，不覆写。缺失 v2 基线时先用 `--report-only` 审阅真实结果，不用 record 掩盖失败，也不要求重新设计仍保持旧 ±15%。模拟记录实际层数、护甲、道具、损血／治疗、消费及失败原因。
+当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v3-flat-defense`**（新增固定减伤卡组：坚甲/守拙/磨砺之盾/棘盾契约），parity／多策略工具复用该版本；新录制使用该命名空间。`tools/baselines/` 下 `sixcolor-v1-*`、`sixcolor-v2-random-events-*` 以及旧 `baseline.snapshot.json`、`parity-before.json`、`parity-after.json` 均保留，不覆写。缺失当前版本基线时先用 `--report-only` 审阅真实结果，不用 record 掩盖失败，也不要求重新设计仍保持旧 ±15%。模拟记录实际层数、护甲、道具、损血／治疗、消费及失败原因。
 
-**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是 25 事件版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮27组测试、类型与SFC检查、固定种子／200种子及五策略50＋50种子回归已通过；新版基线已独立录制并复验，v1文件未覆盖。五策略统计为算法结果，不代表真人，完整改前／改后报告随本轮交付包提供。
+**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮30组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
 
 ## 本轮改进
 
-界面减负、棋盘下方道具、属性说明和合并动效见 [UI_MOTION_IMPROVEMENTS.md](./UI_MOTION_IMPROVEMENTS.md)。六色卡片、道具、净化、起始点数与数值见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)。25事件的全部选项、成本、精确奖励和概率见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)，引擎与任务路径汇总见 [PROJECT_ANALYSIS.md](./PROJECT_ANALYSIS.md)。
+界面减负、棋盘下方道具、属性说明和合并动效见 [UI_MOTION_IMPROVEMENTS.md](./UI_MOTION_IMPROVEMENTS.md)。六色卡片、道具、净化、起始点数与数值见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)。34 个事件的全部选项、成本、精确奖励和概率见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)（由源码自动生成），引擎与任务路径汇总见 [PROJECT_ANALYSIS.md](./PROJECT_ANALYSIS.md)。全部文档的合并阅读入口见 [MASTER_DOC.md](./MASTER_DOC.md)。
 
 详见 [IMPROVEMENTS.md](./IMPROVEMENTS.md)：机制修复、视觉交互、测试结果、基线变化和未验证范围。纸质分叉地图另见 [MAP_IMPROVEMENTS.md](./MAP_IMPROVEMENTS.md)。怪物、装备和场景美术见 [ART_IMPROVEMENTS.md](./ART_IMPROVEMENTS.md)。
 
