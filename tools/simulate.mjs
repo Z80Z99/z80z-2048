@@ -18,8 +18,8 @@ const { generateRoute } = loadProject('./core/route')
 const { createScopedRng } = loadProject('./core/random')
 const { useGameStore } = loadProject('./store/gameStore')
 
-export const RULE_VERSION = 'sixcolor-v2-events25'
-export const POLICY_VERSION = 1
+export const RULE_VERSION = 'sixcolor-v3-flat-defense'
+export const POLICY_VERSION = 2
 export const STRATEGIES = ['baseline', 'corner', 'attack', 'defense', 'economy']
 export const DEFAULT_SEED = 12345
 export const BASELINE_DIRECTORY = path.join(import.meta.dirname, 'baselines')
@@ -114,12 +114,13 @@ function cardScore(def, store, strategy) {
   let score = 0
   for (const effect of def.effects) {
     const value = effect.value
-    const attack = { attackBonus: 100, mergeCoefficient: 100, startingPoints: 4, comboBonus: 4, burstCoefficient: 25, extraStrikeRating: 20, critRating: 90, executeRating: 60, savedStepsCharge: 12, chargeStart: 12, comboGrace: 10 }
-    const defense = { defenseBonus: 60, spawnArmor: 40, mergeArmor: 60, armorCarry: 35 }
+  // POLICY_VERSION 2：flatDR 卡组权重；lowHpFury 改按“每10%失血6个百分点”语义（修正旧语义高估）。
+  const attack = { attackBonus: 100, mergeCoefficient: 100, startingPoints: 4, comboBonus: 4, burstCoefficient: 25, extraStrikeRating: 20, critRating: 90, executeRating: 60, savedStepsCharge: 12, chargeStart: 12, comboGrace: 10, killAttackBonus: 90, smeltMastery: 80, spendBlade: 60, veteranBlade: 50, lowHpFury: 10 }
+  const defense = { defenseBonus: 60, spawnArmor: 40, mergeArmor: 60, armorCarry: 35, flatDamageReduction: 130, guardedStance: 55, shieldGrind: 90, thornRating: 70 }
     if (effect.type in attack) score += value * attack[effect.type] * weights.attack
     else if (effect.type in defense) score += value * defense[effect.type] * weights.defense
     else if (effect.type === 'bonusTurns') score += value * 18 * (weights.attack + weights.defense) / 2
-    else if (effect.type === 'maxHpBonus') score += value * weights.hp
+    else if (effect.type === 'maxHpBonus' || effect.type === 'killHpBonus') score += value * weights.hp
     else if (effect.type === 'lifestealRating') score += value * 120 * weights.hp
     else if (effect.type === 'goldBonus' || effect.type === 'greedRating') score += value * 120 * weights.economy
     else if (effect.type === 'xpBonus') score += value * 90 * weights.economy
@@ -164,25 +165,38 @@ function routeScore(node, store, strategy) {
   return 5 - (node.enemy?.attack ?? 0) / 10 - (node.enemy?.hp ?? 0) / 50
 }
 
-function eventHasNegative(effect) {
-  if (['hp_reduce', 'hp_reduce_pct', 'maxhp_down', 'maxhp_down_pct', 'heal_curse', 'gamble', 'trap'].includes(effect.type)) return true
-  for (const field of ['curse', 'curse_hp', 'hpCost', 'hp_lose', 'hp_dmg', 'lose_gold']) if (effect[field] > 0 || (effect[field] && typeof effect[field] === 'object')) return true
+function effectHasNegative(effect) {
+  if (['hp_reduce', 'hp_reduce_pct', 'maxhp_down', 'maxhp_down_pct', 'heal_curse'].includes(effect.type)) return true
+  // 支付金币与负 gold 也是代价：强制事件里“花 25 金币烧掉契约”不该被当成免费安全项。
+  if (effect.type === 'gold' && expectedNumber(effect.value) < 0) return true
+  if ((effect.cost ?? 0) > 0) return true
+  for (const field of ['curse_hp', 'hpCost']) if (effect[field] > 0 || (effect[field] && typeof effect[field] === 'object')) return true
   return (effect.cardGrants ?? effect.grants ?? []).some(grant => !cardById(grant.id) || cardById(grant.id).effects.some(item => item.polarity === 'negative'))
     || (effect.consumableGrants ?? []).some(grant => consumableById(grant.id)?.effects.some(item => item.polarity === 'negative'))
 }
+const choiceHasNegative = choice => choice.outcomes.some(outcome => effectHasNegative(outcome.effect))
 const expectedNumber = value => typeof value === 'number' ? value : value && Number.isFinite(value.min) && Number.isFinite(value.max) ? (value.min + value.max) / 2 : 0
-function eventScore(effect, store, strategy) {
+function outcomeScore(effect, store, strategy) {
   const weights = POLICY_WEIGHTS[strategy]
-  const known = ['none', 'gold', 'heal', 'gold_heal', 'gold_xp', 'xp', 'maxhp_up', 'drop_equip', 'reforge', 'card_trade']
+  const known = ['none', 'gold', 'heal', 'gold_heal', 'gold_xp', 'xp', 'maxhp_up', 'drop_equip', 'reforge', 'card_trade', 'heal_curse', 'hp_reduce', 'hp_reduce_pct', 'maxhp_down_pct']
   if (!known.includes(effect.type)) return -1000
-  let score = -expectedNumber(effect.cost) * 0.5 - expectedNumber(effect.hpCost) * 3
+  const missingHp = () => Math.max(0, store.effectivePlayer.maxHp - store.player.hp)
+  const healScore = percent => Math.min(missingHp(), store.effectivePlayer.maxHp * expectedNumber(percent) / 100) * weights.hp
+  // 生命代价按缺失比例放大：残血时卖血选项迅速变得不划算。
+  const hpRatio = store.effectivePlayer.maxHp > 0 ? store.player.hp / store.effectivePlayer.maxHp : 1
+  let score = -expectedNumber(effect.cost) * 0.5 - expectedNumber(effect.hpCost) * 3 * (1 + Math.max(0, 0.6 - hpRatio) * 4)
   if (effect.type === 'none') return 0
   if (effect.type === 'gold') score += expectedNumber(effect.value) * weights.economy
-  else if (effect.type === 'heal') score += Math.min(store.effectivePlayer.maxHp - store.player.hp, store.effectivePlayer.maxHp * expectedNumber(effect.value) / 100) * weights.hp
+  else if (effect.type === 'heal') score += healScore(effect.value)
   else if (effect.type === 'xp') score += expectedNumber(effect.value)
   else if (effect.type === 'maxhp_up') score += expectedNumber(effect.value) * weights.hp
-  else if (effect.type === 'gold_heal' || effect.type === 'gold_xp') score += expectedNumber(effect.gold) * weights.economy + expectedNumber(effect.xp) + Math.min(store.effectivePlayer.maxHp - store.player.hp, store.effectivePlayer.maxHp * expectedNumber(effect.heal) / 100) * weights.hp
-  else if (effect.type === 'drop_equip' || effect.type === 'reforge') score += 10
+  else if (effect.type === 'gold_heal' || effect.type === 'gold_xp') score += expectedNumber(effect.gold) * weights.economy + expectedNumber(effect.xp) + healScore(effect.heal)
+  else if (effect.type === 'heal_curse') score += healScore(effect.heal) - expectedNumber(effect.curse_hp) / 100 * store.effectivePlayer.maxHp * 0.6 * weights.hp
+  else if (effect.type === 'hp_reduce') score += -expectedNumber(effect.value) * weights.hp
+  else if (effect.type === 'hp_reduce_pct' || effect.type === 'maxhp_down_pct') {
+    score += -(expectedNumber(effect.value) / 100) * store.player.hp * weights.hp * (effect.type === 'hp_reduce_pct' ? 1 : 0.6)
+    score += (expectedNumber(effect.atk_mult) * 40 + expectedNumber(effect.def_mult) * 40) * weights.attack
+  } else if (effect.type === 'drop_equip' || effect.type === 'reforge') score += 10
   else if (effect.type === 'card_trade') {
     score += expectedNumber(effect.gold) * weights.economy
     if (effect.removesPurple > 0) score += 6 * effect.removesPurple
@@ -193,6 +207,17 @@ function eventScore(effect, store, strategy) {
     for (const grant of effect.consumableGrants ?? []) score += 8 * grant.count
   }
   return score
+}
+// 三档随机结果：按权重取期望值评估整个选项。
+const choiceScore = (choice, store, strategy) => choice.outcomes.reduce((sum, outcome) => sum + outcome.weight / 100 * outcomeScore(outcome.effect, store, strategy), 0)
+
+// 强制事件没有离开出口：优先无负面档的选项；一个都没有时选期望最高的可执行选项，避免机器人卡死。
+export function pickEventChoice(store, { allowNegativeEvents = false, strategy = 'baseline' } = {}) {
+  if (!store.gameEvent) return null
+  const enabled = store.gameEvent.choices.map((choice, index) => ({ ...choice, index })).filter(choice => !store.eventChoiceDisabledReason(choice.index))
+  const safe = enabled.filter(choice => allowNegativeEvents || !choiceHasNegative(choice))
+  const pool = safe.length ? safe : enabled
+  return pool.sort((a, b) => choiceScore(b, store, strategy) - choiceScore(a, store, strategy))[0] ?? null
 }
 
 function visitShop(store, act, strategy) {
@@ -418,17 +443,13 @@ export function runSim(seed = DEFAULT_SEED, inputOptions = {}) {
         case 'event': {
           if (!store.gameEvent) { failure = { code: 'missing_event', detail: 'event screen without gameEvent' }; break }
           if (!store.eventResult) {
-            const choices = store.gameEvent.choices.map((choice, index) => ({ ...choice, index })).filter(choice => !store.eventChoiceDisabledReason(choice.index) && (options.allowNegativeEvents || !eventHasNegative(choice.effect)))
-            const chosen = choices.sort((a, b) => eventScore(b.effect, store, options.strategy) - eventScore(a.effect, store, options.strategy))[0]
-            if (!chosen) { failure = { code: 'event_no_safe_choice', detail: `No allowed enabled choice in ${store.gameEvent.id}` }; break }
-            act('RESOLVE_EVENT', [chosen.index], 'event_preview')
-            if (!store.eventResult) failure = { code: 'event_resolve_no_progress', detail: `Cannot resolve ${store.gameEvent.id} choice ${chosen.index}` }
+            const chosen = pickEventChoice(store, { allowNegativeEvents: options.allowNegativeEvents, strategy: options.strategy })
+            if (!chosen) { failure = { code: 'event_no_choice', detail: `No enabled choice in ${store.gameEvent.id}` }; break }
+            act('CHOOSE_EVENT', [chosen.index], 'event')
+            if (!store.eventResult) failure = { code: 'event_choose_no_progress', detail: `Could not settle ${store.gameEvent.id} choice ${chosen.index}` }
           } else {
-            if (!options.allowNegativeEvents && eventHasNegative(store.eventResult.effect)) { failure = { code: 'unexpected_negative_event', detail: 'Resolved negative result from policy-approved safe choice' }; break }
-            const black = store.eventResult.requiresBlackConfirmation || (store.eventResult.effect.cardGrants ?? []).some(grant => cardById(grant.id)?.cardClass === 'black')
-            if (black) act('CONFIRM_BLACK_EVENT', [], 'event_confirm')
-            act('APPLY_EVENT', [], 'event')
-            if (store.screen === 'event') failure = { code: 'event_apply_no_progress', detail: `Could not apply cached result in ${store.gameEvent.id}` }
+            act('LEAVE_EVENT', [], 'event_leave')
+            if (store.screen === 'event') failure = { code: 'event_leave_no_progress', detail: `Could not leave settled event in ${store.gameEvent?.id}` }
           }
           break
         }

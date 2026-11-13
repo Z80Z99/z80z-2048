@@ -16,8 +16,8 @@ export async function run() {
 
   assert.deepEqual(cards.CARD_CLASSES, ['white', 'blue', 'gold', 'red', 'purple', 'black'])
   assert.deepEqual(cards.NORMAL_CARD_CLASSES, ['white', 'blue', 'gold'])
-  assert.equal(cards.UPGRADE_POOL.length, 37)
-  assert.equal(new Set(cards.UPGRADE_POOL.map(def => def.id)).size, 37)
+  assert.equal(cards.UPGRADE_POOL.length, 47)
+  assert.equal(new Set(cards.UPGRADE_POOL.map(def => def.id)).size, 47)
   assert.equal(cards.UPGRADE_POOL.filter(def => def.kind === 'instant').length, 2)
   for (const def of cards.UPGRADE_POOL) {
     assert.equal(cards.validateCard(def), true, `${def.id} validates`)
@@ -79,23 +79,27 @@ export async function run() {
     atk_up_1: ['white', 'attackBonus', 0.08], def_up_1: ['white', 'defenseBonus', 0.08],
     max_hp_1: ['white', 'maxHpBonus', 8], gold_1: ['white', 'goldBonus', 0.03],
     balanced_1: ['white', 'attackBonus', 0.05], vigor_1: ['white', 'maxHpBonus', 6],
-    xp_1: ['white', 'xpBonus', 0.1],
+    xp_1: ['white', 'xpBonus', 0.1], flat_def_1: ['white', 'flatDamageReduction', 1],
     bonus_turn_0_5: ['blue', 'bonusTurns', 1], atk_up_2: ['blue', 'mergeCoefficient', 0.1],
     spawn_red_1: ['blue', 'spawnArmor', 0.2], start_tile_1: ['blue', 'startingPoints', 4],
     charge_start_1: ['blue', 'chargeStart', 3], spawn_luck_1: ['blue', 'spawnLuck', 0.05],
-    halve_shield_1: ['blue', 'halveShield', 0.1],
+    halve_shield_1: ['blue', 'halveShield', 0.1], guarded_stance: ['blue', 'guardedStance', 1],
     gold_combo: ['gold', 'comboBonus', 4], gold_merge_armor: ['gold', 'mergeArmor', 0.25],
     gold_carry: ['gold', 'armorCarry', 0.25], gold_lifesteal: ['gold', 'lifestealRating', 0.08],
     gold_combo_grace: ['gold', 'comboGrace', 0.5], gold_execute: ['gold', 'executeRating', 0.05],
     gold_crit: ['gold', 'critRating', 0.08], gold_saved_steps: ['gold', 'savedStepsCharge', 2],
     red_berserk: ['red', 'burstCoefficient', 1], red_blood: ['red', 'lifestealRating', 0.5],
     red_double: ['red', 'extraStrikeRating', 1], red_hunt: ['red', 'executeRating', 1],
-    red_greed: ['red', 'greedRating', 1],
+    red_greed: ['red', 'greedRating', 1], thorn_aegis: ['red', 'thornRating', 1],
     curse_burn: ['purple', 'burn', 2],
     curse_decay: ['purple', 'healingPenalty', 0.2], curse_charge: ['purple', 'chargeLoss', 0.15],
     curse_heavy: ['purple', 'heavyLegs', 1], curse_brittle: ['purple', 'armorErosion', 0.15],
     doom_soul: ['black', 'soulRecoil', 2], doom_rebirth: ['black', 'enemyRegen', 4],
     doom_rage: ['black', 'enemyRage', 1],
+    war_soul_totem: ['gold', 'killAttackBonus', 0.02], soul_orb: ['gold', 'killHpBonus', 3],
+    smelting_mastery: ['gold', 'smeltMastery', 0.01], spend_blade: ['gold', 'spendBlade', 0.01],
+    veteran_blade: ['gold', 'veteranBlade', 0.01], blood_fury: ['red', 'lowHpFury', 6],
+    shield_grind: ['gold', 'shieldGrind', 1],
     heal_1: ['white', 'heal', 12], heal_2: ['white', 'heal', 30],
   }
   for (const [id, [cardClass, type, value]] of Object.entries(expected)) {
@@ -109,12 +113,13 @@ export async function run() {
   assert.deepEqual(byId('red_double').effects.map(({ type, value }) => [type, value]), [['extraStrikeRating', 1], ['backlash', 4]])
   assert.deepEqual(byId('red_hunt').effects.map(({ type, value }) => [type, value]), [['executeRating', 1], ['vulnerability', 0.25]])
   assert.deepEqual(byId('red_greed').effects.map(({ type, value }) => [type, value]), [['greedRating', 1], ['burn', 4]])
+  assert.deepEqual(byId('thorn_aegis').effects.map(({ type, value }) => [type, value]), [['thornRating', 1], ['chargeLoss', 0.3]])
 
   const held = Object.entries(expected).map(([id]) => ({ def: byId(id), count: 1000 }))
   const heldBefore = JSON.stringify(held)
   const modifiers = effects.collectCardModifiers(held)
   assert.deepEqual(effects.emptyCardModifiers(), Object.fromEntries(Object.keys(modifiers).map(key => [key, 0])))
-  assert.equal(Object.keys(modifiers).length, 34)
+  assert.equal(Object.keys(modifiers).length, 44)
   assert.equal(modifiers.attackBonus, 130)
   assert.equal(modifiers.defenseBonus, 160)
   assert.equal(modifiers.maxHpBonus, 14000)
@@ -130,6 +135,16 @@ export async function run() {
   assert.equal(modifiers.critRating, 80)
   assert.equal(modifiers.savedStepsCharge, 2000)
   assert.equal(modifiers.greedRating, 1000)
+  assert.equal(modifiers.killAttackBonus, 20)
+  assert.equal(modifiers.killHpBonus, 3000)
+  assert.equal(modifiers.smeltMastery, 10)
+  assert.equal(modifiers.spendBlade, 10)
+  assert.equal(modifiers.veteranBlade, 10)
+  assert.equal(modifiers.lowHpFury, 6000)
+  assert.equal(modifiers.flatDamageReduction, 1000)
+  assert.equal(modifiers.guardedStance, 1000)
+  assert.equal(modifiers.thornRating, 1000)
+  assert.equal(modifiers.shieldGrind, 1000)
   assert.equal(modifiers.lifestealRating, 580)
   assert.equal(modifiers.bleed, 3000)
   assert.equal(modifiers.burn, 6000)
@@ -178,16 +193,16 @@ export async function run() {
     const lowHp = cards.pickUpgrades(rng, { hpRatio: 0.2 })
     assert.equal(lowHp[0].kind, 'instant')
     const noHeal = cards.pickUpgrades(rng, { count: 100, hpRatio: 0.2, excludeHeal: true })
-    assert.equal(noHeal.length, 22)
+    assert.equal(noHeal.length, 30)
     assert.ok(noHeal.every(def => def.kind === 'persistent'))
   }
   assert.deepEqual(cards.pickUpgrades(rng, { allowedClasses: [] }), [])
   assert.deepEqual(cards.pickUpgrades(rng, { count: 0, hpRatio: 0.1 }), [])
   const risky = cards.pickUpgrades(rng, { allowedClasses: ['red'], count: 1000 })
-  assert.equal(risky.length, 5)
+  assert.equal(risky.length, 7)
   assert.ok(risky.every(def => def.cardClass === 'red'))
   const all = cards.pickUpgrades(rng, { allowedClasses: cards.CARD_CLASSES, count: 1000 })
-  assert.equal(all.length, 37)
+  assert.equal(all.length, 47)
   const frequencies = { white: 0, blue: 0, gold: 0 }
   for (let i = 0; i < 10000; i++) frequencies[cards.pickUpgrades(rng, { count: 1 })[0].cardClass]++
   assert.ok(Math.abs(frequencies.white / 10000 - 0.6) < 0.025)

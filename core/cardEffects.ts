@@ -36,6 +36,16 @@ const EFFECT_RULES: Record<CardEffect['type'], { scope: CardEffect['scope']; pol
   heavyLegs: { scope: 'mechanic', polarity: 'negative' },
   armorErosion: { scope: 'mechanic', polarity: 'negative' },
   enemyRage: { scope: 'mechanic', polarity: 'negative' },
+  killAttackBonus: { scope: 'mechanic', polarity: 'positive' },
+  killHpBonus: { scope: 'mechanic', polarity: 'positive' },
+  smeltMastery: { scope: 'mechanic', polarity: 'positive' },
+  spendBlade: { scope: 'mechanic', polarity: 'positive' },
+  veteranBlade: { scope: 'mechanic', polarity: 'positive' },
+  lowHpFury: { scope: 'mechanic', polarity: 'positive' },
+  flatDamageReduction: { scope: 'stat', polarity: 'positive' },
+  guardedStance: { scope: 'parameter', polarity: 'positive' },
+  thornRating: { scope: 'mechanic', polarity: 'positive' },
+  shieldGrind: { scope: 'mechanic', polarity: 'positive' },
 }
 
 const CLASSES: CardClass[] = ['white', 'blue', 'gold', 'red', 'purple', 'black']
@@ -50,10 +60,10 @@ export function validateCardEffect(effect: unknown): effect is CardEffect {
     candidate.scope === rule.scope && candidate.polarity === rule.polarity && hasText(candidate.description)
 }
 
-// 红卡的正面机制必须显著：爆发或追加攻击评级至少 1，吸血评级至少 0.5。
+// 红卡的正面机制必须显著：爆发或追加攻击评级至少 1，吸血评级至少 0.5，固定减伤至少 3。
 function isStrongMechanic(effect: CardEffect): boolean {
-  return (effect.type === 'burstCoefficient' || effect.type === 'extraStrikeRating' || effect.type === 'executeRating' || effect.type === 'greedRating') ? effect.value >= 1 :
-    effect.type === 'lifestealRating' && effect.value >= 0.5
+  return (effect.type === 'burstCoefficient' || effect.type === 'extraStrikeRating' || effect.type === 'executeRating' || effect.type === 'greedRating' || effect.type === 'lowHpFury' || effect.type === 'thornRating') ? effect.value >= 1 :
+    (effect.type === 'lifestealRating' && effect.value >= 0.5) || (effect.type === 'flatDamageReduction' && effect.value >= 3)
 }
 
 export function validateCard(def: unknown): def is UpgradeDef {
@@ -100,6 +110,8 @@ export function emptyCardModifiers(): CardModifiers {
     comboGrace: 0, executeRating: 0, critRating: 0, savedStepsCharge: 0, greedRating: 0,
     backlash: 0, burn: 0, healingPenalty: 0, chargeLoss: 0, soulRecoil: 0, enemyRegen: 0,
     heavyLegs: 0, armorErosion: 0, enemyRage: 0,
+    killAttackBonus: 0, killHpBonus: 0, smeltMastery: 0, spendBlade: 0, veteranBlade: 0, lowHpFury: 0,
+    flatDamageReduction: 0, guardedStance: 0, thornRating: 0, shieldGrind: 0,
   }
 }
 

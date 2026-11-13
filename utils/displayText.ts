@@ -111,6 +111,16 @@ export function summarizeEffect(effect: CardEffect, context?: DisplayContext): s
       ? '回合间保留的护甲会被侵蚀；叠加后侵蚀更多'
       : `侵蚀合计${numberText(total)}，直接抵扣护甲的传承比例`
     case 'enemyRage': return `每层：敌人攻击每回合成长 +${value}`
+    case 'killAttackBonus': return `每击败一个敌人，攻击倍率 +${percent}，整局累积`
+    case 'killHpBonus': return `每击败一个敌人，最大生命 +${value} 并等量回复`
+    case 'smeltMastery': return `整局每累计合并 100 点方块数值，攻击倍率 +${percent}`
+    case 'spendBlade': return `每累计花费 25 金币，攻击倍率 +${percent}`
+    case 'veteranBlade': return `每进入一场战斗，攻击倍率 +${percent}`
+    case 'lowHpFury': return `当前生命每降低 10%，攻击倍率 +${value}%（满血无加成）`
+    case 'flatDamageReduction': return `每次承受攻击的伤害 −${value}，按持有数量累加`
+    case 'guardedStance': return `交战结算时每剩余 1 点行动步数，本次承受的伤害额外 −${value}`
+    case 'thornRating': return `受到攻击时有几率反弹伤害（${numberText(effect.value * 2)}＋本次减免量），几率随层数提升`
+    case 'shieldGrind': return `整局每累计承受 30 点伤害，固定减伤 +${value}`
   }
 }
 

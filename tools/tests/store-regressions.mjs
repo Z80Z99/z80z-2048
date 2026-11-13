@@ -52,22 +52,26 @@ export async function run() {
     assert.equal(store.player.equipment.helmet, id)
   }
 
-  // 事件结果只抽取一次；确认后不重复扣费/发奖，升级逐次发强化。
+  // 事件点选即结算：同 seed 同结果；离开后走升级奖励队列，不能二次结算。
   {
     const store = fresh()
     store.screen = 'event'
     store.currentNodeId = 's1_n8'
-    store.gameEvent = { id: 'test', title: '测试', icon: '', desc: '', choices: [{ label: '经验', effect: { type: 'xp', value: 100 } }] }
-    store.RESOLVE_EVENT(0)
-    const result = JSON.stringify(store.eventResult)
-    store.RESOLVE_EVENT(0)
-    assert.equal(JSON.stringify(store.eventResult), result)
-    store.APPLY_EVENT()
+    store.gameEvent = { id: 'test', title: '测试', icon: '', desc: '', choices: [{ label: '经验', outcomes: [
+      { weight: 50, label: '多', tone: 'good', effect: { type: 'xp', value: 100 } },
+      { weight: 30, label: '中', tone: 'mid', effect: { type: 'xp', value: 100 } },
+      { weight: 20, label: '少', tone: 'bad', effect: { type: 'xp', value: 100 } },
+    ] }] }
+    store.CHOOSE_EVENT(0)
+    const settled = JSON.stringify(store.eventResult)
+    assert.ok(settled.includes('"tone"'))
+    store.CHOOSE_EVENT(0)
+    assert.equal(JSON.stringify(store.eventResult), settled, 'settled result cannot be re-rolled')
     assert.equal(store.player.level, 3)
+    assert.equal(store.screen, 'event', 'result page holds until leave')
+    store.LEAVE_EVENT()
     assert.equal(store.screen, 'reward')
     assert.equal(store.rewardQueue.length, 2)
-    store.APPLY_EVENT()
-    assert.equal(store.player.level, 3)
     store.SKIP_REWARD()
     assert.equal(store.screen, 'reward')
     assert.equal(store.rewardQueue.length, 1)
@@ -79,18 +83,22 @@ export async function run() {
     const store = fresh()
     store.screen = 'event'
     store.currentNodeId = 's1_n8'
-    store.gameEvent = { id: 'forge', title: '锻造', icon: '', desc: '', choices: [{ label: '淬火', effect: { type: 'drop_equip', rarity: 'epic', cost: 25 } }] }
+    store.gameEvent = { id: 'forge', title: '锻造', icon: '', desc: '', choices: [{ label: '淬火', outcomes: [
+      { weight: 45, label: '神兵', tone: 'good', effect: { type: 'drop_equip', rarity: 'epic', cost: 25 } },
+      { weight: 40, label: '合格', tone: 'mid', effect: { type: 'drop_equip', rarity: 'rare', cost: 25 } },
+      { weight: 15, label: '失败', tone: 'bad', effect: { type: 'drop_equip', rarity: 'common', cost: 25 } },
+    ] }] }
     assert.ok(store.eventChoiceDisabledReason(0))
-    store.RESOLVE_EVENT(0)
+    store.CHOOSE_EVENT(0)
     assert.equal(store.eventResult, null)
     store.player.gold = 25
-    store.RESOLVE_EVENT(0)
+    store.CHOOSE_EVENT(0)
     const predicted = store.eventResult.effect.eqId
-    store.APPLY_EVENT()
     assert.equal(store.player.gold, 0)
     assert.equal(store.player.inventory[0], predicted)
-    store.APPLY_EVENT()
+    store.LEAVE_EVENT()
     assert.equal(store.player.inventory.length, 1)
+    assert.equal(store.screen, 'route')
   }
 
   // 较早回合或额外步数不再制造省步金币，最后用满步数击杀只领基础奖励。

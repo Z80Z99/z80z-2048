@@ -299,6 +299,18 @@ function checkNewMechanics() {
   assert.equal(ragePreview.enemyAttack, 20 + 2 * 3 + 3 * 2, 'rage adds 2 per round on top of buffered base growth (rounds 1-2 free)')
   const rageEnemy = battle({ round: 4, cardModifiers: { enemyRage: 2 } }).enemy
   assert.equal(rageEnemy.attack, 20, 'the enemy object itself is never mutated')
+
+  // 浴血狂怒：每层“每损失10%生命攻击倍率+6个百分点”；满血无加成，承伤代价由易伤键结算。
+  const fullHp = combat.getBattlePreview(battle({ totalAttack: 20, cardModifiers: { lowHpFury: 6 } }), player({ hp: 100, maxHp: 100 }))
+  assert.equal(fullHp.enemyDamage, 20, 'full hp grants no fury bonus')
+  const wounded = combat.getBattlePreview(battle({ totalAttack: 20, cardModifiers: { lowHpFury: 6 } }), player({ hp: 50, maxHp: 100 }))
+  assert.equal(wounded.enemyDamage, 26, '50% missing hp → +0.30 multiplier (6% per 10% lost), exact halves avoid float tails')
+  const nearDeath = combat.getBattlePreview(battle({ totalAttack: 20, cardModifiers: { lowHpFury: 6 } }), player({ hp: 1, maxHp: 100 }))
+  assert.equal(nearDeath.enemyDamage, 31, '99% missing hp floors at the +0.594 multiplier bonus')
+  const stacked = combat.getBattlePreview(battle({ totalAttack: 20, cardModifiers: { lowHpFury: 12 } }), player({ hp: 50, maxHp: 100 }))
+  assert.equal(stacked.enemyDamage, 32, 'two layers stack linearly to +0.60 at half hp')
+  const boostedCap = combat.getBattlePreview(battle({ totalAttack: 20, cardModifiers: { lowHpFury: 6 } }), player({ hp: 160, maxHp: 160 }))
+  assert.equal(boostedCap.enemyDamage, 20, 'bonus tracks effective max hp: full hp still grants nothing')
 }
 
 export async function run() {

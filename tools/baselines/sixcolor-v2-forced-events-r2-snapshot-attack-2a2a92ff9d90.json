@@ -1,0 +1,599 @@
+{
+  "ruleVersion": "sixcolor-v2-forced-events-r2",
+  "policyVersion": 1,
+  "configuration": {
+    "seed": 12345,
+    "options": {
+      "strategy": "attack",
+      "maxStage": 3,
+      "maxIterations": 4000,
+      "maxBattleRounds": 80,
+      "maxValidTurns": 2000,
+      "allowNegativeEvents": false,
+      "syntheticStage": null
+    }
+  },
+  "hash": "0c1cac7c54af5207831ecbec9516eb8f45edb4c46de83dfe5bf0e195015b3ebc",
+  "snapshot": {
+    "ruleVersion": "sixcolor-v2-forced-events-r2",
+    "policyVersion": 1,
+    "ruleFingerprint": "ae6fe183292cb18cdd7e700f893712046def90c5b96fa408eee1fcf226bc4ea2",
+    "seed": 12345,
+    "options": {
+      "strategy": "attack",
+      "maxStage": 3,
+      "maxIterations": 4000,
+      "maxBattleRounds": 80,
+      "maxValidTurns": 2000,
+      "allowNegativeEvents": false,
+      "syntheticStage": null
+    },
+    "scenario": "normal fresh-meta run",
+    "stagesCleared": 1,
+    "screen": "gameover",
+    "iterations": 166,
+    "terminal": {
+      "valid": true,
+      "failure": null,
+      "outcome": "defeat",
+      "screen": "gameover",
+      "stage": 2,
+      "nodeId": "s2_n14",
+      "phase": null,
+      "enemyId": null,
+      "round": null,
+      "lastBattle": {
+        "stage": 2,
+        "nodeId": "s2_n14",
+        "enemyId": "plague_bringer",
+        "round": 1,
+        "phase": "finished",
+        "playerHp": 0,
+        "enemyHp": 3,
+        "turnsUsed": 6,
+        "maxTurns": 6,
+        "cardModifiers": {
+          "attackBonus": 0.05,
+          "defenseBonus": 0.05,
+          "maxHpBonus": 0,
+          "goldBonus": 0,
+          "xpBonus": 0,
+          "bonusTurns": 0,
+          "mergeCoefficient": 0,
+          "spawnArmor": 0,
+          "startingPoints": 4,
+          "chargeStart": 6,
+          "spawnLuck": 0,
+          "halveShield": 0,
+          "comboBonus": 0,
+          "mergeArmor": 0,
+          "armorCarry": 0,
+          "lifestealRating": 0,
+          "burstCoefficient": 0,
+          "vulnerability": 0,
+          "bleed": 0,
+          "extraStrikeRating": 0,
+          "comboGrace": 0,
+          "executeRating": 0,
+          "critRating": 0,
+          "savedStepsCharge": 4,
+          "greedRating": 0,
+          "backlash": 0,
+          "burn": 0,
+          "healingPenalty": 0,
+          "chargeLoss": 0,
+          "soulRecoil": 0,
+          "enemyRegen": 0,
+          "heavyLegs": 0,
+          "armorErosion": 0,
+          "enemyRage": 0,
+          "killAttackBonus": 0,
+          "killHpBonus": 0,
+          "smeltMastery": 0,
+          "spendBlade": 0,
+          "veteranBlade": 0,
+          "lowHpFury": 0
+        },
+        "roundModifiers": {},
+        "battleModifiers": {},
+        "result": {
+          "playerWon": false,
+          "playerDamageDealt": 52,
+          "playerDamageTaken": 23,
+          "goldEarned": 0,
+          "totalRounds": 1,
+          "savedSteps": 0
+        },
+        "lastRoundResult": {
+          "playerDamage": 23,
+          "enemyDamage": 52,
+          "enemyHpAfter": 3,
+          "overflowDamage": 0,
+          "playerFirst": true,
+          "playerSpeed": 15,
+          "enemySpeed": 11,
+          "playerHpAfter": 0,
+          "healing": 0,
+          "reflectedDamage": 0,
+          "curseDamage": 0,
+          "extraDamage": 0,
+          "enemyHealing": 0,
+          "attackCount": 1,
+          "playerActed": true,
+          "enemyActed": true,
+          "avoidReason": null,
+          "fortifyUsed": false,
+          "fortifyTriggered": false
+        }
+      },
+      "rewardQueue": [],
+      "rewardChoices": [],
+      "pendingLevels": 0,
+      "eventPending": false,
+      "debugActionCount": 0,
+      "recentActions": []
+    },
+    "player": {
+      "hp": 0,
+      "maxHp": 85,
+      "attackMultiplier": 1,
+      "defenseMultiplier": 1.12,
+      "flatAttack": 0,
+      "flatDefense": 0,
+      "bonusTurns": 0,
+      "baseMaxTurns": 6,
+      "spawnArmor": 0,
+      "goldBoost": 0,
+      "xpBoost": 0,
+      "baseSpeed": 3,
+      "equipment": {
+        "helmet": "eq_hunter_helmet_common:1:75",
+        "armor": "eq_dark_armor_common:2:99",
+        "pants": "eq_dark_pants_common:1:100"
+      },
+      "inventory": [
+        "eq_hunter_helmet_common:1:75",
+        "eq_dark_armor_common:2:99",
+        "eq_dark_pants_common:1:100"
+      ],
+      "gold": 312,
+      "xp": 25,
+      "level": 6,
+      "xpToNext": 85
+    },
+    "stats": {
+      "initial": {
+        "hp": 100,
+        "maxHp": 100,
+        "attackMultiplier": 1,
+        "defenseMultiplier": 1,
+        "flatAttack": 0,
+        "flatDefense": 0,
+        "baseSpeed": 3,
+        "bonusTurns": 0,
+        "goldBoost": 0,
+        "xpBoost": 0,
+        "spawnArmor": 0,
+        "maxTurns": 6
+      },
+      "terminal": {
+        "hp": 0,
+        "maxHp": 85,
+        "attackMultiplier": 1.3,
+        "defenseMultiplier": 1.1700000000000002,
+        "flatAttack": 31,
+        "flatDefense": 0,
+        "baseSpeed": 5,
+        "bonusTurns": 0,
+        "goldBoost": 0,
+        "xpBoost": 0,
+        "spawnArmor": 0,
+        "maxTurns": 6
+      },
+      "peak": {
+        "hp": 100,
+        "maxHp": 100,
+        "attackMultiplier": 1.3,
+        "defenseMultiplier": 1.1700000000000002,
+        "flatAttack": 31,
+        "flatDefense": 0,
+        "baseSpeed": 5,
+        "bonusTurns": 0,
+        "goldBoost": 0,
+        "xpBoost": 0,
+        "spawnArmor": 0,
+        "maxTurns": 6
+      }
+    },
+    "cards": [
+      {
+        "id": "balanced_1",
+        "cardClass": "white",
+        "kind": "persistent",
+        "count": 1
+      },
+      {
+        "id": "charge_start_1",
+        "cardClass": "blue",
+        "kind": "persistent",
+        "count": 2
+      },
+      {
+        "id": "gold_saved_steps",
+        "cardClass": "gold",
+        "kind": "persistent",
+        "count": 2
+      },
+      {
+        "id": "start_tile_1",
+        "cardClass": "blue",
+        "kind": "persistent",
+        "count": 1
+      }
+    ],
+    "cardCounts": {
+      "total": 6,
+      "unique": 4,
+      "byClass": {
+        "white": 1,
+        "blue": 3,
+        "gold": 2,
+        "red": 0,
+        "purple": 0,
+        "black": 0
+      },
+      "acquired": {
+        "balanced_1": 1,
+        "charge_start_1": 2,
+        "gold_saved_steps": 2,
+        "heal_1": 3,
+        "start_tile_1": 1
+      },
+      "removed": {},
+      "sources": {
+        "reward_boss": {
+          "gold_saved_steps": 1
+        },
+        "reward_elite": {
+          "charge_start_1": 1,
+          "gold_saved_steps": 1
+        },
+        "reward_levelup": {
+          "heal_1": 3,
+          "balanced_1": 1,
+          "charge_start_1": 1
+        },
+        "shop": {
+          "start_tile_1": 1
+        }
+      }
+    },
+    "upgradeIds": [
+      "balanced_1",
+      "charge_start_1",
+      "gold_saved_steps",
+      "start_tile_1"
+    ],
+    "cardModifiers": {
+      "attackBonus": 0.05,
+      "defenseBonus": 0.05,
+      "maxHpBonus": 0,
+      "goldBonus": 0,
+      "xpBonus": 0,
+      "bonusTurns": 0,
+      "mergeCoefficient": 0,
+      "spawnArmor": 0,
+      "startingPoints": 4,
+      "chargeStart": 6,
+      "spawnLuck": 0,
+      "halveShield": 0,
+      "comboBonus": 0,
+      "mergeArmor": 0,
+      "armorCarry": 0,
+      "lifestealRating": 0,
+      "burstCoefficient": 0,
+      "vulnerability": 0,
+      "bleed": 0,
+      "extraStrikeRating": 0,
+      "comboGrace": 0,
+      "executeRating": 0,
+      "critRating": 0,
+      "savedStepsCharge": 4,
+      "greedRating": 0,
+      "backlash": 0,
+      "burn": 0,
+      "healingPenalty": 0,
+      "chargeLoss": 0,
+      "soulRecoil": 0,
+      "enemyRegen": 0,
+      "heavyLegs": 0,
+      "armorErosion": 0,
+      "enemyRage": 0,
+      "killAttackBonus": 0,
+      "killHpBonus": 0,
+      "smeltMastery": 0,
+      "spendBlade": 0,
+      "veteranBlade": 0,
+      "lowHpFury": 0
+    },
+    "inventory": {
+      "equipmentIds": [
+        "eq_dark_armor_common:2:99",
+        "eq_dark_pants_common:1:100",
+        "eq_hunter_helmet_common:1:75"
+      ],
+      "equipped": {
+        "helmet": "eq_hunter_helmet_common:1:75",
+        "armor": "eq_dark_armor_common:2:99",
+        "pants": "eq_dark_pants_common:1:100"
+      },
+      "consumables": {},
+      "consumed": {}
+    },
+    "hp": {
+      "initial": 100,
+      "terminal": 0,
+      "healing": 102,
+      "loss": 202,
+      "accountingResidual": 0,
+      "sources": {
+        "boss": {
+          "healing": 0,
+          "loss": 0
+        },
+        "combat": {
+          "healing": 0,
+          "loss": 187
+        },
+        "equipment": {
+          "healing": 0,
+          "loss": 0
+        },
+        "event": {
+          "healing": 0,
+          "loss": 15
+        },
+        "event_preview": {
+          "healing": 0,
+          "loss": 0
+        },
+        "overflow": {
+          "healing": 0,
+          "loss": 0
+        },
+        "presentation": {
+          "healing": 0,
+          "loss": 0
+        },
+        "rest": {
+          "healing": 66,
+          "loss": 0
+        },
+        "rest_leave": {
+          "healing": 0,
+          "loss": 0
+        },
+        "reward_boss": {
+          "healing": 0,
+          "loss": 0
+        },
+        "reward_elite": {
+          "healing": 0,
+          "loss": 0
+        },
+        "reward_levelup": {
+          "healing": 36,
+          "loss": 0
+        },
+        "round_curse": {
+          "healing": 0,
+          "loss": 0
+        },
+        "round_start": {
+          "healing": 0,
+          "loss": 0
+        },
+        "route": {
+          "healing": 0,
+          "loss": 0
+        },
+        "shop": {
+          "healing": 0,
+          "loss": 0
+        },
+        "shop_leave": {
+          "healing": 0,
+          "loss": 0
+        }
+      }
+    },
+    "gold": {
+      "initial": 0,
+      "terminal": 312,
+      "gained": 397,
+      "spent": 85,
+      "accountingResidual": 0,
+      "sources": {
+        "boss": {
+          "gained": 0,
+          "spent": 0
+        },
+        "combat": {
+          "gained": 387,
+          "spent": 0
+        },
+        "equipment": {
+          "gained": 0,
+          "spent": 0
+        },
+        "event": {
+          "gained": 10,
+          "spent": 5
+        },
+        "event_preview": {
+          "gained": 0,
+          "spent": 0
+        },
+        "overflow": {
+          "gained": 0,
+          "spent": 0
+        },
+        "presentation": {
+          "gained": 0,
+          "spent": 0
+        },
+        "rest": {
+          "gained": 0,
+          "spent": 0
+        },
+        "rest_leave": {
+          "gained": 0,
+          "spent": 0
+        },
+        "reward_boss": {
+          "gained": 0,
+          "spent": 0
+        },
+        "reward_elite": {
+          "gained": 0,
+          "spent": 0
+        },
+        "reward_levelup": {
+          "gained": 0,
+          "spent": 0
+        },
+        "round_start": {
+          "gained": 0,
+          "spent": 0
+        },
+        "route": {
+          "gained": 0,
+          "spent": 0
+        },
+        "shop": {
+          "gained": 0,
+          "spent": 80
+        },
+        "shop_leave": {
+          "gained": 0,
+          "spent": 0
+        }
+      }
+    },
+    "meta": {
+      "totalGold": 51,
+      "totalRuns": 1,
+      "purchasedIds": [],
+      "highestDepth": 1,
+      "unlockedEnemies": [
+        "slime",
+        "orc",
+        "spider",
+        "cave_troll",
+        "boss_rock",
+        "golem",
+        "dragon_whelp"
+      ],
+      "enemyKills": {
+        "slime": 1,
+        "orc": 1,
+        "spider": 1,
+        "cave_troll": 1,
+        "boss_rock": 1,
+        "golem": 1,
+        "dragon_whelp": 1
+      },
+      "bestiaryBonusHp": 5,
+      "bestiaryBonusAtk": 0,
+      "bestiaryClaimed": [
+        3,
+        6
+      ],
+      "enemyClaims": {},
+      "globalClaimLevel": 0
+    },
+    "battleStats": {
+      "rounds": 18,
+      "settledRounds": 18,
+      "winningRounds": 17,
+      "losingRounds": 1,
+      "kills": 7,
+      "turns": 87,
+      "battles": 8,
+      "noLegalMoves": 0,
+      "invalidSlides": 0,
+      "earlyEnds": 6,
+      "zeroDamageRounds": 0,
+      "enemyDamage": 187,
+      "curseDamage": 0,
+      "moveSelfDamage": 0,
+      "healing": 0,
+      "damageDealt": 585,
+      "enemyHealing": 0,
+      "mergedSum": 444
+    },
+    "nodesVisited": {
+      "battle": 4,
+      "boss": 1,
+      "elite": 3,
+      "event": 4,
+      "rest": 3,
+      "shop": 1
+    },
+    "actions": {
+      "APPLY_EVENT": 4,
+      "BOSS_DEFEATED": 1,
+      "BUY_SHOP_EQUIP": 1,
+      "BUY_SHOP_UPGRADE": 1,
+      "END_BATTLE": 8,
+      "END_TURN_EARLY": 6,
+      "EQUIP_ITEM": 3,
+      "GO_TO_ROUTE": 4,
+      "NEXT_ROUND": 10,
+      "PICK_UPGRADE": 8,
+      "RESOLVE_EVENT": 4,
+      "REST_HEAL": 3,
+      "SELECT_NODE": 16,
+      "SHOW_BATTLE_RESULT": 8,
+      "SHOW_ROUND": 10,
+      "SLIDE": 87
+    },
+    "actionSources": {
+      "boss": 1,
+      "combat": 93,
+      "equipment": 3,
+      "event": 4,
+      "event_preview": 4,
+      "overflow": 8,
+      "presentation": 18,
+      "rest": 3,
+      "rest_leave": 3,
+      "reward_boss": 1,
+      "reward_elite": 2,
+      "reward_levelup": 5,
+      "round_start": 10,
+      "route": 16,
+      "shop": 2,
+      "shop_leave": 1
+    },
+    "rewardPicks": {
+      "boss": 1,
+      "elite": 2,
+      "levelup": 5
+    }
+  },
+  "historicalFiles": [
+    {
+      "name": "baseline.snapshot.json",
+      "sha256": "177f8bf8d7897f519337c227e535889d03df92339c1d460e0679494dc9b50efb"
+    },
+    {
+      "name": "parity-before.json",
+      "sha256": "9833eec51537ac1c3eced1705ac7dc881acd5371594aef48e82fcc52347bafb9"
+    },
+    {
+      "name": "parity-after.json",
+      "sha256": "35602df685256faec317258ed4542126805a31fcc79e86e6132cd63ad402554a"
+    }
+  ]
+}

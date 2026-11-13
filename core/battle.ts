@@ -148,6 +148,8 @@ export interface BattlePreview {
   enemyAttack: number
   // 已计入本回合成长和穿透后的防御，正是伤害公式采用的数值。
   enemyDefense: number
+  /** 本回合固定减伤总量（坚甲/磨砺成长/守拙剩余步），棘盾反伤以其为加成。 */
+  flatReduction: number
 }
 
 function getBattleEffects(battle: BattleState, player: PlayerStats): Partial<EquipSetEffects> {
@@ -179,15 +181,23 @@ export function getBattlePreview(battle: BattleState, rawPlayer: PlayerStats): B
   }
   const playerSpeed = player.baseSpeed + emptyCells
   const playerFirst = !!effects.firstStrike || playerSpeed >= enemySpeed
-  const enemyDamage = battle.totalAttack > 0 ? Math.max(0, Math.floor(battle.totalAttack * player.attackMultiplier - enemyDefense) + player.flatAttack) : 0
+  // 浴血狂怒：每层参数 6 表示“每损失 10% 生命攻击倍率 +6 个百分点”（6%/10%失血），
+  // 与卡面文案一致；半血单层 +0.30，濒死 +0.60，多层线性叠加。
+  const lowHpBonus = modifiers.lowHpFury * (1 - player.hp / Math.max(1, player.maxHp)) / 10
+  const effectiveAttackMultiplier = player.attackMultiplier + lowHpBonus
+  const enemyDamage = battle.totalAttack > 0 ? Math.max(0, Math.floor(battle.totalAttack * effectiveAttackMultiplier - enemyDefense) + player.flatAttack) : 0
   // 防御收益：棋盘和 × 倍率 ÷ 3（原 ÷6 过度稀释，防御卡几乎无效——前期平衡修正）。
   const defenseValue = Math.floor(boardSum * player.defenseMultiplier / 3
     + battle.totalDefense * ((player.spawnArmor ?? 0) + modifiers.spawnArmor)
     + (battle.mechanicArmor ?? 0) + (battle.carryArmor ?? 0))
   const armorDamage = enemyAttack > 0 ? Math.max(1, Math.ceil(enemyAttack * 15 / (15 + Math.max(0, defenseValue + player.flatDefense)))) : 0
-  const incomingDamage = enemyAttack > 0 ? Math.max(1, Math.ceil(armorDamage * (1 + modifiers.vulnerability))) : 0
+  // 固定减伤：坚甲等提供的线性减免，在易伤放大之后扣减（不会被承伤加成放大稀释）；
+  // 守拙按交战时剩余行动步数加成——留步即舍输出换生存。
+  const flatReduction = modifiers.flatDamageReduction + (player.flatDamageReductionBonus ?? 0)
+    + Math.max(0, battle.maxTurns - battle.turnsUsed) * modifiers.guardedStance
+  const incomingDamage = enemyAttack > 0 ? Math.max(1, Math.ceil(armorDamage * (1 + modifiers.vulnerability)) - flatReduction) : 0
   const playerDamage = effects.fortify && !battle.fortifyUsed ? Math.ceil(incomingDamage / 2) : incomingDamage
-  return { player, playerDamage, enemyDamage, playerSpeed, enemySpeed, playerFirst, defenseValue, enemyAttack, enemyDefense }
+  return { player, playerDamage, enemyDamage, playerSpeed, enemySpeed, playerFirst, defenseValue, enemyAttack, enemyDefense, flatReduction }
 }
 
 export function resolveRound(
@@ -293,6 +303,13 @@ export function resolveRound(
       fortifyTriggered = true
       reflectedDamage = Math.min(enemyHpAfter, Math.max(0, effects.reflect ?? 0))
       enemyHpAfter -= reflectedDamage
+    }
+    // 棘盾契约：受到攻击后按评级概率反伤。越硬（固定减伤越高）反伤越痛；
+    // 仅在持卡时消耗抽签，不改变无卡局面的 rng 序列。
+    if (modifiers.thornRating > 0 && enemyHpAfter > 0 && rng() < naturalFraction(modifiers.thornRating)) {
+      const thorn = Math.min(enemyHpAfter, Math.max(0, Math.round(modifiers.thornRating * 2 + preview.flatReduction)))
+      reflectedDamage = Math.min(enemyHpAfter, reflectedDamage + thorn)
+      enemyHpAfter -= thorn
     }
   }
 

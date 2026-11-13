@@ -56,14 +56,14 @@ export function runSmoke() {
     store.screen = 'rest'
     store.REST_HEAL(); assert.equal(store.restUsed, true); assert.equal(store.player.hp, 40)
     store.GO_TO_ROUTE(); assert.equal(store.screen, 'route')
-    // 营地只治疗；紫卡净化走奇遇（cleansing_hermit）。
+    // 营地只治疗；紫卡净化走奇遇（cleansing_hermit）。点选即结算。
     store.screen = 'event'
     store.player.gold = 100
     store.upgrades = [{ def: cardById('curse_burn'), count: 2 }]
-    store.gameEvent = { id: 'cleansing_hermit', title: 'fixture', icon: '', desc: '', stageMin: 2, choices: [{ label: 'cleanse', effect: { type: 'card_trade', grants: [], cost: 40, gold: 0, hpCost: 0, removesPurple: 1 } }, { label: 'leave', effect: { type: 'none' } }] }
-    store.RESOLVE_EVENT(0)
-    assert.ok(store.eventResult, 'hermit cleanse resolves with purple held')
-    store.APPLY_EVENT()
+    store.gameEvent = { id: 'cleansing_hermit', title: 'fixture', icon: '', desc: '', stageMin: 2, choices: [{ label: 'cleanse', outcomes: [{ weight: 50, label: 'ok', tone: 'good', effect: { type: 'card_trade', grants: [], cost: 40, gold: 0, hpCost: 0, removesPurple: 1 } }, { weight: 35, label: 'plain', tone: 'mid', effect: { type: 'card_trade', grants: [], cost: 40, gold: 0, hpCost: 0, removesPurple: 1 } }, { weight: 15, label: 'dud', tone: 'bad', effect: { type: 'none' } }] }] }
+    store.CHOOSE_EVENT(0)
+    assert.ok(store.eventResult, 'hermit cleanse settles with purple held')
+    store.LEAVE_EVENT()
     assert.equal(store.upgrades[0]?.count, 1, 'event cleanse removed one purple layer')
     assert.equal(store.player.gold, 60, 'cleanse cost deducted')
     store.START_RUN(9)
@@ -77,13 +77,17 @@ export function runSmoke() {
     store.PICK_UPGRADE(id, generation); assert.equal(store.rewardQueue.length, 0); assert.equal(store.screen, 'route')
     assert.equal(store.upgrades.reduce((total, card) => total + card.count, 0), 2)
     store.screen = 'event'
-    store.gameEvent = { id: 'synthetic-black', title: 'fixture', icon: '', desc: '', choices: [{ label: 'accept', effect: { type: 'card_trade', grants: [{ id: 'doom_soul', count: 1 }], cost: 0, gold: 0, hpCost: 0 } }, { label: 'leave', effect: { type: 'none' } }] }
-    store.RESOLVE_EVENT(0)
-    assert.equal(store.eventResult.requiresBlackConfirmation, true)
-    store.APPLY_EVENT(); assert.equal(store.screen, 'event'); assert.equal(store.upgrades.some(card => card.def.cardClass === 'black'), false)
-    store.CONFIRM_BLACK_EVENT(); store.APPLY_EVENT()
+    store.gameEvent = { id: 'synthetic-black', title: 'fixture', icon: '', desc: '', choices: [{ label: 'accept', outcomes: [
+      { weight: 34, label: 'gift', tone: 'good', effect: { type: 'card_trade', grants: [{ id: 'doom_soul', count: 1 }], cost: 0, gold: 5, hpCost: 0 } },
+      { weight: 33, label: 'plain', tone: 'mid', effect: { type: 'card_trade', grants: [{ id: 'doom_soul', count: 1 }], cost: 0, gold: 0, hpCost: 0 } },
+      { weight: 33, label: 'shadow', tone: 'bad', effect: { type: 'card_trade', grants: [{ id: 'doom_soul', count: 1 }], cost: 0, gold: 0, hpCost: 0 } },
+    ] }] }
+    store.CHOOSE_EVENT(0)
+    assert.equal(store.screen, 'event', 'settled event stays on the result page')
+    assert.equal(store.upgrades.some(card => card.def.cardClass === 'black'), true, 'black card applies directly without confirmation')
+    store.LEAVE_EVENT()
     assert.equal(store.screen, 'route'); assert.equal(store.upgrades.some(card => card.def.id === 'doom_soul'), true)
-    checks.push('synthetic API fixtures: rest one-time action with early leave, event cleanse one purple layer, id-based queued picks/stale generation guard, explicit black confirm-before-apply')
+    checks.push('synthetic API fixtures: rest one-time action with early leave, event cleanse one purple layer, id-based queued picks/stale generation guard, black settles without confirmation')
   } finally { store.$dispose(); p._e.stop() }
   return { pass: true, checks }
 }

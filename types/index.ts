@@ -214,6 +214,16 @@ export interface CardModifiers {
   heavyLegs: number;
   armorErosion: number;
   enemyRage: number;
+  killAttackBonus: number;
+  killHpBonus: number;
+  smeltMastery: number;
+  spendBlade: number;
+  veteranBlade: number;
+  lowHpFury: number;
+  flatDamageReduction: number;
+  guardedStance: number;
+  thornRating: number;
+  shieldGrind: number;
 }
 
 export interface CardEffect {
@@ -266,6 +276,8 @@ export interface PlayerStats {
   goldBoost: number;
   xpBoost: number;
   baseSpeed: number;
+  /** 磨砺之盾等整局成长累积的固定减伤（与卡牌 modifiers 相加）。 */
+  flatDamageReductionBonus?: number;
   equipment: { pants?: string; helmet?: string; armor?: string; gloves?: string; boots?: string };
   inventory: string[];
   gold: number;
@@ -325,18 +337,19 @@ export interface GameState {
   shopConsumables: (string | null)[];
   restUsed: boolean;
   restResult: string | null;
-  eventBlackConfirmed: boolean;
   shopRefreshCost: number;
   shopRefreshCount: number;
   shopRemoveCost: number;
   shopRemoveUsed: boolean;
   stage: number;
-  gameEvent: { id: string; title: string; icon: string; desc: string; choices: { label: string; tooltip?: string; effect: Record<string, any> }[] } | null;
-  eventResult: { label: string; desc: string; choiceIndex: number; effect: Record<string, any>; requiresBlackConfirmation?: boolean } | null;
+  gameEvent: { id: string; title: string; icon: string; desc: string; choices: { label: string; outcomes: Record<string, any>[] }[] } | null;
+  eventResult: { label: string; outcomeLabel: string; tone: 'good' | 'mid' | 'bad'; desc: string; choiceIndex: number; effect: Record<string, any> } | null;
   meta: MetaState;
   runSeed: number;
   runOutcome: 'victory' | 'defeat' | null;
   runShards: number;
+  /** 一局内的成长计数：击杀数、累计合并数值、累计消费、进入的战斗数、累计承受伤害。 */
+  runStats: { kills: number; mergedTotal: number; goldSpent: number; battles: number; damageTaken: number };
   debugActionCount: number;
 }
 
@@ -350,6 +363,8 @@ export interface GameState {
 // (a `number | { min; max }` union would break that arithmetic).
 export interface EventEffectMap {
   gold?: number | { min: number; max: number };
+  /** 负金币档位为 true 时表示玩家主动支付（购买/赌注/投币），计入挥金如土消费；意外损失不计。 */
+  paid?: boolean;
   xp?: number | { min: number; max: number };
   heal?: number;
   bonus_gold?: number | { min: number; max: number };

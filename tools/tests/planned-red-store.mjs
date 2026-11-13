@@ -55,7 +55,7 @@ export async function run() {
     assert.strictEqual(pinnedResult.length, 3, 'pinned: 3 items');
     assert.deepStrictEqual(
       pinnedResult.map(u => u.id),
-      ['start_tile_1', 'spawn_luck_1', 'gold_1'],
+      ['start_tile_1', 'spawn_luck_1', 'balanced_1'],
       'pinned ids match characterization (excludeHeal:true, hpRatio:1)'
     );
 

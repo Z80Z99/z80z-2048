@@ -39,9 +39,11 @@ export async function run() {
     balanced_1: ['攻击增强5%', '防御增强5%'],
     vigor_1: ['生命上限+6（同时恢复6）', '防御增强3%'],
     xp_1: ['战斗获得的经验增加10%'],
+    flat_def_1: ['每次承受攻击的伤害 −1，按持有数量累加'],
     charge_start_1: ['每回合开局自带3点蓄力'],
     spawn_luck_1: ['新方块更容易出现高数值；叠加后更明显'],
     halve_shield_1: ['回合结束时方块有机会不减半；叠加后机会更大'],
+    guarded_stance: ['交战结算时每剩余 1 点行动步数，本次承受的伤害额外 −1'],
     gold_combo_grace: ['未合并的回合连锁会延续一部分；叠加后保留更多'],
     gold_execute: ['攻击后敌人生命低于斩杀线时直接击杀；叠加后斩杀线提高'],
     gold_crit: ['攻击有几率造成双倍伤害；叠加后几率提高'],
@@ -51,10 +53,18 @@ export async function run() {
     curse_heavy: ['每回合行动步数减少1（至少保留 1 步）'],
     curse_brittle: ['回合间保留的护甲会被侵蚀；叠加后侵蚀更多'],
     doom_rage: ['每层：敌人攻击每回合成长 +1'],
+    war_soul_totem: ['每击败一个敌人，攻击倍率 +2%，整局累积'],
+    soul_orb: ['每击败一个敌人，最大生命 +3 并等量回复'],
+    smelting_mastery: ['整局每累计合并 100 点方块数值，攻击倍率 +1%'],
+    spend_blade: ['每累计花费 25 金币，攻击倍率 +1%'],
+    veteran_blade: ['每进入一场战斗，攻击倍率 +1%'],
+    blood_fury: ['当前生命每降低 10%，攻击倍率 +6%（满血无加成）', '受到的敌人攻击伤害增加25%'],
     heal_1: ['立即恢复12点生命（受治疗减少影响，不超过上限）'],
     heal_2: ['立即恢复30点生命（受治疗减少影响，不超过上限）'],
+    shield_grind: ['整局每累计承受 30 点伤害，固定减伤 +1'],
+    thorn_aegis: ['受到攻击时有几率反弹伤害（2＋本次减免量），几率随层数提升', '合并积攒的攻击减少；叠加后减少更多'],
   }
-  assert.equal(UPGRADE_POOL.length, 37)
+  assert.equal(UPGRADE_POOL.length, 47)
   for (const def of UPGRADE_POOL) {
     const frozen = freeze(JSON.parse(JSON.stringify(def)))
     const lines = summarizeCard(frozen)

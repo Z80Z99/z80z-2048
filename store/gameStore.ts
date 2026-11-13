@@ -6,7 +6,7 @@ import { generateRoute } from '../core/route'
 import { ENEMIES, getBestiaryId } from '../core/enemy'
 import { ALL_EQUIPMENT, computeEquipBonuses, getEffectivePlayer, rollEquipEffects, equipmentById, makeEquipId, sortInventory, equipCost } from '../core/equipment'
 import type { EquipSlot, SortMode } from '../core/equipment'
-import { pickEvent, resolveEventEffect, buildEventResult, getEventChoiceDisabledReason } from '../core/events'
+import { pickEvent, resolveEventOutcome, buildEventResult, getEventChoiceDisabledReasonForChoice } from '../core/events'
 import type { EventChoiceContext, EventEffect } from '../core/events'
 import { getMetaUpgrades, UPGRADE_POOL, upgradeCost, cardById, canRemoveCard, validateCard } from '../core/upgrade'
 import { collectCardModifiers, deriveCardPlayer, modifiersFromEffects } from '../core/cardEffects'
@@ -69,6 +69,9 @@ export const useGameStore = defineStore('game', {
       let prepared: BattleState | null = null
       if (node.enemy && ['battle', 'elite', 'boss'].includes(node.type)) {
         if (!this._canGrantCards([])) return
+        // 百战老兵：每进入一场战斗，攻击倍率成长一层（先于战斗快照生效）。
+        this.runStats.battles++
+        if (this.cardModifiers.veteranBlade > 0) this.player.attackMultiplier += this.cardModifiers.veteranBlade
         const effects = rollEquipEffects(computeEquipBonuses(this.player.equipment).setEffects, createScopedRng(this.runSeed, this.stage, node.id, 'equipment', 1))
         const player = getEffectivePlayer(this.cardPlayer, effects)
         const turns = Math.max(1, player.baseMaxTurns + player.bonusTurns + (effects.extraTurns || 0) - this.cardModifiers.heavyLegs)
@@ -106,7 +109,6 @@ export const useGameStore = defineStore('game', {
       } else if (node.type === 'event') {
         this.gameEvent = pickEvent(this.stage, this._rng('event'))
         this.eventResult = null
-        this.eventBlackConfirmed = false
         this.screen = 'event'
       }
     },
@@ -114,31 +116,18 @@ export const useGameStore = defineStore('game', {
     eventChoiceDisabledReason(choiceIndex: number): string | null {
       const choice = this.gameEvent?.choices[choiceIndex]
       if (!choice) return '该选项不可用'
-      const disabled = getEventChoiceDisabledReason(choice.effect as EventEffect, this.eventContext)
-      if (disabled) return disabled
-      if (this.eventResult?.choiceIndex === choiceIndex) return getEventChoiceDisabledReason(this.eventResult.effect as EventEffect, this.eventContext)
-      return null
+      return getEventChoiceDisabledReasonForChoice(choice as { outcomes?: unknown }, this.eventContext)
     },
 
-    RESOLVE_EVENT(choiceIndex: number) {
+    // 点选即结算：按权重抽一档（不可行档先剔除）并立即落地，结果页只做展示。
+    CHOOSE_EVENT(choiceIndex: number) {
       if (this.screen !== 'event' || !this.gameEvent || this.eventResult) return
-      if (this.eventChoiceDisabledReason(choiceIndex)) return
       const choice = this.gameEvent.choices[choiceIndex]
-      const effect = resolveEventEffect(choice.effect as EventEffect, this.stage, this._rng('event-choice', choiceIndex), this.eventContext)
-      this.eventBlackConfirmed = false
-      this.eventResult = { label: choice.label, desc: buildEventResult(effect), choiceIndex, effect, requiresBlackConfirmation: effect.type === 'card_trade' && effect.requiresBlackConfirmation }
-    },
-
-    CONFIRM_BLACK_EVENT() {
-      if (this.screen === 'event' && this.eventResult?.requiresBlackConfirmation) this.eventBlackConfirmed = true
-    },
-
-    APPLY_EVENT() {
-      if (this.screen !== 'event' || !this.gameEvent || !this.eventResult) return
-      const { choiceIndex, effect: eff } = this.eventResult
-      if (this.eventChoiceDisabledReason(choiceIndex) || getEventChoiceDisabledReason(eff as EventEffect, this.eventContext)) return
-      const hasBlack = (eff.cardGrants ?? []).some((grant: { id: string }) => cardById(grant.id)?.cardClass === 'black')
-      if ((hasBlack || this.eventResult.requiresBlackConfirmation) && !this.eventBlackConfirmed) return
+      if (!choice || this.eventChoiceDisabledReason(choiceIndex)) return
+      const outcome = resolveEventOutcome(choice.outcomes as never, this.stage, this._rng('event-choice', choiceIndex), this.eventContext)
+      const eff = outcome.effect as EventEffect
+      // 结算前门禁已通过，但任何内部预检失败都必须立刻暴露（fail-fast），避免停在无出口的事件页。
+      const invariant = (ok: boolean, reason: string) => { if (!ok) throw new Error(`事件结算失败（${this.gameEvent!.id}）：${reason}`) }
       switch (eff.type) {
         case 'card_trade': {
           const grants: { id: string; count: number }[] = eff.cardGrants ?? []
@@ -148,25 +137,32 @@ export const useGameStore = defineStore('game', {
           for (const grant of grants) aggregatedCards.set(grant.id, (aggregatedCards.get(grant.id) ?? 0) + grant.count)
           for (const grant of supplies) aggregatedSupplies.set(grant.id, (aggregatedSupplies.get(grant.id) ?? 0) + grant.count)
           const cardBatch = [...aggregatedCards].map(([id, count]) => ({ id, count }))
-          if (!grants.every(grant => safeCount(grant.count)) || !this._canGrantCards(cardBatch) ||
-            !supplies.every(grant => safeCount(grant.count)) || ![...aggregatedSupplies].every(([id, count]) =>
-              consumableById(id) && safeCount(count) && Number.isSafeInteger((this.consumableCounts[id] ?? 0) + count))) return
+          invariant(grants.every(grant => safeCount(grant.count)) && this._canGrantCards(cardBatch) &&
+            supplies.every(grant => safeCount(grant.count)) && [...aggregatedSupplies].every(([id, count]) =>
+              consumableById(id) && safeCount(count) && Number.isSafeInteger((this.consumableCounts[id] ?? 0) + count)), '奖励数量溢出或定义无效')
           const cost = eff.cost ?? 0, hpCost = eff.hpCost ?? 0, gold = eff.gold ?? 0
-          if (![cost, hpCost, gold].every(value => Number.isFinite(value) && value >= 0) || this.player.gold < cost || this.player.hp <= hpCost) return
+          invariant([cost, hpCost, gold].every(value => Number.isFinite(value) && value >= 0) && this.player.gold >= cost && this.player.hp > hpCost, '金币或生命不足以支付')
           const removesPurple = eff.removesPurple ?? 0
           const purpleLayers = this.upgrades.reduce((sum, card) => sum + (canRemoveCard(card.def, 'cleanse') ? card.count : 0), 0)
-          if (removesPurple > 0 && (!Number.isSafeInteger(removesPurple) || purpleLayers < removesPurple)) return
-          this.player.gold += gold - cost
+          invariant(removesPurple <= 0 || (Number.isSafeInteger(removesPurple) && purpleLayers >= removesPurple), '可净化紫卡层数不足')
+          this.player.gold += gold
+          if (cost > 0) this._spendGold(cost)
           this.player.hp -= hpCost
           for (const grant of cardBatch) this._grantUpgrade(cardById(grant.id)!, grant.count)
           for (const [id, count] of aggregatedSupplies) this._addConsumable(id, count)
           for (let index = 0; index < removesPurple; index++) {
             const target = this.upgrades.find(card => canRemoveCard(card.def, 'cleanse'))?.def.id
-            if (!target || !this._removeCardLayer(target, 'cleanse')) return
+            invariant(Boolean(target) && this._removeCardLayer(target!, 'cleanse'), '净化目标在中途消失')
           }
           break
         }
-        case 'gold': this.player.gold += eff.value ?? 0; break
+        // 负金币档：主动支付（paid）走 _spendGold 计入“挥金如土”消费；意外损失只扣金币。
+        case 'gold': {
+          const value = eff.value ?? 0
+          if (value < 0 && eff.paid) this._spendGold(-value)
+          else this.player.gold += value
+          break
+        }
         case 'heal': this._heal(Math.floor(this.effectivePlayer.maxHp * (eff.value ?? 10) / 100)); break
         case 'gold_heal':
           this._heal(Math.floor(this.effectivePlayer.maxHp * eff.heal / 100))
@@ -192,24 +188,37 @@ export const useGameStore = defineStore('game', {
           break
         case 'maxhp_up': this.player.maxHp += eff.value ?? 0; break
         case 'drop_equip':
-          if (!this._addEquipment(eff.eqId)) return
-          this.player.gold -= eff.cost ?? 0
+          invariant(this._addEquipment(eff.eqId), '装备发放失败')
+          if ((eff.cost ?? 0) > 0) this._spendGold(eff.cost)
           break
         case 'reforge': {
           const index = this.player.inventory.indexOf(eff.removeEqId)
-          if (index < 0 || !equipmentById(eff.eqId)) return
+          invariant(index >= 0 && Boolean(equipmentById(eff.eqId)), '重铸目标在中途消失')
           this.player.inventory.splice(index, 1)
-          this._addEquipment(eff.eqId)
-          this.player.gold += (eff.gold ?? 0) - (eff.cost ?? 0)
+          invariant(this._addEquipment(eff.eqId), '重铸奖励发放失败')
+          this.player.gold += (eff.gold ?? 0)
+          if ((eff.cost ?? 0) > 0) this._spendGold(eff.cost)
           break
         }
       }
       this._clampHp()
+      this.eventResult = {
+        outcomeLabel: outcome.label,
+        tone: outcome.tone,
+        label: choice.label,
+        desc: buildEventResult(eff as Record<string, any>),
+        choiceIndex,
+        effect: eff as Record<string, any>,
+      }
+    },
+
+    LEAVE_EVENT() {
+      if (this.screen !== 'event' || !this.eventResult) return
       this.gameEvent = null
       this.eventResult = null
-      this.eventBlackConfirmed = false
       if (!this._showNextReward()) this.screen = 'route'
     },
+
 
     SLIDE(direction: string) {
       if (this.screen !== 'battle' || !this.battle || this.battle.phase !== 'playing') return
@@ -217,6 +226,7 @@ export const useGameStore = defineStore('game', {
       const updated = processTurn(before, direction, this._rng('spawn', before.round, before.turnsUsed))
       if (updated === before) return
       updated.totalTurns = (before.totalTurns || 0) + updated.turnsUsed - before.turnsUsed
+      this._trackMerged(updated.lastMergedSum ?? 0)
       const moveDamage = updated.lastMoveDamage ?? 0
       if (moveDamage > 0) {
         this.player.hp = Math.max(0, this.player.hp - moveDamage)
@@ -312,6 +322,29 @@ export const useGameStore = defineStore('game', {
       if (this.screen === 'shop' || this.screen === 'rest') this.screen = 'route'
     },
 
+    // 挥金如土等成长卡的消费计数：所有金币支出统一经过这里。
+    _spendGold(amount: number) {
+      if (!Number.isFinite(amount) || amount <= 0) return
+      this.player.gold -= amount
+      this.runStats.goldSpent += amount
+      const blade = this.cardModifiers.spendBlade
+      if (blade <= 0) return
+      const before = Math.floor((this.runStats.goldSpent - amount) / 25)
+      const after = Math.floor(this.runStats.goldSpent / 25)
+      if (after > before) this.player.attackMultiplier += blade * (after - before)
+    },
+
+    // 熔炼掌握：整局累计合并数值跨过 100 点阈值时提升攻击倍率。
+    _trackMerged(sum: number) {
+      if (!Number.isFinite(sum) || sum <= 0) return
+      this.runStats.mergedTotal += sum
+      const mastery = this.cardModifiers.smeltMastery
+      if (mastery <= 0) return
+      const before = Math.floor((this.runStats.mergedTotal - sum) / 100)
+      const after = Math.floor(this.runStats.mergedTotal / 100)
+      if (after > before) this.player.attackMultiplier += mastery * (after - before)
+    },
+
     REST_HEAL() {
       if (this.screen !== 'rest' || this.restUsed || this.runOutcome) return
       const before = this.player.hp
@@ -325,7 +358,7 @@ export const useGameStore = defineStore('game', {
       if (!def) return '道具不存在'
       if (!safeCount(this.consumableCounts[id] ?? 0)) return '没有该道具'
       if (this.runOutcome) return '本次冒险已结束'
-      if (this.eventResult) return '先确认当前事件'
+      if (this.eventResult) return '事件结算展示中'
       const purple = this.upgrades.some(card => card.def.cardClass === 'purple' && card.count > 0)
       return consumableUseDisabledReason(def, this.screen, this.battle?.phase, purple)
     },
@@ -360,7 +393,7 @@ export const useGameStore = defineStore('game', {
       const id = this.shopConsumables[slot]
       const def = id ? consumableById(id) : undefined
       if (!id || !def || this.player.gold < def.price || !this._addConsumable(id)) return
-      this.player.gold -= def.price
+      this._spendGold(def.price)
       this.shopConsumables[slot] = null
     },
 
@@ -382,7 +415,7 @@ export const useGameStore = defineStore('game', {
       const cost = def ? upgradeCost(def) : null
       if (!def || !['white', 'blue', 'gold'].includes(def.cardClass) || cost === null || this.player.gold < cost) return
       if (!this._grantUpgrade(def)) return
-      this.player.gold -= cost
+      this._spendGold(cost)
       this.shopUpgrades[slot] = null
     },
 
@@ -392,7 +425,7 @@ export const useGameStore = defineStore('game', {
       const eq = eid && equipmentById(eid)
       if (!eq || this.player.gold < equipCost(eq)) return
       if (!this._addEquipment(eid!)) return
-      this.player.gold -= equipCost(eq)
+      this._spendGold(equipCost(eq))
       this.shopEquipment[slot] = null
     },
 
@@ -402,7 +435,7 @@ export const useGameStore = defineStore('game', {
       if (!def || def.kind !== 'instant') return
       const cost = instantSupplyCost(def)
       if (this.player.gold < cost || !this._grantUpgrade(def)) return
-      this.player.gold -= cost
+      this._spendGold(cost)
       this.shopHeals[slot] = null
     },
 
@@ -410,7 +443,7 @@ export const useGameStore = defineStore('game', {
       if (this.screen !== 'shop' || this.player.gold < this.shopRefreshCost) return
       const nextCount = this.shopRefreshCount + 1
       const built = buildShop(this._rng('shop', nextCount), this.stage, this.upgrades)
-      this.player.gold -= this.shopRefreshCost
+      this._spendGold(this.shopRefreshCost)
       this.shopUpgrades = built.shopUpgrades
       this.shopEquipment = built.shopEquipment
       this.shopHeals = built.shopHeals
@@ -422,7 +455,7 @@ export const useGameStore = defineStore('game', {
     SHOP_REMOVE_UPGRADE(upgradeId: string) {
       if (this.screen !== 'shop' || this.shopRemoveUsed || this.player.gold < this.shopRemoveCost) return
       if (!this._removeCardLayer(upgradeId, 'shop')) return
-      this.player.gold -= this.shopRemoveCost
+      this._spendGold(this.shopRemoveCost)
       this.shopRemoveUsed = true
     },
 
@@ -470,11 +503,25 @@ export const useGameStore = defineStore('game', {
 
     _settleRound(updated: BattleState) {
       const result = resolveRound(updated, this.cardPlayer, this._rng('combat', updated.round, updated.turnsUsed))
+      const hpBefore = this.player.hp
       const hpAfter = result.playerHpAfter ?? Math.max(0, this.player.hp - result.playerDamage)
       this.player.hp = hpAfter
+      // 磨砺之盾：按实际承受伤害累计，跨过阈值即时提升固定减伤（死亡回合同样计数）。
+      this._trackDamageTaken(Math.max(0, hpBefore - hpAfter))
       this.battle = { ...updated, enemyCurrentHp: result.enemyHpAfter, lastRoundResult: result, fortifyUsed: result.fortifyUsed ?? updated.fortifyUsed }
       if (hpAfter <= 0) this._resolvePlayerDeath(this.battle, result)
       else if (result.enemyHpAfter <= 0) this._resolveKill(this.battle, result, hpAfter)
+    },
+
+    // 磨砺之盾：整局每累计承受 30 点伤害，固定减伤 +1；与 runStats.damageTaken 共用权威计数。
+    _trackDamageTaken(loss: number) {
+      if (!Number.isFinite(loss) || loss <= 0) return
+      this.runStats.damageTaken += loss
+      const grind = this.cardModifiers.shieldGrind
+      if (grind <= 0) return
+      const before = Math.floor((this.runStats.damageTaken - loss) / 30)
+      const after = Math.floor(this.runStats.damageTaken / 30)
+      if (after > before) this.player.flatDamageReductionBonus = (this.player.flatDamageReductionBonus ?? 0) + grind * (after - before)
     },
 
     _resolveKill(updated: BattleState, roundRes: RoundResult, playerHpAfter: number) {
@@ -484,6 +531,9 @@ export const useGameStore = defineStore('game', {
       const player = getEffectivePlayer(this.cardPlayer, effects)
       const enemyGoldBoost = 0
       const greed = getCombinedCardModifiers(updated).greedRating
+      // 成长型卡牌：按击杀数累积攻击倍率；生命上限成长在下方 hp 结算后处理。
+      this.runStats.kills++
+      if (this.cardModifiers.killAttackBonus > 0) this.player.attackMultiplier += this.cardModifiers.killAttackBonus
       let baseGold = Math.floor(updated.enemy.tier * 15 * (1 + player.goldBoost + enemyGoldBoost) * (1 + greed)) * rewardMult
       let xpEarned = Math.floor((updated.enemy.tier * 8 + Math.floor(updated.totalAttack / 8)) * (1 + player.xpBoost)) * rewardMult
       if (effects.doubleGold) baseGold *= 2
@@ -491,6 +541,14 @@ export const useGameStore = defineStore('game', {
       const savedSteps = updated.turnsUsed < updated.maxTurns ? Math.max(0, (updated.baseTurns ?? this.player.baseMaxTurns) - updated.turnsUsed) : 0
       const goldEarned = baseGold + savedSteps * 2
       this.player.hp = playerHpAfter
+      // 英魂宝珠：击杀成长的生命上限在 hp 结算之后应用，回复走 _heal（受治疗衰减）并计入治疗来源。
+      if (this.cardModifiers.killHpBonus > 0) {
+        this.player.maxHp += this.cardModifiers.killHpBonus
+        const hpBeforeHeal = this.player.hp
+        this._heal(this.cardModifiers.killHpBonus)
+        const healed = this.player.hp - hpBeforeHeal
+        if (healed > 0) roundRes.healing = (roundRes.healing ?? 0) + healed
+      }
       this.player.gold += goldEarned
       if (nodeType === 'boss' || nodeType === 'elite') {
         this.rewardQueue.push({ reason: nodeType, allowedClasses: nodeType === 'boss' ? ['gold'] : ['blue', 'gold'] })

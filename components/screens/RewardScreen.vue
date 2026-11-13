@@ -37,7 +37,6 @@ function existingCount(id: string) { return store.upgrades.find(upgrade => upgra
         </button>
       </view>
       <button role="button" :key="`skip-${store.rewardRollCount}`" class="ui-btn ui-btn-quiet reward-skip" @click="skipReward">仅跳过这次奖励</button>
-      <text class="ui-note reward-skip-note">{{ remaining ? '后续奖励仍会依次出现，不会一起跳过。' : '跳过后继续当前冒险流程。' }}</text>
     </view>
   </view>
 </template>
@@ -61,7 +60,6 @@ function existingCount(id: string) { return store.upgrades.find(upgrade => upgra
 .reward-stacks { display: block; margin-top: 12rpx; }
 .reward-select-arrow { font-size: 30rpx; color: var(--accent); align-self: center; }
 .reward-skip { width: 100%; margin-top: 32rpx; }
-.reward-skip-note { margin-top: 16rpx; text-align: center; }
 @media (max-width: 360px) {
   .reward-card { gap: 12rpx; padding: 16rpx; }
   .reward-select-arrow { display: none; }

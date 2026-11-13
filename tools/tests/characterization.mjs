@@ -50,12 +50,12 @@ export async function run() {
     assert.strictEqual(result.length, 3, 'pickUpgrades count');
     assert.deepStrictEqual(
       result.map(u => u.id),
-      ['start_tile_1', 'spawn_luck_1', 'gold_1'],
+      ['start_tile_1', 'spawn_luck_1', 'balanced_1'],
       'pickUpgrades seeded sixcolor ids'
     );
     assert.deepStrictEqual(result.map(u => u.cardClass), ['blue', 'blue', 'white']);
     const gold = upgrade.pickUpgrades(random.createRng(42), { count: 3, allowedClasses: ['gold'] });
-    assert.deepStrictEqual(gold.map(u => u.id), ['gold_lifesteal', 'gold_execute', 'gold_combo_grace'], 'seeded boss gold ids');
+    assert.deepStrictEqual(gold.map(u => u.id), ['gold_crit', 'soul_orb', 'gold_saved_steps'], 'seeded boss gold ids');
     assert.ok(gold.every(u => u.cardClass === 'gold' && u.kind === 'persistent'));
   }
 

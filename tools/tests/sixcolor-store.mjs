@@ -59,26 +59,31 @@ export async function run() {
     assert.ok(!store.REST_CLEANSE, 'campfire no longer cleanses purple cards')
     assert.equal(store.upgrades.find(card => card.def.id === 'curse_burn').count, 2)
     // 事件净化：cleansing_hermit 的 card_trade removesPurple 生效，黑卡仍不可移除。
+    const cleanseTiers = (cost, gold) => [
+      { weight: 98, label: '净', tone: 'good', effect: { type: 'card_trade', grants: [], cost, gold: 0, hpCost: 0, removesPurple: 1, ...(gold ? { gold } : {}) } },
+      { weight: 1, label: '顺', tone: 'mid', effect: { type: 'card_trade', grants: [], cost, gold: 0, hpCost: 0, removesPurple: 1 } },
+      { weight: 1, label: '晃', tone: 'bad', effect: { type: 'card_trade', grants: [], cost, gold: 0, hpCost: 0, removesPurple: 1 } },
+    ]
     store.gameEvent = {
       id: 'cleansing_hermit', title: '流浪的净化师', icon: '🕯️', desc: '', stageMin: 2,
-      choices: [
-        { label: '净化', effect: { type: 'card_trade', grants: [], cost: 0, gold: 0, hpCost: 0, removesPurple: 1 } },
-        { label: '离开', effect: { type: 'none' } },
-      ],
+      choices: [{ label: '净化', outcomes: cleanseTiers(40) }],
     }
-    store.screen = 'event'; store.eventResult = null; store.eventBlackConfirmed = false
-    store.RESOLVE_EVENT(0)
-    assert.ok(store.eventResult, 'hermit cleanse resolves when a purple layer is held')
-    store.APPLY_EVENT()
-    assert.equal(store.upgrades.find(card => card.def.id === 'curse_burn').count, 1, 'one purple layer cleansed via event')
-    assert.equal(store.upgrades.find(card => card.def.id === 'doom_soul').count, 1, 'black card untouched by cleanse')
-    // 无紫卡时选项不可用，整体不应用。
-    store._removeCardLayer('curse_burn', 'cleanse')
-    store.gameEvent = { ...store.gameEvent, choices: [{ label: '净化', effect: { type: 'card_trade', grants: [], cost: 0, gold: 0, hpCost: 0, removesPurple: 1 } }, { label: '离开', effect: { type: 'none' } }] }
     store.screen = 'event'; store.eventResult = null
+    store.player.gold = 1000
+    store.CHOOSE_EVENT(0)
+    assert.ok(store.eventResult, 'hermit cleanse settles when a purple layer is held')
+    store.LEAVE_EVENT()
+    assert.equal(store.upgrades.find(card => card.def.id === 'curse_burn').count, 1, 'one purple layer cleansed via event')
+    assert.equal(store.player.gold, 960, 'cleanse cost deducted')
+    assert.equal(store.upgrades.find(card => card.def.id === 'doom_soul').count, 1, 'black card untouched by cleanse')
+    // 无紫卡时选项整体不可用（三档都要紫卡），CHOOSE 无副作用。
+    store._removeCardLayer('curse_burn', 'cleanse')
+    store.screen = 'event'; store.eventResult = null
+    store.gameEvent = { ...store.gameEvent, choices: [{ label: '净化', outcomes: cleanseTiers(40) }] }
     assert.ok(store.eventChoiceDisabledReason(0), 'cleanse choice disabled without purple layers')
-    store.RESOLVE_EVENT(0)
-    assert.equal(store.eventResult, null, 'disabled choice cannot resolve')
+    const stuckState = JSON.stringify({ er: store.eventResult, up: store.upgrades.map(c => c.count), g: store.player.gold })
+    store.CHOOSE_EVENT(0)
+    assert.equal(JSON.stringify({ er: store.eventResult, up: store.upgrades.map(c => c.count), g: store.player.gold }), stuckState, 'disabled choice cannot settle')
   }
   {
     const store = fresh()
@@ -196,23 +201,22 @@ export async function run() {
     const store = fresh()
     store.screen = 'event'
     store.currentNodeId = 's1_event'
-    store.gameEvent = { id: 'contract', title: '契约', icon: '', desc: '', choices: [{ label: '接受', effect: { type: 'card_trade', grants: [{ id: 'gold_merge_armor', count: 1 }, { id: 'doom_soul', count: 1 }], cost: 10, gold: 20, hpCost: 3 } }] }
+    store.gameEvent = { id: 'contract', title: '契约', icon: '', desc: '', choices: [{ label: '接受', outcomes: [
+      { weight: 34, label: '厚', tone: 'good', effect: { type: 'card_trade', grants: [{ id: 'gold_merge_armor', count: 1 }, { id: 'doom_soul', count: 1 }], cost: 10, gold: 20, hpCost: 3 } },
+      { weight: 33, label: '常', tone: 'mid', effect: { type: 'card_trade', grants: [{ id: 'gold_merge_armor', count: 1 }, { id: 'doom_soul', count: 1 }], cost: 10, gold: 20, hpCost: 3 } },
+      { weight: 33, label: '薄', tone: 'bad', effect: { type: 'card_trade', grants: [{ id: 'gold_merge_armor', count: 1 }, { id: 'doom_soul', count: 1 }], cost: 10, gold: 20, hpCost: 3 } },
+    ] }] }
     store.player.gold = 10
-    store.RESOLVE_EVENT(0)
-    assert.equal(store.eventResult.requiresBlackConfirmation, true)
-    const preview = JSON.stringify(store.eventResult)
-    store.APPLY_EVENT()
-    assert.equal(store.player.gold, 10)
-    assert.equal(store.upgrades.length, 0)
-    store.CONFIRM_BLACK_EVENT()
-    store.APPLY_EVENT()
-    assert.equal(store.player.gold, 20)
-    assert.equal(store.player.hp, 97)
-    assert.equal(store.upgrades.length, 2)
-    store.APPLY_EVENT()
-    assert.equal(store.player.gold, 20)
-    assert.ok(preview.includes('doom_soul'))
-    assert.equal(store.eventBlackConfirmed, false)
+    store.CHOOSE_EVENT(0)
+    assert.equal(store.player.gold, 20, '点选即结算：先收金币再扣成本')
+    assert.equal(store.player.hp, 97, 'hpCost charged at settlement')
+    assert.equal(store.upgrades.length, 2, 'black card granted directly without confirmation')
+    assert.ok(JSON.stringify(store.eventResult.effect.cardGrants).includes('doom_soul'))
+    const settled = JSON.stringify(store.eventResult)
+    store.CHOOSE_EVENT(0)
+    assert.equal(JSON.stringify(store.eventResult), settled, 'cannot settle twice')
+    store.LEAVE_EVENT()
+    assert.equal(store.screen, 'route')
   }
   {
     const store = fresh()
@@ -246,13 +250,18 @@ export async function run() {
     else store.consumableCounts[id] = Number.MAX_SAFE_INTEGER - 1
     store.screen = 'event'
     const grants = [{ id, count: 1 }, { id, count: 1 }]
-    store.gameEvent = { id: 'overflow', title: '测试', icon: '', desc: '', choices: [{ label: '交换', effect: { type: 'card_trade', grants: mode === 'card' ? grants : [], consumableGrants: mode === 'consumable' ? grants : [], cost: 10, gold: 0, hpCost: 0 } }] }
+    const tier = { type: 'card_trade', grants: mode === 'card' ? grants : [], consumableGrants: mode === 'consumable' ? grants : [], cost: 10, gold: 0, hpCost: 0 }
+    store.gameEvent = { id: 'overflow', title: '测试', icon: '', desc: '', choices: [{ label: '交换', outcomes: [
+      { weight: 34, label: 'a', tone: 'good', effect: { ...tier } },
+      { weight: 33, label: 'b', tone: 'mid', effect: { ...tier } },
+      { weight: 33, label: 'c', tone: 'bad', effect: { ...tier } },
+    ] }] }
     store.player.gold = 10
-    store.RESOLVE_EVENT(0)
-    store.APPLY_EVENT()
+    // 门禁通过但批量预检失败时，结算必须 fail-fast 暴露，而不是静默发奖。
+    assert.throws(() => store.CHOOSE_EVENT(0), /事件结算失败/, 'overflow throws instead of silently locking')
+    assert.equal(store.eventResult, null, 'no result page after failed settlement')
     assert.equal(store.player.gold, 10)
     assert.equal(mode === 'card' ? store.upgrades[0].count : store.consumableCounts[id], Number.MAX_SAFE_INTEGER - 1)
-    assert.equal(store.screen, 'event')
   }
 
   {
@@ -302,5 +311,48 @@ export async function run() {
     learned._grantUpgrade(cardById('xp_1'))
     const learnedReward = kill(learned)
     assert.ok(learnedReward.xp > plainReward.xp, 'xp bonus raises kill experience')
+  }
+  {
+    // 六张成长卡：击杀/消费/合并/战斗计数驱动整局滚雪球。
+    const store = fresh()
+    store._grantUpgrade(cardById('war_soul_totem'))
+    store._grantUpgrade(cardById('soul_orb'))
+    const node = store.route.find(n => n.accessible && n.type === 'battle' && !n.completed)
+    store.SELECT_NODE(node.id)
+    store.battle.totalAttack = 100
+    const hpBeforeKill = store.player.hp
+    const maxHpBefore = store.player.maxHp
+    const atkBeforeKill = store.player.attackMultiplier
+    const result = { playerDamage: 0, enemyDamage: 100, enemyHpAfter: 0, overflowDamage: 0, playerFirst: true, playerSpeed: 9, enemySpeed: 1, playerHpAfter: store.player.hp, playerActed: true, enemyActed: false, avoidReason: null }
+    store._resolveKill(store.battle, result, store.player.hp)
+    assert.equal(store.runStats.kills, 1, 'kill counter increments')
+    assert.equal(store.player.attackMultiplier, atkBeforeKill + 0.02, 'war soul totem raises attack per kill')
+    assert.equal(store.player.maxHp, maxHpBefore + 3, 'soul orb raises max hp per kill')
+    assert.equal(store.player.hp, Math.min(store.player.maxHp, hpBeforeKill + 3), 'soul orb heals the granted hp')
+    // 挥金如土：消费跨过 25 金币阈值。
+    const spender = fresh()
+    spender._grantUpgrade(cardById('spend_blade'))
+    const spendAtkBefore = spender.player.attackMultiplier
+    spender.player.gold = 100
+    spender.screen = 'shop'
+    spender._spendGold(30)
+    assert.equal(spender.player.attackMultiplier, spendAtkBefore + 0.01, 'first 25 gold spent grants +1% attack')
+    spender._spendGold(20)
+    assert.equal(spender.player.attackMultiplier, spendAtkBefore + 0.02, 'crossing 50 total grants a second stack')
+    // 熔炼掌握：累计合并数值跨过 100 点阈值。
+    const smelter = fresh()
+    smelter._grantUpgrade(cardById('smelting_mastery'))
+    const smeltAtkBefore = smelter.player.attackMultiplier
+    smelter._trackMerged(60)
+    assert.equal(smelter.player.attackMultiplier, smeltAtkBefore, 'below 100 total no stack yet')
+    smelter._trackMerged(50)
+    assert.equal(smelter.player.attackMultiplier, smeltAtkBefore + 0.01, 'crossing 100 merged grants +1% attack')
+    // 百战老兵：进入战斗即成长。
+    const veteran = fresh()
+    veteran._grantUpgrade(cardById('veteran_blade'), 3)
+    const vetAtkBefore = veteran.player.attackMultiplier
+    const vetNode = veteran.route.find(n => n.accessible && n.type === 'battle' && !n.completed)
+    veteran.SELECT_NODE(vetNode.id)
+    assert.equal(veteran.player.attackMultiplier, vetAtkBefore + 0.03, 'entering a battle grants +3% attack for 3 layers')
   }
 }
