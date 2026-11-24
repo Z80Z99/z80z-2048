@@ -3,6 +3,7 @@
 // 纯渲染函数导出供 tools/tests/gen-events-guide.mjs 单测使用。
 import { loadProject } from './harness.mjs'
 import { RULE_VERSION } from './simulate.mjs'
+import { firstDiff } from './doc-check.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -139,14 +140,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (mode === 'write') {
     fs.writeFileSync(target, generated)
     console.log(`EVENTS_GUIDE.md written (${Buffer.byteLength(generated)} bytes)`)
-  } else if (generated !== existing) {
-    // 定位首个差异行，方便快速修复漂移。
-    const generatedLines = generated.split('\n')
-    const existingLines = existing.split('\n')
-    const index = generatedLines.findIndex((line, i) => line !== existingLines[i])
-    console.error(`EVENTS_GUIDE.md is stale (first diff at generated line ${index + 1}:`)
-    console.error(`  expected: ${JSON.stringify(generatedLines[index])}`)
-    console.error(`  found:    ${JSON.stringify(existingLines[index])}`)
+  } else if (firstDiff(generated, existing)) {
+    // 定位首个差异行，方便快速修复漂移；行尾差异（CRLF 检出）不算漂移。
+    const { line, expected, found } = firstDiff(generated, existing)
+    console.error(`EVENTS_GUIDE.md is stale (first diff at generated line ${line}:`)
+    console.error(`  expected: ${JSON.stringify(expected)}`)
+    console.error(`  found:    ${JSON.stringify(found)}`)
     console.error('Run `node tools/gen-events-guide.mjs --write` after reviewing the change.')
     process.exitCode = 1
   } else {

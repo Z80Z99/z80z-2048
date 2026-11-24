@@ -5,6 +5,7 @@ import path from 'node:path'
 import { loadProject } from '../harness.mjs'
 import { choiceRow, renderGuide, generateContent } from '../gen-events-guide.mjs'
 import { RULE_VERSION } from '../simulate.mjs'
+import { firstDiff } from '../doc-check.mjs'
 
 const events = loadProject('./core/events')
 
@@ -44,10 +45,15 @@ export async function run() {
     assert.match(full, /阶段池：S1 12 \/ S2 26 \/ S3\+ 34/)
   }
 
-  // 磁盘一致性：生成内容与 EVENTS_GUIDE.md 完全一致（--check 的只读断言）。
+  // 磁盘一致性：生成内容与 EVENTS_GUIDE.md 一致（--check 的只读断言）；行尾差异不算漂移。
   {
     const target = path.resolve(import.meta.dirname, '../../EVENTS_GUIDE.md')
     const existing = fs.readFileSync(target, 'utf8')
-    assert.equal(generateContent(), existing, 'EVENTS_GUIDE.md must match core/events.ts (run gen-events-guide.mjs --write after intentional changes)')
+    const generated = generateContent()
+    assert.equal(firstDiff(generated, existing), null, 'EVENTS_GUIDE.md must match core/events.ts (run gen-events-guide.mjs --write after intentional changes)')
+    assert.equal(firstDiff(generated, existing.replace(/\r?\n/g, '\r\n')), null, 'CRLF checkout (core.autocrlf) is not drift')
+    assert.equal(firstDiff(generated, existing.replace(/\r\n/g, '\n')), null, 'LF checkout is not drift')
+    assert.equal(firstDiff(generated, generated.replace('奇遇事件指南', '被改动')).line, 1, 'a real text change is reported at its line')
+    assert.equal(firstDiff(generated, generated + '多出来的一行').line, generated.split('\n').length, 'an extra trailing line is reported')
   }
 }

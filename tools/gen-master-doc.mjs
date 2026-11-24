@@ -5,8 +5,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { firstDiff, normalizeEol } from './doc-check.mjs'
 
-const PARTS = [
+export const PARTS = [
   { file: 'README.md', title: '项目总览' },
   { file: 'AGENTS.md', title: '协作约定' },
   { file: 'PROJECT_ANALYSIS.md', title: '系统知识库' },
@@ -32,7 +33,8 @@ function stripRelativeLinks(text) {
 }
 
 function renderPart(index, source) {
-  let text = source.replace(/^# .*\r?\n?/, '').replace(/\s+$/, '')
+  // 源文档行尾随平台检出变化，统一成 LF 后再拼接，生成结果才能稳定比对。
+  let text = normalizeEol(source).replace(/^# .*\n?/, '').replace(/\s+$/, '')
   text = stripRelativeLinks(text)
   if (index === 4) text = text.replaceAll('本文档', '本部分')
   const heading = partHeading(index, PARTS[index].title, PARTS[index].file)
@@ -71,13 +73,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (mode === 'write') {
     fs.writeFileSync(target, generated)
     console.log(`MASTER_DOC.md written (${Buffer.byteLength(generated)} bytes)`)
-  } else if (generated !== existing) {
-    const generatedLines = generated.split('\n')
-    const existingLines = existing.split('\n')
-    const index = generatedLines.findIndex((line, i) => line !== existingLines[i])
-    console.error(`MASTER_DOC.md is stale (first diff at generated line ${index + 1}:`)
-    console.error(`  expected: ${JSON.stringify(generatedLines[index])}`)
-    console.error(`  found:    ${JSON.stringify(existingLines[index])}`)
+  } else if (firstDiff(generated, existing)) {
+    // 定位首个差异行，方便快速修复漂移；行尾差异（CRLF 检出）不算漂移。
+    const { line, expected, found } = firstDiff(generated, existing)
+    console.error(`MASTER_DOC.md is stale (first diff at generated line ${line}:`)
+    console.error(`  expected: ${JSON.stringify(expected)}`)
+    console.error(`  found:    ${JSON.stringify(found)}`)
     console.error('Edit source documents, then run `node tools/gen-master-doc.mjs --write`.')
     process.exitCode = 1
   } else {

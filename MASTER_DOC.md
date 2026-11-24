@@ -88,7 +88,7 @@ node tools/parity.mjs record
 
 当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v3-flat-defense`**（新增固定减伤卡组：坚甲/守拙/磨砺之盾/棘盾契约），parity／多策略工具复用该版本；新录制使用该命名空间。`tools/baselines/` 下 `sixcolor-v1-*`、`sixcolor-v2-random-events-*` 以及旧 `baseline.snapshot.json`、`parity-before.json`、`parity-after.json` 均保留，不覆写。缺失当前版本基线时先用 `--report-only` 审阅真实结果，不用 record 掩盖失败，也不要求重新设计仍保持旧 ±15%。模拟记录实际层数、护甲、道具、损血／治疗、消费及失败原因。
 
-**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮30组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
+**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮31组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
 
 ## 本轮改进
 
@@ -219,7 +219,7 @@ node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检�
 | `npm run build:h5` | `node tools/build.mjs build h5` | H5 正式构建 |
 | `npm run preview:h5` | `node tools/build.mjs preview h5` | 预览服务（默认端口 4173） |
 | `npm run build:mp-weixin` | `node tools/build.mjs build mp-weixin` | 微信构建 + 自动压图 + 包体校验（≤2 MiB） |
-| `npm test` | `node tools/run-tests.mjs` | 30 组测试，必须全绿 |
+| `npm test` | `node tools/run-tests.mjs` | 31 组测试，必须全绿 |
 | `npm run typecheck` | `tsc -p tools/tsconfig.check.json` | 类型检查（0 错误） |
 | `npm run simulate` | `node tools/simulate.mjs` | 固定种子整局模拟 + SHA-256 基线 |
 | `npm run parity` | `node tools/parity.mjs` | 200 种子统计平价 |
@@ -716,9 +716,9 @@ doubleGold（套装结构支持）再 ×2。溢出伤害可选 1:1 金币或 2:1
 
 ## 14. 测试与基线基建
 
-### 14.1 30 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
+### 14.1 31 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
 
-art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集）、sixcolor-store（store 流程）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
+art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集）、sixcolor-store（store 流程）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
 
 ### 14.2 harness 原理与写法
 
@@ -758,7 +758,7 @@ node tools/simulate.mjs --update-baseline
 node tools/parity.mjs record
 ```
 
-默认 check 只读，缺失／不匹配会失败；录制写当前版本／配置命名空间，同版本同配置会写既有目标，不能盲目每次规则改动都 record，更不能重录掩盖失败或重复种子不一致。回复说明行为与哈希变化原因、测量口径和未验证项，不把旧通关率改名为新率。**本轮（sixcolor-v3-flat-defense）30组测试、类型/SFC 检查已通过；新版本基线尚未录制，模拟与统计以 `--report-only` 结果如实报告，待差异审阅并批准后单独录制；更早版本基线原样保留。**
+默认 check 只读，缺失／不匹配会失败；录制写当前版本／配置命名空间，同版本同配置会写既有目标，不能盲目每次规则改动都 record，更不能重录掩盖失败或重复种子不一致。回复说明行为与哈希变化原因、测量口径和未验证项，不把旧通关率改名为新率。**本轮（sixcolor-v3-flat-defense）31组测试、类型/SFC 检查已通过；新版本基线尚未录制，模拟与统计以 `--report-only` 结果如实报告，待差异审阅并批准后单独录制；更早版本基线原样保留。**
 
 ---
 
@@ -830,7 +830,7 @@ events.ts：EFFECT_FIELDS 白名单 → `pick`/`tradeO`/`o` 助手与结算透�
 
 ### 18.6 发版检查单
 
-tests 30/30 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
+tests 31/31 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
 
 ---
 
@@ -997,7 +997,7 @@ tests 30/30 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本�
 - 普通模拟默认不接受负面契约（无安全选项时才回落到期望最高的可执行选项），因此不能证明红／诅咒流派平衡；机制组合覆盖与真人取舍试玩是不同证据。
 - 当前 `RULE_VERSION` 为 **`sixcolor-v3-flat-defense`**（`tools/simulate.mjs`），parity／多策略工具导入同一版本；该版本为防御投资新增固定减伤线性通道（坚甲／守拙／磨砺之盾／棘盾契约四卡）。旧 `tools/baselines/` 下全部历史基线原样保留，不覆写；新录制使用当前版本命名空间，待差异审阅并批准后进行。
 - 默认验证只读；可先用 `--report-only` 查看当前结果。只有整合完成、审阅差异且明确批准后，才执行所需 `--update-baseline`／`record`；规则变更、缺失基线或 mismatch 本身不是自动录制授权，同版本同配置的录制也会写既有目标文件。
-- **当前版本验证状态**：30组单元／回归与类型检查通过（含生成器与包体门禁测试）；`sixcolor-v3-flat-defense` 新基线尚未录制，以 `--report-only` 结果为准。首轮五策略 50+50 实测：defense 8 胜（前版 9）、attack 20（前版 17）、corner 7（前版 12）、baseline 0、economy 4——新卡进入白卡池稀释了其他卡的出现率，净效果接近中性；固定减伤 1 点/层的力度在后期敌攻 50+ 时占比偏小，若要继续加强需另行调整卡面数值并复测。
+- **当前版本验证状态**：31组单元／回归与类型检查通过（含生成器与包体门禁测试）；`sixcolor-v3-flat-defense` 新基线尚未录制，以 `--report-only` 结果为准。首轮五策略 50+50 实测：defense 8 胜（前版 9）、attack 20（前版 17）、corner 7（前版 12）、baseline 0、economy 4——新卡进入白卡池稀释了其他卡的出现率，净效果接近中性；固定减伤 1 点/层的力度在后期敌攻 50+ 时占比偏小，若要继续加强需另行调整卡面数值并复测。
 
 ---
 
