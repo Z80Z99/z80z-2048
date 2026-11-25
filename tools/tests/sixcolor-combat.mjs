@@ -313,6 +313,84 @@ function checkNewMechanics() {
   assert.equal(boostedCap.enemyDamage, 20, 'bonus tracks effective max hp: full hp still grants nothing')
 }
 
+// 固定减伤卡组（sixcolor-v3）：坚甲 / 守拙 / 磨砺之盾的整局成长 / 棘盾契约。
+// 基准：空盘面、敌攻 20、防御倍率 1 → 每回合承受 20。
+function checkFlatReductionAndThorns() {
+  const damage = (overrides, raw = player()) => combat.getBattlePreview(battle(overrides), raw)
+  const base = damage({})
+  assert.equal(base.playerDamage, 20, 'baseline: enemy attack 20 lands as 20 without reduction')
+  assert.equal(base.flatReduction, 0)
+
+  // 坚甲：固定减伤直接从承伤里扣；堆到极高仍有 1 点保底。
+  const plated = damage({ cardModifiers: { flatDamageReduction: 3 } })
+  assert.equal(plated.flatReduction, 3)
+  assert.equal(plated.playerDamage, 17)
+  assert.equal(damage({ cardModifiers: { flatDamageReduction: 100 } }).playerDamage, 1, 'flat reduction never makes the player immune')
+  assert.equal(damage({ enemy: { attack: 0 }, cardModifiers: { flatDamageReduction: 5 } }).playerDamage, 0, 'a zero-attack enemy deals nothing; the 1-point floor needs a real attack')
+  // 在易伤放大之后扣减：ceil(20 × 1.5) − 3 = 27（若先减后乘会得到 26）。
+  assert.equal(damage({ cardModifiers: { flatDamageReduction: 3, vulnerability: 0.5 } }).playerDamage, 27, 'reduction applies after vulnerability')
+  // 首击守护对已减免的伤害再减半：ceil(17 ÷ 2) = 9。
+  assert.equal(damage({ equipEffects: { fortify: true }, cardModifiers: { flatDamageReduction: 3 } }).playerDamage, 9)
+  // 磨砺之盾的整局成长记在玩家身上，与卡牌减伤相加。
+  const grown = damage({ cardModifiers: { flatDamageReduction: 2 } }, player({ flatDamageReductionBonus: 2 }))
+  assert.equal(grown.flatReduction, 4)
+  assert.equal(grown.playerDamage, 16)
+
+  // 守拙：交战时每剩 1 点基础步数多减 1 层；步数用完或超出基础步数都不再加成。
+  const guard = turnsUsed => damage({ turnsUsed, maxTurns: 6, cardModifiers: { guardedStance: 1 } })
+  assert.equal(guard(0).flatReduction, 6, 'all six base steps left')
+  assert.equal(guard(0).playerDamage, 14)
+  assert.equal(guard(2).flatReduction, 4)
+  assert.equal(guard(2).playerDamage, 16)
+  assert.equal(guard(6).flatReduction, 0, 'steps used up: no bonus')
+  assert.equal(guard(9).playerDamage, 20, 'extra turns beyond the base count never make the bonus negative')
+  const combined = damage({ turnsUsed: 2, maxTurns: 6, cardModifiers: { guardedStance: 2, flatDamageReduction: 1 } })
+  assert.equal(combined.flatReduction, 9, '2 layers × 4 remaining steps + 1 flat')
+  assert.equal(combined.playerDamage, 11)
+  // 结算复用预览：减免不消耗随机数，实扣与预览一致。
+  const settled = combat.resolveRound(freeze(battle({ cardModifiers: { flatDamageReduction: 3 } })), freeze(player()), noRng)
+  assert.equal(settled.playerDamage, 17, 'settlement applies the previewed reduction without a roll')
+  assert.equal(settled.playerHpAfter, 63)
+
+  // 棘盾契约：受到攻击后抽签一次，反弹 2×层数＋本次减免量。
+  const thornRound = (overrides, roll) => combat.resolveRound(freeze(battle({ totalAttack: 20, ...overrides })), freeze(player()), roll)
+  const hit = thornRound({ cardModifiers: { thornRating: 1 } }, sequence(0.1))
+  assert.equal(hit.enemyDamage, 20)
+  assert.equal(hit.playerDamage, 20)
+  assert.equal(hit.reflectedDamage, 2, 'one layer with no reduction: 2 × 1 + 0')
+  assert.equal(hit.enemyHpAfter, 178)
+  const miss = thornRound({ cardModifiers: { thornRating: 1 } }, sequence(0.5))
+  assert.equal(miss.reflectedDamage, 0, 'a roll of 0.5 against a 50% chance does not trigger')
+  assert.equal(miss.enemyHpAfter, 180)
+  // 反弹量把本次固定减伤算进去：越硬反伤越痛。
+  const armored = thornRound({ cardModifiers: { thornRating: 1, flatDamageReduction: 3 } }, sequence(0.1))
+  assert.equal(armored.playerDamage, 17)
+  assert.equal(armored.reflectedDamage, 5, '2 × 1 + 3 reduction')
+  assert.equal(armored.enemyHpAfter, 175)
+  const guarding = combat.resolveRound(freeze(battle({ totalAttack: 20, turnsUsed: 4, cardModifiers: { thornRating: 1, guardedStance: 1 } })), freeze(player()), sequence(0.1))
+  assert.equal(guarding.playerDamage, 18, 'two remaining steps absorb 2')
+  assert.equal(guarding.reflectedDamage, 4, '2 × 1 + 2 reduction from the saved steps')
+  assert.equal(thornRound({ cardModifiers: { thornRating: 2 } }, sequence(0.6)).reflectedDamage, 4, 'two layers reflect 2 × 2; the chance rises to 2/3')
+  // 敌人先手时同样只抽一次：先反弹，再被玩家攻击。
+  const enemyFirst = combat.resolveRound(freeze(battle({ enemy: { speed: 999 }, totalAttack: 20, cardModifiers: { thornRating: 1 } })), freeze(player()), sequence(0.1))
+  assert.equal(enemyFirst.playerFirst, false)
+  assert.equal(enemyFirst.reflectedDamage, 2)
+  assert.equal(enemyFirst.enemyDamage, 20)
+  assert.equal(enemyFirst.enemyHpAfter, 178)
+  // 反弹可以击杀敌人，且不超过敌人剩余生命（3 层 + 3 减免 = 12，敌人只剩 5）。
+  const thornKill = combat.resolveRound(freeze(battle({ enemy: { hp: 5, maxHp: 200 }, totalAttack: 0, cardModifiers: { thornRating: 3, flatDamageReduction: 3 } })), freeze(player()), sequence(0.1))
+  assert.equal(thornKill.enemyHpAfter, 0)
+  assert.equal(thornKill.reflectedDamage, 5, 'capped at remaining HP')
+  const thornShort = combat.resolveRound(freeze(battle({ enemy: { hp: 5, maxHp: 200 }, totalAttack: 0, cardModifiers: { thornRating: 1 } })), freeze(player()), sequence(0.1))
+  assert.equal(thornShort.enemyHpAfter, 3, 'a 2-damage thorn against 5 HP leaves the enemy alive')
+  assert.equal(thornShort.reflectedDamage, 2)
+  // 没有受击（先手击杀）或没有棘盾时，不消耗随机数。
+  assert.equal(combat.resolveRound(freeze(battle({ enemyCurrentHp: 10, totalAttack: 20, cardModifiers: { thornRating: 1 } })), freeze(player()), noRng).reflectedDamage, 0, 'player kill comes first: no thorn roll')
+  assert.equal(combat.resolveRound(freeze(battle({ cardModifiers: { flatDamageReduction: 5, guardedStance: 1 } })), freeze(player()), noRng).reflectedDamage, 0, 'pure reduction never rolls')
+  // 棘盾契约的代价：后续合并积蓄按 1 ÷ (1 + 0.3) 保留。
+  close(combat.processTurn(battle({ grid: grid([2, 2]), totalAttack: 0, cardModifiers: { chargeLoss: 0.3 } }), 'left', sequence(0, 0)).totalAttack, 4 / 1.3)
+}
+
 export async function run() {
   const ambientRandom = Math.random
   Math.random = () => { throw new Error('Six-color combat must use explicit RNG') }
@@ -322,6 +400,7 @@ export async function run() {
     checkArmorAndTemporaryModifiers()
     checkRedAndCurses()
     checkNewMechanics()
+    checkFlatReductionAndThorns()
   } finally {
     Math.random = ambientRandom
   }

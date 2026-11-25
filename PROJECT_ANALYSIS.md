@@ -222,9 +222,13 @@ defenseValue = floor(
 armorDamage   = max(1, ceil(敌攻 × 15 ÷ (15 + max(0, defenseValue + flatDefense))))
 incoming      = max(1, ceil(armorDamage × (1 + vulnerability)))
 要塞套装      = ceil(incoming ÷ 2)   -- 每场首次实际受伤，fortifyUsed 记录
+最终承伤      = max(1, 要塞套装后的伤害 − flatReduction)   -- sixcolor-v3
+flatReduction = flatDamageReduction ＋ 整局成长 ＋ max(0, maxTurns − turnsUsed) × guardedStance
 ```
 - 常数 **15** 是全部 UI 引用的真实值（旧文档的 30 已废弃）。
 - **算例**：敌攻 20、总防 45 → ceil(20×15/60)=5；易伤 0.3 → ceil(5×1.3)=7。
+- **固定减伤（sixcolor-v3）**：`flatReduction` 由坚甲（每层 +1）、磨砺之盾（整局每累计承受 30 点伤害 +1，记在 `player.flatDamageReductionBonus`）和守拙（每层按交战时剩余基础步数各 +1）相加。它在易伤与首击守护**之后**扣减，所以承伤加成不会被减伤稀释；`max(1,...)` 保底，有攻击力的敌人最低仍造成 1 点伤害（敌攻为 0 则不受伤）。闪避、敌人停手、先手击杀时没有受击，减伤无从体现。预览与结算共用 `getBattlePreview`，`preview.flatReduction` 即本次减免总量。
+- **算例**：敌攻 20、总防 0、坚甲 3 层 → 20 − 3 = 17；若同时易伤 +50% → ceil(20×1.5) − 3 = 27（先减后乘会得到 26）；守拙 1 层、6 步全剩 → 再减 6。
 
 ### 5.3 出手伤害（enemyDamage，对敌）
 
@@ -245,6 +249,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 | 追加攻击（extraStrikeRating） | 首击后双方存活且 rng < 评级÷(1+评级) → 再攻击一次 | 每回合最多一次；触发即反噬 backlash |
 | 反噬（backlash）/流血（bleed）/灼烧（burn）/噬魂（soulRecoil） | 固定数值扣血 | 计入 curseDamage，独立于战斗伤害；可以致死 |
 | 敌人回血（enemyRegen） | 回合结束存活敌回 min(上限−当前, 评级×层数) | |
+| 反弹（棘盾契约 thornRating） | 每次实际受击后抽签，概率 = 评级÷(1+评级)；反弹 = min(敌剩余生命, 2×层数＋本次 flatReduction) | 仅持卡时消耗 rng；敌人先手或后手都只抽一次；与要塞反弹叠加并计入 reflectedDamage；反弹可以击杀敌人 |
 
 ### 5.5 时序与死亡规则
 
@@ -286,11 +291,11 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 
 ### 6.2 全卡速查（47 张；公式化说明）
 
-**白（7）**：攻击强化 攻倍率+8%/层 ｜ 防御强化 防+8%/层 ｜ 生命训练 maxHp+8 获得时等量回血 ｜ 淘金者 金币+3%/层 ｜ 均衡训练 攻+5% 且防+5%/层 ｜ 血脉坚韧 maxHp+6 且防+3%/层 ｜ 见多识广 战斗经验+10%/层
+**白（8）**：攻击强化 攻倍率+8%/层 ｜ 防御强化 防+8%/层 ｜ 生命训练 maxHp+8 获得时等量回血 ｜ 淘金者 金币+3%/层 ｜ 均衡训练 攻+5% 且防+5%/层 ｜ 血脉坚韧 maxHp+6 且防+3%/层 ｜ 见多识广 战斗经验+10%/层 ｜ 坚甲 每次受击伤害−1/层（固定减伤）
 
-**蓝（7）**：快速思考 每回合+1步 ｜ 强力攻击 合并蓄力系数+10%/层 ｜ 灵活身法 生成护甲系数+0.2/层 ｜ 开局优势 每回合+4点起始方块 ｜ 蓄力起步 开局自带3点蓄力/层 ｜ 幸运生成 4 概率=10%+90%×评级÷(1+评级) ｜ 减半护佑 不减半概率=评级÷(1+评级)
+**蓝（8）**：快速思考 每回合+1步 ｜ 强力攻击 合并蓄力系数+10%/层 ｜ 灵活身法 生成护甲系数+0.2/层 ｜ 开局优势 每回合+4点起始方块 ｜ 蓄力起步 开局自带3点蓄力/层 ｜ 幸运生成 4 概率=10%+90%×评级÷(1+评级) ｜ 减半护佑 不减半概率=评级÷(1+评级) ｜ 守拙 交战时每剩1步承伤−层数（固定减伤）
 
-**金（13）**：连锁战意 连锁每层+4蓄力 ｜ 锻甲合流 合并数值25%→机制护甲 ｜ 护甲传承 保留评级+0.25 ｜ 生命汲取 吸血评级+0.08 ｜ 连锁回响 未合并回合连锁按比例保留 ｜ 猎手印记 斩杀线=最大生命×评级÷(1+评级) ｜ 致命节奏 暴击率=评级÷(1+评级) ｜ 过载核心 剩余每步→2蓄力 ｜ 战魂图腾 每击败一个敌人攻倍率+2%（整局累积） ｜ 英魂宝珠 每击败一个敌人最大生命+3并回复（受治疗衰减） ｜ 熔炼掌握 每累计合并100点方块数值攻倍率+1% ｜ 挥金如土 每累计主动支付25金币攻倍率+1%（购买/交易/赌注计入，意外损失不计） ｜ 百战老兵 每进入一场战斗攻倍率+1% ｜ 磨砺之盾 每累计承受30点伤害固定减伤+1
+**金（14）**：连锁战意 连锁每层+4蓄力 ｜ 锻甲合流 合并数值25%→机制护甲 ｜ 护甲传承 保留评级+0.25 ｜ 生命汲取 吸血评级+0.08 ｜ 连锁回响 未合并回合连锁按比例保留 ｜ 猎手印记 斩杀线=最大生命×评级÷(1+评级) ｜ 致命节奏 暴击率=评级÷(1+评级) ｜ 过载核心 剩余每步→2蓄力 ｜ 战魂图腾 每击败一个敌人攻倍率+2%（整局累积） ｜ 英魂宝珠 每击败一个敌人最大生命+3并回复（受治疗衰减） ｜ 熔炼掌握 每累计合并100点方块数值攻倍率+1% ｜ 挥金如土 每累计主动支付25金币攻倍率+1%（购买/交易/赌注计入，意外损失不计） ｜ 百战老兵 每进入一场战斗攻倍率+1% ｜ 磨砺之盾 每累计承受30点伤害固定减伤+1
 
 **红（7，均可来自狂战祭坛；猎魔契约也可来自星界棋局）**：狂战契约 爆发+100%/承伤+30% ｜ 血之契约 吸血0.5/流血3 ｜ 双刃赌局 追加攻击1/反噬4 ｜ 猎魔契约 斩杀线50%/承伤+25% ｜ 贪婪之约 金币×(1+评级)/灼烧4 ｜ 浴血狂怒 当前生命每降10%攻+6%（满血无加成）/承伤+25% ｜ 棘盾契约 受击按评级概率反弹(2×层数+本次减免量)/攻击散失+0.3
 
@@ -308,7 +313,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 | elite 奖励 | 蓝+金 | _resolveKill |
 | boss 奖励 | 仅金 | _resolveKill |
 | 商店（3 槽） | 白/蓝/金，价 20/50/90 | buildShop |
-| 狂战祭坛（S1+） | 6 种红卡必选其一（强制选择，无安全离开） | events.ts risk_shrine |
+| 狂战祭坛（S1+） | 7 种红卡必选其一（强制选择，无安全离开） | events.ts risk_shrine |
 | 诅咒藏书室（S2+） | 金卡+紫诅咒配对交易（5 组） | cursed_archive |
 | 深渊契约（S3+） | 金卡+黑宿命配对交易（3 组，黑卡三档都给、点选即生效无确认） | abyss_contract |
 | 流浪的净化师（S2+） | 40 金净化一层紫卡 | cleansing_hermit |
@@ -439,7 +444,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 
 ## 10. 事件系统
 
-**34 个事件、112 个选项 × 3 档随机结果 = 336 档**（`core/events.ts` EVENTS）。全部为**强制奇遇**：点选即结算（结果页只做展示），收获不预告；每事件至少有一个选项的**全部三档**零依赖金币/生命/持有物，避免死锁。按 `stageMin <= stage` 累计解锁，`pickEvent` 在当前池内均匀抽取，不做跨节点去重。逐项三档概率表由 `tools/gen-events-guide.mjs` 自动生成到 EVENTS_GUIDE.md。
+**34 个事件、113 个选项 × 3 档随机结果 = 339 档**（`core/events.ts` EVENTS）。全部为**强制奇遇**：点选即结算（结果页只做展示），收获不预告；每事件至少有一个选项的**全部三档**零依赖金币/生命/持有物，避免死锁。按 `stageMin <= stage` 累计解锁，`pickEvent` 在当前池内均匀抽取，不做跨节点去重。逐项三档概率表由 `tools/gen-events-guide.mjs` 自动生成到 EVENTS_GUIDE.md。
 
 | 解锁阶段 | 既有事件 | 强制奇遇（精确 ID） | 本阶段新增／累计池 |
 |---|---|---|---|
@@ -555,7 +560,7 @@ doubleGold（套装结构支持）再 ×2。溢出伤害可选 1:1 金币或 2:1
 
 ### 14.1 31 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
 
-art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集）、sixcolor-store（store 流程）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
+art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
 
 ### 14.2 harness 原理与写法
 
@@ -566,12 +571,12 @@ art-resources（美术资源资产校验）、board-effects（棋盘动效/浮�
 
 | 位置 | 内容 |
 |---|---|
-| `tools/tests/card-domain.mjs:19-21` | 池长 43、id 去重、即时卡数 |
-| `tools/tests/card-domain.mjs` expected 表 + 聚合断言 | 每张卡首效果 + 40 键×1000 层聚合值 |
-| `tools/tests/display-text.mjs:63` + expected 表 | 池长 43 + 每卡文案逐字断言 |
+| `tools/tests/card-domain.mjs:19-21` | 池长 47、id 去重、即时卡数 |
+| `tools/tests/card-domain.mjs` expected 表 + 聚合断言 | 每张卡首效果 + 44 键×1000 层聚合值 |
+| `tools/tests/display-text.mjs:67` + expected 表 | 池长 47 + 每卡文案逐字断言 |
 | `tools/tests/card-events.mjs` channel/obtainable 清单 | 每个交易事件的获取渠道与可获取断言 |
 | `tools/tests/events-progression.mjs` 阶段计数与逐项契约 | 每阶段事件数/结构/结算回归 |
-| `tools/tests/board-rewards.mjs` | 金卡数 13 等 |
+| `tools/tests/board-rewards.mjs` | 金卡数 14 等 |
 | `tools/tests/characterization.mjs` + `planned-red-store.mjs` | seed42 固定抽卡表 |
 | `tools/simulate.mjs` cardScore/outcomeScore/choiceScore | 新效果键的机器人权重 |
 
@@ -678,6 +683,7 @@ tests 31/31 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本�
 - **2026-11-07 前期平衡包（历史实测，不是当前规则的通关率）**（针对“前期玩家数值追不上怪物”的实测3~10倍倒挂）：防御公式÷6→÷3、敌人回合成长前两回合缓冲、stage1/2敌防与boss数值下调（岩石巨人130/28/10、远古巨龙170/44/14）。当时attack策略打过stage1 boss 26/50（52%）、stage2 boss 14/50（28%）、整局胜利8~15/50（改前5）；baseline当时仍全灭。这些样本保留历史口径，不能迁移为 `sixcolor-v2-forced-events-r2` 的通关率，扩充后需独立测量。原目标口径：boss击杀/存活比≤1.5x；stage3+高压是后期曲线设计。
 - **2026-11-09 三档随机事件（sixcolor-v2-random-events，历史实测口径同上）**：34 事件全部改为每选项 3 种随机结果（主题化档名、点选即结算、收获不预告、黑卡免确认）。与前版 `sixcolor-v2-forced-events-r2` 五策略 50+50 对比：baseline 3→2 / 2→2、corner 12→12 / 17→13、attack 15→14 / 19→19、defense 14→12 / 14→11、economy 11→11 / 11→10（checkpoint/holdout 通关数），整体**略变难**（收益事件档位略抠、付费落空档引入），attack/corner/economy 基本持平；200 种子 parity 17 胜（前版 20）、全部 valid、0 invalid slides。三档波动大于前版单点结算，真人体感差异会大于算法差异。
 - **2026-11-10 一致性修复（sixcolor-v2-consistency-fixes，前一版本）**：①浴血狂怒换算修正——`lowHpFury` 参数 6 现按“每损失 10% 生命攻击倍率 +6 个百分点”计（半血单层 +0.30，修正前错误地 +30）；②事件负金币档标记主动支付并经 `_spendGold` 计入“挥金如土”（修正前绕过消费统计），意外损失不计；③选项代价摘要 `summarizeChoiceCost` 由 UI 与文档生成器共用，代价列不再全部显示“无”；④微信包体超 2MiB 构建失败真正生效。新基线待审阅批准后录制。
+- **2026-11-12 固定减伤卡组（sixcolor-v3-flat-defense，当前版本）**：针对“防御的边际收益随防御值平方衰减、防御投资无法与线性攻击竞争”的结构问题，新增固定减伤线性通道与四张卡（坚甲／守拙／磨砺之盾／棘盾契约），卡池 43→47，狂战祭坛 6→7 选项。五策略 50+50 实测（算法策略，非真人）：defense 8 胜（前一版 5）、attack 20（9）、corner 7（12）、economy 4（12）、baseline 0（0）。**未达目的指标**（defense 每 50 局 ≥8，实际 4 和 4）。这批差异不能单独归因于新卡：同一轮还修正了机器人对浴血狂怒的估值权重（`lowHpFury` 60→10，POLICY_VERSION 2），两个因素没有分开测量；新卡进入白卡池也会改变其他白卡的出现率。v3 基线未录制，以上为 `--report-only` 结果。
 - **无尽模式**：stage≥4 程序生成，数值随 stage 线性放大，没有"通关终点"——平衡数据只覆盖 stage1~3 为主。
 - **局内不自动存档**：刷新/关页即弃局（设计如此）；只有局外 meta 持久化。
 - 浏览器验证基于 H5；微信端共享逻辑但渲染层（skyline/webview 差异）未覆盖。
