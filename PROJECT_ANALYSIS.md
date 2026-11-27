@@ -56,7 +56,7 @@
 | `npm run build:h5` | `node tools/build.mjs build h5` | H5 正式构建 |
 | `npm run preview:h5` | `node tools/build.mjs preview h5` | 预览服务（默认端口 4173） |
 | `npm run build:mp-weixin` | `node tools/build.mjs build mp-weixin` | 微信构建 + 自动压图 + 包体校验（≤2 MiB） |
-| `npm test` | `node tools/run-tests.mjs` | 34 组测试，必须全绿 |
+| `npm test` | `node tools/run-tests.mjs` | 35 组测试，必须全绿 |
 | `npm run typecheck` | `tsc -p tools/tsconfig.check.json` | 类型检查（0 错误） |
 | `npm run simulate` | `node tools/simulate.mjs` | 固定种子整局模拟 + SHA-256 基线 |
 | `npm run parity` | `node tools/parity.mjs` | 200 种子统计平价 |
@@ -573,9 +573,9 @@ doubleGold（套装结构支持）再 ×2。溢出伤害可选 1:1 金币或 2:1
 
 ## 14. 测试与基线基建
 
-### 14.1 34 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
+### 14.1 35 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
 
-art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、screen-scroll（屏幕自滚动与手势不冒泡）、shop-selling（商店回收价与出售动作）、spring-water（泉水抽签边界、隐藏、先进先出、饮用、持续回合与出售）、swipe-input、ui-components（SFC 编译+挂载，含商店回收与泉水验货、跳过回合结算开关的两种状态）、ui-feedback、w2-bugfix。
+art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、ci-upload（CI 上传脚本的参数校验与包体门禁）、screen-scroll（屏幕自滚动与手势不冒泡）、shop-selling（商店回收价与出售动作）、spring-water（泉水抽签边界、隐藏、先进先出、饮用、持续回合与出售）、swipe-input、ui-components（SFC 编译+挂载，含商店回收与泉水验货、跳过回合结算开关的两种状态）、ui-feedback、w2-bugfix。
 
 ### 14.2 harness 原理与写法
 
@@ -636,7 +636,8 @@ node tools/parity.mjs record
 
 - `tools/build.mjs <dev|build|preview> <h5|mp-weixin>`：子进程调 uni CLI，注入 UNI_PLATFORM/UNI_OUTPUT_DIR/CI=1；**mp-weixin 构建后自动跑 optimize-mp-art 并校验包体 ≤2 MiB**（超限即失败）。
 - `tools/optimize-mp-art.mjs`：只压**构建产物副本**（敌人 128/徽记 96/道具与地图图标 128/场景 480 宽、删 SVG），`static/` 源图不动。
-- `tools/upload-mp.mjs --appid wx...`：appid 校验 `wx[0-9a-f]{16}`、只写构建副本 project.config.json、调微信 cli 上传——**真实 appid 绝不提交**。
+- `tools/upload-mp.mjs --appid wx...`：appid 校验 `wx[0-9a-f]{16}`、只写构建副本 project.config.json、调微信 cli 上传——**真实 appid 绝不提交**。本机手动上传用。
+- `tools/ci-upload-mp.mjs`：用官方 `miniprogram-ci` 无头上传开发版，凭据只读 `WECHAT_APPID` / `WECHAT_PRIVATE_KEY` 环境变量，密钥写临时文件用完即删；`--dry-run` 只校验包体与参数。由 `.github/workflows/wechat-upload.yml` 在 **合并到 master 后自动执行**（`windows-latest`，因为压图依赖 PowerShell；测试不过则不上传）。配置与排错见 `docs/WECHAT_CI.md`。设体验版／提审／发布仍需手动。
 - #ifdef 差异全在 H5 侧：viewport 高度、Board 鼠标拖动、reduced-motion 监听、换屏回顶；微信端触屏滑动为默认路径。
 - 调试面板（DEBUG_ENABLED=__DEV__）只在 dev 构建，正式构建无入口且 debug 动作无效。
 
@@ -689,7 +690,7 @@ events.ts：EFFECT_FIELDS 白名单 → `pick`/`tradeO`/`o` 助手与结算透�
 
 ### 18.6 发版检查单
 
-tests 34/34 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
+tests 35/35 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
 
 ---
 

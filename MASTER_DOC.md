@@ -89,7 +89,7 @@ node tools/parity.mjs record
 
 当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v4-spring-water`**（治愈之泉泉水与商店回收；固定减伤卡组保留），parity／多策略工具复用该版本；新录制使用该命名空间。`tools/baselines/` 下 `sixcolor-v1-*`、`sixcolor-v2-random-events-*` 以及旧 `baseline.snapshot.json`、`parity-before.json`、`parity-after.json` 均保留，不覆写。缺失当前版本基线时先用 `--report-only` 审阅真实结果，不用 record 掩盖失败，也不要求重新设计仍保持旧 ±15%。模拟记录实际层数、护甲、道具、损血／治疗、消费及失败原因。
 
-**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮34组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
+**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮35组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
 
 ## 本轮改进
 
@@ -134,14 +134,18 @@ node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检�
 
 ## 提交与发布授权
 
-完成改动后先验证，默认只保留本地工作区。**只有用户明确要求时，才提交／推送 GitHub 或上传微信**；当前任务的发布授权不延续到以后任务。
+完成改动后先验证，默认只保留本地工作区。**只有用户明确要求时，才提交／推送 GitHub**；当前任务的发布授权不延续到以后任务。
+
+**微信开发版已改为自动上传**（用户 2026-11-28 明确授权）：合并进 `master` 后，`.github/workflows/wechat-upload.yml` 会自动跑测试、构建并上传开发版。凭据只放在仓库 Secrets，配置见 `docs/WECHAT_CI.md`。
+
+仍需单独授权的动作：**设置体验版、提交审核、正式发布**——这三项没有可用的自动接口，且对个人主体有类目限制。
 
 获授权后：
 
 1. **验证**：跑上述测试，确认改动可用且无回归，检查待提交文件无凭据或构建产物
 2. **提交**：在非默认分支提交相互依赖的已验证改动；消息沿用 `fix:` / `feat:` / `refactor:` / `docs:` / `chore:` 前缀
 3. **推送**：核对远端后普通推送，不强制覆盖；用远端哈希确认同步
-4. **微信上传**：仅在明确要求时上传开发版。设置体验版、审核与正式发布属于不同动作，未经授权不执行
+4. **微信上传**：开发版由 master 合并自动上传；手动上传仍可用 `npm run upload:mp-weixin`。设置体验版、审核与正式发布属于不同动作，未经授权不执行
 
 ### 护栏（遇到必须停下向用户确认，不得静默处理）
 
@@ -157,6 +161,7 @@ node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检�
 - git 身份（仓库级已配置）：Z80Z <790200647@qq.com>
 - 游戏平衡数值（成本、伤害公式、经验曲线、掉落率）不随意改动
 - `pages.json` 关闭了页面原生滚动：新增以 `.screen` 为根的屏幕必须带 `@touchmove.stop`，否则手机上拖不动（原因见 PROJECT_ANALYSIS §15）
+- 真实小程序上传密钥（`*.key`）已加入 `.gitignore`，绝不入库；CI 凭据只走 GitHub Secrets
 
 ---
 
@@ -221,7 +226,7 @@ node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检�
 | `npm run build:h5` | `node tools/build.mjs build h5` | H5 正式构建 |
 | `npm run preview:h5` | `node tools/build.mjs preview h5` | 预览服务（默认端口 4173） |
 | `npm run build:mp-weixin` | `node tools/build.mjs build mp-weixin` | 微信构建 + 自动压图 + 包体校验（≤2 MiB） |
-| `npm test` | `node tools/run-tests.mjs` | 34 组测试，必须全绿 |
+| `npm test` | `node tools/run-tests.mjs` | 35 组测试，必须全绿 |
 | `npm run typecheck` | `tsc -p tools/tsconfig.check.json` | 类型检查（0 错误） |
 | `npm run simulate` | `node tools/simulate.mjs` | 固定种子整局模拟 + SHA-256 基线 |
 | `npm run parity` | `node tools/parity.mjs` | 200 种子统计平价 |
@@ -738,9 +743,9 @@ doubleGold（套装结构支持）再 ×2。溢出伤害可选 1:1 金币或 2:1
 
 ## 14. 测试与基线基建
 
-### 14.1 34 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
+### 14.1 35 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
 
-art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、screen-scroll（屏幕自滚动与手势不冒泡）、shop-selling（商店回收价与出售动作）、spring-water（泉水抽签边界、隐藏、先进先出、饮用、持续回合与出售）、swipe-input、ui-components（SFC 编译+挂载，含商店回收与泉水验货、跳过回合结算开关的两种状态）、ui-feedback、w2-bugfix。
+art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、ci-upload（CI 上传脚本的参数校验与包体门禁）、screen-scroll（屏幕自滚动与手势不冒泡）、shop-selling（商店回收价与出售动作）、spring-water（泉水抽签边界、隐藏、先进先出、饮用、持续回合与出售）、swipe-input、ui-components（SFC 编译+挂载，含商店回收与泉水验货、跳过回合结算开关的两种状态）、ui-feedback、w2-bugfix。
 
 ### 14.2 harness 原理与写法
 
@@ -801,7 +806,8 @@ node tools/parity.mjs record
 
 - `tools/build.mjs <dev|build|preview> <h5|mp-weixin>`：子进程调 uni CLI，注入 UNI_PLATFORM/UNI_OUTPUT_DIR/CI=1；**mp-weixin 构建后自动跑 optimize-mp-art 并校验包体 ≤2 MiB**（超限即失败）。
 - `tools/optimize-mp-art.mjs`：只压**构建产物副本**（敌人 128/徽记 96/道具与地图图标 128/场景 480 宽、删 SVG），`static/` 源图不动。
-- `tools/upload-mp.mjs --appid wx...`：appid 校验 `wx[0-9a-f]{16}`、只写构建副本 project.config.json、调微信 cli 上传——**真实 appid 绝不提交**。
+- `tools/upload-mp.mjs --appid wx...`：appid 校验 `wx[0-9a-f]{16}`、只写构建副本 project.config.json、调微信 cli 上传——**真实 appid 绝不提交**。本机手动上传用。
+- `tools/ci-upload-mp.mjs`：用官方 `miniprogram-ci` 无头上传开发版，凭据只读 `WECHAT_APPID` / `WECHAT_PRIVATE_KEY` 环境变量，密钥写临时文件用完即删；`--dry-run` 只校验包体与参数。由 `.github/workflows/wechat-upload.yml` 在 **合并到 master 后自动执行**（`windows-latest`，因为压图依赖 PowerShell；测试不过则不上传）。配置与排错见 `docs/WECHAT_CI.md`。设体验版／提审／发布仍需手动。
 - #ifdef 差异全在 H5 侧：viewport 高度、Board 鼠标拖动、reduced-motion 监听、换屏回顶；微信端触屏滑动为默认路径。
 - 调试面板（DEBUG_ENABLED=__DEV__）只在 dev 构建，正式构建无入口且 debug 动作无效。
 
@@ -854,7 +860,7 @@ events.ts：EFFECT_FIELDS 白名单 → `pick`/`tradeO`/`o` 助手与结算透�
 
 ### 18.6 发版检查单
 
-tests 34/34 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
+tests 35/35 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
 
 ---
 
@@ -1024,7 +1030,7 @@ tests 34/34 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本�
 - 普通模拟默认不接受负面契约（无安全选项时才回落到期望最高的可执行选项），因此不能证明红／诅咒流派平衡；机制组合覆盖与真人取舍试玩是不同证据。
 - 当前 `RULE_VERSION` 为 **`sixcolor-v4-spring-water`**（`tools/simulate.mjs`），parity／多策略工具导入同一版本；该版本加入治愈之泉的泉水与商店回收（v3 的固定减伤四卡保留）。旧 `tools/baselines/` 下全部历史基线原样保留，不覆写；新录制使用当前版本命名空间，待差异审阅并批准后进行。
 - 默认验证只读；可先用 `--report-only` 查看当前结果。只有整合完成、审阅差异且明确批准后，才执行所需 `--update-baseline`／`record`；规则变更、缺失基线或 mismatch 本身不是自动录制授权，同版本同配置的录制也会写既有目标文件。
-- **当前版本验证状态**：34组单元／回归与类型检查通过；`sixcolor-v4-spring-water` 新基线尚未录制，以 `--report-only` 结果为准。五策略 50+50 实测（算法策略，非真人，机器人不饮用泉水）：defense 7 胜（v3 为 8）、attack 20（20）、corner 7（7）、economy 4（4）、baseline 0（0）。v3 留下的防御目标仍未达到（defense 每 50 局 ≥8，实际 3 和 4）。差异里混有同期修正的机器人权重（浴血狂怒估值 60→10），没有与新卡分开测量，不能单独归因；若要继续加强需先分离两个因素，再调整卡面数值并复测。
+- **当前版本验证状态**：35组单元／回归与类型检查通过；`sixcolor-v4-spring-water` 新基线尚未录制，以 `--report-only` 结果为准。五策略 50+50 实测（算法策略，非真人，机器人不饮用泉水）：defense 7 胜（v3 为 8）、attack 20（20）、corner 7（7）、economy 4（4）、baseline 0（0）。v3 留下的防御目标仍未达到（defense 每 50 局 ≥8，实际 3 和 4）。差异里混有同期修正的机器人权重（浴血狂怒估值 60→10），没有与新卡分开测量，不能单独归因；若要继续加强需先分离两个因素，再调整卡面数值并复测。
 
 ---
 

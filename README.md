@@ -65,7 +65,7 @@ node tools/parity.mjs record
 
 当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v4-spring-water`**（治愈之泉泉水与商店回收；固定减伤卡组保留），parity／多策略工具复用该版本；新录制使用该命名空间。`tools/baselines/` 下 `sixcolor-v1-*`、`sixcolor-v2-random-events-*` 以及旧 `baseline.snapshot.json`、`parity-before.json`、`parity-after.json` 均保留，不覆写。缺失当前版本基线时先用 `--report-only` 审阅真实结果，不用 record 掩盖失败，也不要求重新设计仍保持旧 ±15%。模拟记录实际层数、护甲、道具、损血／治疗、消费及失败原因。
 
-**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮34组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
+**统计限制**：基础、角落规划、攻击、防御、经济是固定算法策略，均不代表真人通关率或最优构筑。文档保留的旧六色／前期平衡数据不是当前 34 事件三档版本的新率，需在当前规则下独立测量。`node tools/balance-strategies.mjs --smoke` 做快速安全检查，`node tools/balance-strategies.mjs --report-only --seeds 50 --holdout-count 50` 运行五策略与独立样本，不覆写基线。本轮35组测试、类型与SFC检查已通过；当前规则版本 `sixcolor-v3-flat-defense` 的新基线待差异审阅并批准后录制，此前以 `--report-only` 结果为准。五策略统计为算法结果，不代表真人。
 
 ## 本轮改进
 

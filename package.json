@@ -16,7 +16,8 @@
     "build:h5": "node tools/build.mjs build h5",
     "build:mp-weixin": "node tools/build.mjs build mp-weixin",
     "preview:h5": "node tools/build.mjs preview h5",
-    "upload:mp-weixin": "node tools/upload-mp.mjs"
+    "upload:mp-weixin": "node tools/upload-mp.mjs",
+    "upload:mp-weixin:ci": "node tools/ci-upload-mp.mjs"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5030420261029002",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@dcloudio/types": "3.4.31",
     "@dcloudio/vite-plugin-uni": "3.0.0-5030420261029002",
+    "miniprogram-ci": "^2.1.31",
     "sass": "1.77.8",
     "typescript": "5.9.3",
     "vite": "5.2.8"

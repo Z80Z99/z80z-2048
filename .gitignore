@@ -5,3 +5,5 @@ node_modules/
 .codegraph/
 .omo/
 *.log
+# 小程序代码上传密钥，绝不入库
+*.key

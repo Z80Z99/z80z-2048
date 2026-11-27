@@ -1,0 +1,58 @@
+# 合并到 master 后自动构建并上传微信开发版。
+# 凭据存放在仓库 Secrets（Settings → Secrets and variables → Actions）：
+#   WECHAT_APPID         小程序 AppID
+#   WECHAT_PRIVATE_KEY   小程序代码上传密钥的完整内容（需关闭该密钥的 IP 白名单）
+#
+# 用 windows-latest：构建链路里的压图（tools/optimize-mp-art.mjs）依赖 PowerShell + System.Drawing。
+# 上传只是开发版；设体验版、提审、发布仍需在 mp.weixin.qq.com 手动操作。
+name: WeChat dev upload
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      desc:
+        description: '上传说明（留空则用提交信息）'
+        required: false
+        default: ''
+
+concurrency:
+  # 连续合并时只跑最新一次，避免旧提交覆盖新版本。
+  group: wechat-upload
+  cancel-in-progress: true
+
+jobs:
+  upload:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Test and typecheck
+        run: |
+          npm test
+          npm run typecheck
+
+      - name: Build WeChat package
+        run: npm run build:mp-weixin
+
+      - name: Upload development version
+        env:
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          desc="${{ inputs.desc }}"
+          if [ -z "$desc" ]; then
+            desc="$(git log -1 --pretty=%s) ($(git rev-parse --short HEAD))"
+          fi
+          node tools/ci-upload-mp.mjs --desc "$desc"
