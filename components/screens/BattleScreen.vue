@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted, inject } from 'vue'
+import { computed, ref, watch, onUnmounted, inject, provide } from 'vue'
 import type { Ref } from 'vue'
 import BattleItems from '../BattleItems.vue'
 import ExpandPanel from '../ExpandPanel.vue'
@@ -10,9 +10,22 @@ import EnemyDisplay from '../EnemyDisplay.vue'
 import Board from '../Board.vue'
 import ResultModal from '../ResultModal.vue'
 import { stageArtwork } from '../../utils/artwork'
+import { loadBattlePrefs, saveBattlePrefs } from '../../utils/battlePrefs'
+import type { RoundResult } from '../../types'
 
 const store = useGameStore()
-const inputBlocked = inject<Ref<boolean>>('gameInputBlocked')
+const shellInputBlocked = inject<Ref<boolean>>('gameInputBlocked', ref(false))
+// 「跳过每回合结算界面」只影响界面节奏：开启后结算动效一结束就进入下一回合，回合记录改为按需查看。
+const skipRoundEnd = ref(loadBattlePrefs().skipRoundEnd)
+const showRecord = ref(false)
+const lastRecord = ref<{ result: RoundResult; round: number; enemyCurrentHp: number } | null>(null)
+const inputBlocked = computed(() => shellInputBlocked.value || showRecord.value)
+// 回合记录打开期间，连同棋盘与道具栏一起阻断输入。
+provide('gameInputBlocked', inputBlocked)
+function toggleSkipRoundEnd() {
+  skipRoundEnd.value = !skipRoundEnd.value
+  saveBattlePrefs({ skipRoundEnd: skipRoundEnd.value })
+}
 const feedback = useFeedback(1300)
 watch(() => store.battle?.lastRoundResult, result => {
   if (!result) return
@@ -28,15 +41,30 @@ const player = computed(() => store.effectivePlayer)
 const preview = computed(() => store.battlePreview)
 const nodeKind = computed(() => store.route.find(node => node.id === store.currentNodeId)?.type)
 const stageName = computed(() => store.stage === 1 ? '地牢入口' : store.stage === 2 ? '深渊回廊' : store.stage === 3 ? '终焉之间' : '无尽深渊')
-const result = computed(() => battle.value?.lastRoundResult)
+/** 当前展示的回合记录：结算停顿时用实时结果；跳过模式下按需查看上一回合的留存。 */
+const record = computed(() => {
+  const current = battle.value
+  if (!current) return null
+  if (current.phase === 'round_end' && current.lastRoundResult) {
+    return { live: true, round: current.round, enemyCurrentHp: current.enemyCurrentHp, result: current.lastRoundResult }
+  }
+  if (showRecord.value && lastRecord.value) return { live: false, ...lastRecord.value }
+  return null
+})
 const showForecastDetails = ref(false)
 const remainingSteps = computed(() => Math.max(0, (battle.value?.baseTurns ?? 6) - (battle.value?.turnsUsed ?? 0)))
 const modifiers = computed(() => store.activeCardModifiers)
 let phaseTimer: ReturnType<typeof setTimeout> | undefined
 watch(() => battle.value?.phase, phase => {
   if (phaseTimer) clearTimeout(phaseTimer)
+  if (phase !== 'playing') showRecord.value = false
   if (phase === 'round_delay') phaseTimer = setTimeout(() => {
-    if (store.battle?.phase === 'round_delay') store.SHOW_ROUND()
+    if (store.battle?.phase !== 'round_delay') return
+    // 进入下一回合会清空 lastRoundResult，先留一份给「上回合记录」。
+    const settled = store.battle.lastRoundResult
+    if (settled) lastRecord.value = { result: settled, round: store.battle.round, enemyCurrentHp: store.battle.enemyCurrentHp }
+    store.SHOW_ROUND()
+    if (skipRoundEnd.value && store.battle?.phase === 'round_end') store.NEXT_ROUND()
   }, 500)
   if (phase === 'finish_delay') phaseTimer = setTimeout(() => {
     if (store.battle?.phase === 'finish_delay') store.SHOW_BATTLE_RESULT()
@@ -52,7 +80,7 @@ const chanceEffects = computed(() => {
   return labels
 })
 const roundLogs = computed(() => {
-  const rr = result.value
+  const rr = record.value?.result
   if (!rr) return []
   const logs: { kind: string; text: string }[] = []
   const attack = () => logs.push({ kind: 'attack', text: rr.playerActed === false ? '你未能出手，本回合没有攻击。' : `你${rr.playerFirst ? '先手攻击' : '随后攻击'}，造成 ${rr.enemyDamage} 点伤害。` })
@@ -83,7 +111,13 @@ const roundLogs = computed(() => {
   <view v-if="battle && preview" class="screen battle-screen">
     <image class="battle-scenery" :src="stageArtwork(store.stage)" mode="aspectFill" alt="" aria-hidden="true" />
     <view class="battle-content">
-      <view class="battle-heading"><text class="ui-kicker">S{{ store.stage }} · {{ stageName }}</text><text class="battle-heading-note">合并，为下一击蓄力</text></view>
+      <!-- 标题行右侧放“跳过回合结算”开关与回看入口：不占用竖向空间，战斗界面仍保持一屏。 -->
+      <view class="battle-heading"><text class="ui-kicker">S{{ store.stage }} · {{ stageName }}</text>
+        <view class="battle-heading-tools">
+          <button v-if="skipRoundEnd && lastRecord && battle.phase === 'playing'" role="button" class="battle-tool-btn" :disabled="inputBlocked" @click="showRecord = true">上回合记录</button>
+          <button role="button" class="battle-tool-btn" :class="{ 'battle-tool-on': skipRoundEnd }" :aria-pressed="skipRoundEnd" :aria-label="`跳过每回合结算界面，当前${skipRoundEnd ? '开启' : '关闭'}`" @click="toggleSkipRoundEnd">跳过回合结算：{{ skipRoundEnd ? '开' : '关' }}</button>
+        </view>
+      </view>
       <StatusBar :hp="player.hp" :max-hp="player.maxHp" :turns-used="battle.turnsUsed" :max-turns="battle.maxTurns"
         :total-attack="battle.totalAttack" :total-defense="preview.defenseValue" :total-speed="preview.playerSpeed"
         :gold="player.gold" :round="battle.round" :xp="player.xp" :xp-to-next="player.xpToNext" :level="player.level"
@@ -104,6 +138,7 @@ const roundLogs = computed(() => {
           <text class="forecast-note">现在结束并击败敌人，未用的基础步数每步换 2 金币。额外步数不计入，也不跨回合累计。</text>
           <text v-if="(battle.startingPointsGranted ?? 0) > 0" class="forecast-note">开局赠送数值 {{ battle.startingPointsGranted }}，已生成 {{ battle.startingPointsPlaced }}，还留着 {{ battle.startingPointsPending }}。有空格时继续放置。</text>
           <text class="forecast-note">药剂按注明的回合或战斗期限结束。诅咒可以直接损血，生命归零后不能靠回复复活。</text>
+          <text v-for="(effect, effectIndex) in battle.timedEffects ?? []" :key="`${effect.id}-${effectIndex}`" class="forecast-note">泉水状态：{{ effect.label }}，还剩 {{ effect.remaining }} 回合。</text>
           <!-- #ifdef H5 -->
           <text class="forecast-note">网页端也可使用键盘方向键移动棋盘。</text>
           <!-- #endif -->
@@ -120,22 +155,25 @@ const roundLogs = computed(() => {
           {{ battle.phase === 'playing' ? '结束本回合' : '正在结算' }}
           <text v-if="battle.phase === 'playing'" class="early-end-steps">还可获 {{ remainingSteps * 2 }} 金币（若本回合击败敌人）</text>
         </button>
-        <text class="early-end-note">不必用完步数，准备好了就可以交战</text>
+        <!-- 泉水状态顶替这句提示显示：战斗界面本来就贴着一屏底边，不能再多占一行。完整效果写在“说明”里。 -->
+        <view v-if="battle.timedEffects?.length" class="forecast-statuses"><text v-for="(effect, effectIndex) in battle.timedEffects" :key="`${effect.id}-${effectIndex}`" class="forecast-status" :class="effect.polarity === 'negative' ? 'forecast-danger' : 'forecast-chances'">{{ effect.name }} · 剩 {{ effect.remaining }} 回合</text></view>
+        <text v-else class="early-end-note">不必用完步数，准备好了就可以交战</text>
       </view>
     </view>
 
-    <view v-if="battle.phase === 'round_end' && result" class="ui-overlay">
+    <view v-if="record" class="ui-overlay">
       <view class="ui-dialog round-card">
-        <text class="ui-kicker">回合记录 / ROUND {{ battle.round }}</text>
-        <text class="ui-title round-title">第 {{ battle.round }} 回合结束</text>
-        <view class="round-order"><text>你的速度 {{ Number(result.playerSpeed.toFixed(2)) }}</text><text class="stat-speed">{{ result.playerFirst ? '你先手' : '敌人先手' }}</text><text>敌方 {{ result.enemySpeed }}</text></view>
+        <text class="ui-kicker">回合记录 / ROUND {{ record.round }}</text>
+        <text class="ui-title round-title">第 {{ record.round }} 回合结束</text>
+        <view class="round-order"><text>你的速度 {{ Number(record.result.playerSpeed.toFixed(2)) }}</text><text class="stat-speed">{{ record.result.playerFirst ? '你先手' : '敌人先手' }}</text><text>敌方 {{ record.result.enemySpeed }}</text></view>
         <view class="round-logs"><view v-for="(log, index) in roundLogs" :key="index" class="round-log" :class="`round-log-${log.kind}`"><text>{{ log.text }}</text></view></view>
         <view class="round-hp-row">
-          <view><text class="ui-note">你的生命</text><text class="round-hp-value stat-hp">{{ result.playerHpAfter ?? player.hp }} / {{ player.maxHp }}</text></view>
-          <view><text class="ui-note">敌方生命</text><text class="round-hp-value stat-attack">{{ battle.enemyCurrentHp }} / {{ battle.enemy.maxHp }}</text></view>
+          <view><text class="ui-note">你的生命</text><text class="round-hp-value stat-hp">{{ record.result.playerHpAfter ?? player.hp }} / {{ player.maxHp }}</text></view>
+          <view><text class="ui-note">敌方生命</text><text class="round-hp-value stat-attack">{{ record.enemyCurrentHp }} / {{ battle.enemy.maxHp }}</text></view>
         </view>
-        <text class="ui-note round-next-note">下一回合：方块数值减半（最低为 2），敌人继续成长。</text>
-        <button role="button" class="ui-btn" @click="store.NEXT_ROUND()">进入第 {{ battle.round + 1 }} 回合</button>
+        <text class="ui-note round-next-note">{{ record.live ? '下一回合：方块数值减半（最低为 2），敌人继续成长。' : '这是上一回合的记录，关闭后继续战斗。' }}</text>
+        <button v-if="record.live" role="button" class="ui-btn" @click="store.NEXT_ROUND()">进入第 {{ battle.round + 1 }} 回合</button>
+        <button v-else role="button" class="ui-btn ui-btn-secondary" @click="showRecord = false">继续战斗</button>
       </view>
     </view>
     <ResultModal v-if="battle.phase === 'finished' && battle.result" :result="battle.result" />
@@ -143,13 +181,16 @@ const roundLogs = computed(() => {
 </template>
 
 <style scoped lang="scss">
-.battle-screen { position: relative; min-height: 0; padding: 12rpx 24rpx 8rpx; }
+.battle-screen { position: relative; height: auto; min-height: 0; overflow: visible; padding: 12rpx 24rpx 8rpx; }
 /* 仅底图参与定位；HUD 与棋盘保留原有高度，固定弹层仍相对视口。 */
 .battle-scenery { position: absolute; z-index: 0; top: 0; left: 0; width: 100%; height: 450rpx; opacity: 0.14; pointer-events: none; }
 .battle-content { position: relative; z-index: 1; width: 100%; max-width: 760rpx; margin: 0 auto; }
 .battle-feedback { position: fixed; top: 58px; left: 50%; transform: translateX(-50%); z-index: 70; padding: 8rpx 20rpx; max-width: 90%; border: 1px solid var(--line); border-radius: 9rpx; background: var(--surface); color: var(--text); font-size: 25rpx; pointer-events: none; }
-.battle-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6rpx; padding: 0 2rpx 10rpx; }
-.battle-heading-note { font-size: 24rpx; line-height: 1.3; color: var(--muted); }
+.battle-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6rpx 12rpx; padding: 0 2rpx 10rpx; }
+.battle-heading-tools { display: flex; flex-wrap: wrap; gap: 8rpx; }
+.battle-tool-btn { display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin: 0; padding: 0 10rpx; height: 38rpx; min-height: 0; font-size: 22rpx; line-height: 1; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 8rpx; }
+.battle-tool-btn::after { border: none; }
+.battle-tool-on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 .battle-forecast { padding: 10rpx 16rpx; margin-bottom: 12rpx; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12rpx; }
 .forecast-summary { display: flex; align-items: center; gap: 14rpx; }
 .forecast-copy { flex: 1; min-width: 0; }
@@ -167,6 +208,8 @@ const roundLogs = computed(() => {
 .forecast-pending { color: var(--defense); }
 .forecast-danger { color: var(--attack); }
 .forecast-chances { display: block; font-size: 24rpx; color: var(--xp); line-height: 1.45; margin-top: 8rpx; }
+.forecast-statuses { display: flex; justify-content: center; flex-wrap: wrap; gap: 0 16rpx; margin-top: 8rpx; line-height: 1.4; text-align: center; }
+.forecast-statuses .forecast-danger, .forecast-statuses .forecast-chances { margin-top: 0; line-height: 1.4; }
 .battle-board { width: 100%; max-width: 660rpx; margin: 0 auto; }
 .battle-board :deep(.board-hint) { font-size: 24rpx; line-height: 1.3; margin-top: 8rpx; }
 .battle-board :deep(.board-keyboard-hint) { display: none; }

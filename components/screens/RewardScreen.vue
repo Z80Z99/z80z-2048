@@ -25,7 +25,7 @@ function existingCount(id: string) { return store.upgrades.find(upgrade => upgra
 </script>
 
 <template>
-  <view class="screen reward-screen">
+  <view class="screen reward-screen" @touchmove.stop>
     <view class="ui-page reward-content">
       <view class="reward-header"><text class="ui-kicker">{{ heading.label }} · Lv.{{ store.effectivePlayer.level }}</text><text class="ui-title reward-title">{{ heading.title }}</text><text class="ui-body">{{ heading.note }}</text></view>
       <view class="reward-count"><text>本次选择 1 项</text><text v-if="remaining">之后还有 {{ remaining }} 次奖励</text><text v-else>当前队列最后一份奖励</text></view>

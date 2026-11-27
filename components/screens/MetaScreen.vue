@@ -8,7 +8,7 @@ function purchased(id: string) { return store.meta.purchasedIds.includes(id) }
 </script>
 
 <template>
-  <view class="screen meta-screen"><view class="ui-page meta-content">
+  <view class="screen meta-screen" @touchmove.stop><view class="ui-page meta-content">
     <view class="meta-top"><text class="ui-kicker">让下一次出发更从容</text><button role="button" class="ui-close" @click="store.BACK_TO_TITLE()">返回</button></view>
     <text class="ui-title meta-title">传承殿堂</text>
     <text class="ui-body meta-intro">使用灵魂碎片解锁永久提升。所有效果从下一次新冒险起生效。</text>

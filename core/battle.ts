@@ -1,4 +1,4 @@
-import type { BattleState, CardModifiers, Cell, EquipSetEffects, PlayerStats, RoundResult } from '../types'
+import type { BattleState, CardModifiers, Cell, EquipSetEffects, PlayerStats, RoundResult, TimedEffect } from '../types'
 import { initGrid, slideGrid, spawnTile, spawnTileWithValue, halveGridTiles } from './board'
 import { emptyCardModifiers } from './cardEffects'
 import { ROUND_ATK_BONUS, ROUND_DEF_BONUS, ROUND_SPD_BONUS } from './enemy'
@@ -11,11 +11,21 @@ function naturalFraction(rating: number): number {
 
 export function getCombinedCardModifiers(battle: BattleState): CardModifiers {
   const combined = emptyCardModifiers()
-  for (const source of [battle.cardModifiers, battle.battleModifiers, battle.roundModifiers]) {
+  // 持续数回合的状态（泉水）与本回合、本场、持有卡一并相加。
+  const sources: Partial<CardModifiers>[] = [
+    battle.cardModifiers, battle.battleModifiers, battle.roundModifiers,
+    ...(battle.timedEffects ?? []).map(effect => effect.modifiers),
+  ]
+  for (const source of sources) {
     if (!source) continue
     for (const key of Object.keys(combined) as (keyof CardModifiers)[]) combined[key] += source[key] ?? 0
   }
   return combined
+}
+
+/** 持续数回合的状态在每个回合交界递减，归零即移除；不消耗随机数。 */
+function tickTimedEffects(effects: BattleState['timedEffects']): TimedEffect[] {
+  return (effects ?? []).map(effect => ({ ...effect, remaining: effect.remaining - 1 })).filter(effect => effect.remaining > 0)
 }
 
 function validateStartingPoints(points: number): number {
@@ -82,6 +92,7 @@ export function initBattle(
     cardModifiers: { ...emptyCardModifiers(), ...cardModifiers },
     roundModifiers: {},
     battleModifiers: {},
+    timedEffects: [],
     startingPointsPending: placement.pending,
     startingPointsGranted: startingPoints,
     startingPointsPlaced: placement.placed,
@@ -375,6 +386,7 @@ export function startNewRound(battle: BattleState, rng: () => number, startingPo
     lastRoundResult: null,
     savedSteps,
     roundModifiers: {},
+    timedEffects: tickTimedEffects(battle.timedEffects),
     comboStreak: 0,
     mergeCount: 0,
     mechanicArmor: 0,

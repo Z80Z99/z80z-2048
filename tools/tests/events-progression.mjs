@@ -81,8 +81,20 @@ export async function run() {
     assert.deepEqual(resolveEventOutcome(drink.outcomes, 3, sequence(0.95), rich()), { tone: 'mid', label: '泉水浑浊', effect: { type: 'heal', value: 10 } })
     const sip = choice('healing_fountain', 1)
     assert.deepEqual(resolveEventOutcome(sip.outcomes, 3, sequence(0.999999), rich()), { tone: 'mid', label: '无甚感觉', effect: { type: 'none' } })
-    const sell = choice('healing_fountain', 2)
-    assert.deepEqual(resolveEventOutcome(sell.outcomes, 3, sequence(0.5, 0.5), rich()), { tone: 'mid', label: '正常价钱', effect: { type: 'gold', value: 12 } })
+    // 装瓶带走泉水：三档档名与色调完全相同（看不出品质），身份与售价在结算时才抽定。
+    const bottle = choice('healing_fountain', 2)
+    assert.deepEqual(bottle.label, '装瓶带走泉水')
+    assert.deepEqual(bottle.outcomes.map(outcome => [outcome.weight, outcome.label, outcome.tone, outcome.effect.type, outcome.effect.quality]),
+      [[45, '装瓶完成', 'mid', 'spring_water', 2], [40, '装瓶完成', 'mid', 'spring_water', 1], [15, '装瓶完成', 'mid', 'spring_water', 0]])
+    const drawn = resolveEventOutcome(bottle.outcomes, 3, sequence(0.5, 0.1, 0.9), rich())
+    assert.deepEqual([drawn.label, drawn.tone], ['装瓶完成', 'mid'])
+    assert.deepEqual([drawn.effect.type, drawn.effect.quality], ['spring_water', 1])
+    assert.deepEqual(drawn.effect.springWater, { kind: 'heal', quality: 1, percent: 18, sellValue: 20 }, 'identity comes from the first in-effect roll, the price from the second')
+    assert.deepEqual(drawn.effect.consumableGrants, [{ id: 'spring_water', count: 1 }])
+    for (const roll of [0, 0.999999]) {
+      const worst = resolveEventOutcome(bottle.outcomes, 3, sequence(0.999999, roll, 0.5), rich())
+      assert.deepEqual([worst.label, worst.tone, worst.effect.quality], ['装瓶完成', 'mid', 0], 'the worst tier looks exactly like the best one')
+    }
   }
   {
     const shrine = choice('dark_shrine', 0)

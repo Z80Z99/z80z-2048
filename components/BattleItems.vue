@@ -18,8 +18,9 @@ const cleanseOnly = computed(() => !items.value.length && (store.consumableCount
 function use(id: string) {
   if (blocked?.value || store.consumableDisabledReason(id)) return
   const before = store.consumableCounts[id] ?? 0
-  store.USE_CONSUMABLE(id)
-  if ((store.consumableCounts[id] ?? 0) < before) feedback.show(`已使用${CONSUMABLE_POOL.find(def => def.id === id)?.name ?? '道具'}`)
+  // 泉水使用后会返回揭晓文案；其余道具只提示已使用。
+  const revealed = store.USE_CONSUMABLE(id)
+  if ((store.consumableCounts[id] ?? 0) < before) feedback.show(revealed ?? `已使用${CONSUMABLE_POOL.find(def => def.id === id)?.name ?? '道具'}`)
 }
 </script>
 

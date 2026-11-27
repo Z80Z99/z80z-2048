@@ -6,10 +6,10 @@ import { summarizeConsumable } from '../../utils/displayText'
 import type { SummaryLine } from '../../utils/displayText'
 import { useGameStore } from '../../store/gameStore'
 import { cardById, canRemoveCard, upgradeCost } from '../../core/upgrade'
-import { consumableById } from '../../core/consumables'
+import { CONSUMABLE_POOL, consumableById } from '../../core/consumables'
 import CardIcon from '../CardIcon.vue'
 import CardDetails from '../CardDetails.vue'
-import { equipmentById, formatEquipStats, equipCost, getSetData } from '../../core/equipment'
+import { equipmentById, formatEquipStats, equipCost, equipSellPrice, getSetData } from '../../core/equipment'
 import type { EquipSlot } from '../../core/equipment'
 import ItemIcon from '../ItemIcon.vue'
 import type { CardClass, CardEffect, ConsumableDef, EquipRarity } from '../../types'
@@ -36,14 +36,30 @@ const heals = computed(() => store.shopHeals.map((id, index) => {
   return { id, index, def, price: id ? store.shopHealPrice(id) : 0 }
 }))
 const consumables = computed(() => store.shopConsumables.map((id, index) => ({ id, index, def: id ? consumableById(id) : undefined })))
+// 出售区：背包里未穿戴的装备与携带的道具。泉水的售价成交后才揭晓（price 为 null）。
+const sellableEquipment = computed(() => store.player.inventory.flatMap(id => {
+  const def = equipmentById(id)
+  if (!def || Object.values(store.player.equipment).includes(id)) return []
+  return [{ id, def, level: parseInt(id.split(':')[1] || '1', 10) || 1, price: equipSellPrice(def) }]
+}))
+const sellableConsumables = computed(() => CONSUMABLE_POOL.flatMap(def => {
+  const count = store.consumableCounts[def.id] ?? 0
+  return count > 0 ? [{ def, count, price: store.shopSellPrice(def.id) }] : []
+}))
 const removable = computed(() => store.upgrades.filter(upgrade => canRemoveCard(upgrade.def, 'shop')))
 const cannotRefresh = computed(() => store.player.gold < store.shopRefreshCost)
 const cannotRemove = computed(() => store.shopRemoveUsed || store.player.gold < store.shopRemoveCost || removable.value.length === 0)
-type DetailSection = 'upgrade' | 'equipment' | 'consumable' | 'heal'
-const detail = ref<{ section: DetailSection; index: number } | null>(null)
+type BuySection = 'upgrade' | 'equipment' | 'consumable' | 'heal'
+type SellSection = 'sell-equipment' | 'sell-consumable'
+type DetailSection = BuySection | SellSection
+const BUY_SECTIONS: BuySection[] = ['upgrade', 'equipment', 'consumable', 'heal']
+const isBuySection = (section: DetailSection): section is BuySection => (BUY_SECTIONS as string[]).includes(section)
+const detail = ref<{ section: DetailSection; index: number; itemId?: string } | null>(null)
 interface ShopDetailView {
   section: DetailSection
   sold: boolean
+  /** 出售视图：按钮执行出售而不是购买。 */
+  sell?: boolean
   name: string
   price: number | null
   disabledReason: string | null
@@ -106,6 +122,30 @@ const detailView = computed<ShopDetailView | null>(() => {
       disabledReason: gold < def.price ? '金币不足' : null,
     }
   }
+  if (section === 'sell-equipment') {
+    const id = detail.value.itemId ?? ''
+    const def = equipmentById(id)
+    if (!id || !def) return soldDetail(section)
+    return {
+      section, sold: false, sell: true, name: def.name, price: equipSellPrice(def), buyLabel: '出售',
+      equipSlot: def.slot, setId: def.set, rarity: def.rarity,
+      level: parseInt(id.split(':')[1] || '1', 10) || 1,
+      setName: def.set ? `${getSetData(def.set)?.name ?? ''}套装` : '独立装备',
+      lines: formatEquipStats(id),
+      disabledReason: !store.player.inventory.includes(id) || Object.values(store.player.equipment).includes(id) ? '要先卸下才能出售' : null,
+    }
+  }
+  if (section === 'sell-consumable') {
+    const id = detail.value.itemId ?? ''
+    const def = consumableById(id)
+    const owned = store.consumableCounts[id] ?? 0
+    if (!id || !def || owned <= 0) return soldDetail(section)
+    return {
+      section, sold: false, sell: true, name: def.name, price: store.shopSellPrice(id), buyLabel: '出售',
+      cardClass: def.cardClass, icon: def.icon, summaryLines: summarizeConsumable(def), duration: def.duration,
+      owned, disabledReason: null,
+    }
+  }
   const id = store.shopHeals[index]
   const def = upgradeOf(id)
   if (!id || !def) return soldDetail(section)
@@ -116,18 +156,35 @@ const detailView = computed<ShopDetailView | null>(() => {
     disabledReason: store.effectivePlayer.hp >= store.effectivePlayer.maxHp ? '生命已满' : gold < price ? '金币不足' : null,
   }
 })
-const detailSlots = () => ({ upgrade: store.shopUpgrades, equipment: store.shopEquipment, consumable: store.shopConsumables, heal: store.shopHeals })
-function openDetail(section: DetailSection, index: number) {
+const detailSlots = (): Record<BuySection, (string | null)[]> => ({ upgrade: store.shopUpgrades, equipment: store.shopEquipment, consumable: store.shopConsumables, heal: store.shopHeals })
+function openDetail(section: BuySection, index: number) {
   if (detailMotion.closing.value) return
   if (!detailSlots()[section][index]) return
   detail.value = { section, index }
   detailMotion.open()
 }
+function openSellDetail(section: SellSection, itemId: string) {
+  if (detailMotion.closing.value) return
+  detail.value = { section, index: 0, itemId }
+  detailMotion.open()
+}
 function buyFromDetail() {
   const target = detail.value
-  if (detailMotion.closing.value || !target) return
+  if (detailMotion.closing.value || !target || !isBuySection(target.section)) return
   buy(target.section, target.index)
   if (!detailSlots()[target.section][target.index]) detailMotion.close()
+}
+// 出售只在弹窗内发生：点「出售」即成交。泉水的售价在成交后的提示里才揭晓。
+function sellFromDetail() {
+  const target = detail.value
+  if (detailMotion.closing.value || !target?.itemId) return
+  const gold = store.player.gold
+  if (target.section === 'sell-equipment') store.SELL_EQUIPMENT(target.itemId)
+  else store.SELL_CONSUMABLE(target.itemId)
+  if (store.player.gold > gold) {
+    feedback.show(`已出售，获得 ${store.player.gold - gold} 金币`)
+    detailMotion.close()
+  }
 }
 watch(detailMotion.mounted, mounted => { if (!mounted) detail.value = null })
 function removeUpgrade(id: string) {
@@ -159,7 +216,7 @@ function refreshShop() {
 </script>
 
 <template>
-  <view class="screen shop-screen">
+  <view class="screen shop-screen" @touchmove.stop>
     <view class="ui-page shop-content">
       <view class="shop-header"><view><text class="ui-kicker">地牢补给站</text><text class="ui-title">旅途商店</text></view><view class="shop-wallet"><text class="shop-wallet-label">持有金币</text><text class="shop-wallet-value">{{ store.player.gold }}</text></view></view>
       <image class="art-scene shop-scene" src="/static/scenes/shop.png" mode="aspectFill" alt="" aria-hidden="true" />
@@ -204,6 +261,22 @@ function refreshShop() {
           </view>
         </view>
       </view>
+      <view class="shop-section">
+        <view class="shop-section-header"><text class="shop-section-title">出售</text><text class="ui-note">背包里未穿戴的装备与携带的道具 · 半价回收</text></view>
+        <text v-if="!sellableEquipment.length && !sellableConsumables.length" class="ui-note shop-sell-empty">背包里没有可出售的装备或道具。</text>
+        <view v-else class="shop-goods">
+          <view v-for="item in sellableEquipment" :key="`sell-equipment-${item.id}`" class="shop-card art-card shop-sellable ui-press" :class="`shop-rarity-${item.def.rarity}`" role="button" tabindex="0" :aria-label="`查看${item.def.name}的出售价格`" @click="openSellDetail('sell-equipment', item.id)">
+            <view class="shop-item-art"><ItemIcon :slot="item.def.slot" :set-id="item.def.set" :rarity="item.def.rarity" size="normal" /></view>
+            <text class="shop-card-name">{{ item.def.name }}</text>
+            <text class="shop-price">＋{{ item.price }} 金币</text>
+          </view>
+          <view v-for="item in sellableConsumables" :key="`sell-consumable-${item.def.id}`" class="shop-card art-card card-tone card-frame shop-sellable ui-press" :class="`card-${item.def.cardClass}`" role="button" tabindex="0" :aria-label="`查看${item.def.name}的出售价格`" @click="openSellDetail('sell-consumable', item.def.id)">
+            <view class="shop-item-art"><CardIcon :icon="item.def.icon" :card-class="item.def.cardClass" /></view>
+            <text class="shop-card-name">{{ item.def.name }}<text v-if="item.count > 1" class="shop-sell-count"> ×{{ item.count }}</text></text>
+            <text class="shop-price" :class="{ 'shop-price-unavailable': item.price === null }">{{ item.price === null ? '出价未知' : `＋${item.price} 金币` }}</text>
+          </view>
+        </view>
+      </view>
       <view class="shop-section"><text class="shop-section-title">即时补给与整备</text><view class="shop-services">
         <view v-for="item in heals" :key="`heal-${store.shopRefreshCount}-${item.index}`" class="shop-card art-card shop-heal ui-entry ui-press" :class="{ 'shop-sold': !item.id }" :role="item.id && item.def ? 'button' : undefined" :tabindex="item.id && item.def ? 0 : undefined" :aria-label="item.id && item.def ? `查看${item.def.name}的效果与价格` : undefined" @click="openDetail('heal', item.index)">
           <template v-if="item.id && item.def">
@@ -224,7 +297,7 @@ function refreshShop() {
           <CardIcon v-if="detailView.icon" :icon="detailView.icon" :card-class="detailView.cardClass" />
           <ItemIcon v-else-if="detailView.section === 'equipment'" :slot="detailView.equipSlot" :set-id="detailView.setId" :rarity="detailView.rarity" />
         </view>
-        <view v-if="detailView.section === 'equipment'" class="shop-detail-meta">
+        <view v-if="detailView.section === 'equipment' || detailView.section === 'sell-equipment'" class="shop-detail-meta">
           <text class="shop-rarity art-paper-label">{{ equipRarityText(detailView.rarity ?? 'common') }}</text>
           <text class="shop-type">Lv.{{ detailView.level }}</text>
           <text class="shop-type">{{ detailView.setName }}</text>
@@ -233,7 +306,9 @@ function refreshShop() {
         <view v-if="detailView.lines?.length" class="shop-equip-lines"><text v-for="line in detailView.lines" :key="line" class="shop-card-desc">{{ line }}</text></view>
         <CardDetails v-if="detailView.summaryLines" :card-class="detailView.cardClass ?? 'white'" :effects="[]" :summary-lines="detailView.summaryLines" :duration="detailView.duration" :compact="false" :show-help="false" />
         <text v-if="detailView.owned" class="shop-type">已持有 {{ detailView.owned }} 件</text>
-        <button role="button" class="shop-buy ui-press" :disabled="Boolean(detailView.disabledReason)" @click="buyFromDetail"><text>{{ detailView.disabledReason ?? detailView.buyLabel }}</text><text v-if="detailView.price !== null">{{ detailView.price }} 金币</text></button>
+        <button v-if="!detailView.sell" role="button" class="shop-buy ui-press" :disabled="Boolean(detailView.disabledReason)" @click="buyFromDetail"><text>{{ detailView.disabledReason ?? detailView.buyLabel }}</text><text v-if="detailView.price !== null">{{ detailView.price }} 金币</text></button>
+        <text v-if="detailView.sell && detailView.price === null" class="shop-type">泉水没有固定价格，成交后才知道卖了多少钱。</text>
+        <button v-if="detailView.sell" role="button" class="shop-sell ui-press" :disabled="Boolean(detailView.disabledReason)" @click="sellFromDetail"><text>{{ detailView.disabledReason ?? '出售' }}</text><text v-if="detailView.price !== null">＋{{ detailView.price }} 金币</text></button>
       </template>
       <template v-else>
         <view class="ui-sheet-header"><text class="ui-sheet-title">商品详情</text><button role="button" class="ui-close" @click="detailMotion.close()">关闭</button></view>
@@ -258,7 +333,7 @@ function refreshShop() {
 .shop-refresh-title { color: var(--text); font-size: 28rpx; font-weight: 700; }
 .shop-refresh-btn { margin: 0; min-width: 148rpx; flex-shrink: 0; padding: 14rpx 18rpx; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 10rpx; line-height: 1.4; font-size: 26rpx; }
 .shop-refresh-btn text { display: block; font-size: 24rpx; margin-top: 4rpx; }
-.shop-refresh-btn::after, .shop-buy::after, .shop-remove-option::after { border: none; }
+.shop-refresh-btn::after, .shop-buy::after, .shop-remove-option::after, .shop-sell::after { border: none; }
 .shop-refresh-btn[disabled] { color: var(--muted); background: var(--surface-soft); }
 .shop-section { margin-bottom: 32rpx; }
 .shop-section-header { display: flex; justify-content: space-between; align-items: baseline; gap: 16rpx; margin-bottom: 16rpx; }
@@ -284,6 +359,11 @@ function refreshShop() {
 .shop-buy { display: flex; justify-content: space-between; align-items: center; gap: 8rpx; flex-wrap: wrap; margin: auto 0 0; min-height: 76rpx; padding: 14rpx 10rpx; font-size: 26rpx; line-height: 1.4; color: var(--gold); background: var(--gold-soft); border: 1px solid var(--line); border-radius: 10rpx; }
 .shop-buy[disabled] { color: var(--muted); background: var(--surface-soft); }
 .shop-sold { align-items: center; justify-content: center; box-shadow: none; background: var(--surface-soft); border-style: dashed; border-top-width: 1px; }
+/* 出售：回收用生命色区分于购买的 gold 色。 */
+.shop-sell { display: flex; justify-content: space-between; align-items: center; gap: 8rpx; flex-wrap: wrap; margin: auto 0 0; min-height: 76rpx; padding: 14rpx 10rpx; font-size: 26rpx; line-height: 1.4; color: var(--hp); background: var(--hp-soft); border: 1px solid var(--line); border-radius: 10rpx; }
+.shop-sell[disabled] { color: var(--muted); background: var(--surface-soft); }
+.shop-sell-empty { margin-top: 4rpx; }
+.shop-sell-count { color: var(--gold); font-weight: 500; }
 .shop-sold-mark { font-size: 36rpx; color: var(--dim); }
 .shop-heal { border-top-color: var(--hp); }
 .shop-remove { border-top-color: var(--attack); }

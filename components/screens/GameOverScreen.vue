@@ -8,7 +8,7 @@ const heading = computed(() => victory.value ? '凯旋而归' : store.runOutcome
 </script>
 
 <template>
-  <view class="screen gameover-screen"><view class="gameover-content">
+  <view class="screen gameover-screen" @touchmove.stop><view class="gameover-content">
     <text class="ui-kicker">{{ victory ? '胜利结算 / VICTORY' : store.runOutcome === 'defeat' ? '战败结算 / DEFEAT' : '旅程结算' }}</text>
     <view class="gameover-seal" :class="{ 'gameover-seal-defeat': !victory }"><text>{{ victory ? '◇' : '—' }}</text></view>
     <text class="ui-title gameover-title">{{ heading }}</text>

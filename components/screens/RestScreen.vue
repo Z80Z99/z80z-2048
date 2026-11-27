@@ -18,7 +18,7 @@ function heal() {
 </script>
 
 <template>
-  <view class="screen rest-screen"><view class="rest-content">
+  <view class="screen rest-screen" @touchmove.stop><view class="rest-content">
     <text class="ui-kicker">旅途中的片刻安宁</text>
     <image class="art-scene rest-scene" src="/static/scenes/camp.png" mode="aspectFill" alt="" aria-hidden="true" />
     <text class="ui-title rest-title">营火尚暖</text>

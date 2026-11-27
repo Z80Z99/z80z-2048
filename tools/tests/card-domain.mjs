@@ -212,7 +212,8 @@ export async function run() {
   for (let i = 0; i < 5000; i++) if (cards.pickUpgrades(rng, { count: 1, allowedClasses: ['blue', 'gold'] })[0].cardClass === 'blue') blueCount++
   assert.ok(Math.abs(blueCount / 5000 - 0.75) < 0.035, 'class weights normalize within allowed set')
 
-  assert.equal(consumables.CONSUMABLE_POOL.length, 5)
+  assert.equal(consumables.CONSUMABLE_POOL.length, 6)
+  assert.equal(consumables.CONSUMABLE_POOL.filter(item => item.hidden).map(item => item.id).join(), 'spring_water', 'only spring water hides its content')
   for (const item of consumables.CONSUMABLE_POOL) {
     assert.equal(consumables.consumableById(item.id), item)
     assert.equal(consumables.validateConsumable(item), true)
@@ -245,6 +246,15 @@ export async function run() {
   assert.ok(consumables.consumableUseDisabledReason(cleanse, 'route', null, false))
   assert.equal(consumables.validateConsumable({ ...clone(cleanse), cardClass: 'red' }), false)
   assert.equal(consumables.validateConsumable({ ...clone(cleanse), duration: 'round' }), false)
+
+  // 隐藏道具（泉水）：不静态声明效果，内容逐件决定；商店回收价对普通道具是原价的一半。
+  const spring = consumables.consumableById('spring_water')
+  assert.deepEqual(spring.effects, [])
+  assert.equal(consumables.consumableUseDisabledReason(spring, 'battle', 'playing', true), null)
+  assert.equal(consumables.validateConsumable({ ...clone(spring), duration: 'round' }), false)
+  assert.equal(consumables.validateConsumable({ ...clone(spring), hidden: false }), false, 'without the flag an empty effect list is invalid')
+  assert.equal(consumables.validateConsumable({ ...clone(spring), effects: [{ type: 'bonusTurns', value: 2, polarity: 'positive', scope: 'parameter', description: '步数' }] }), false, 'hidden items cannot declare static effects')
+  assert.deepEqual(['tactical_potion', 'charge_potion', 'combo_scroll', 'berserk_potion', 'cleanse_potion'].map(id => consumables.consumableSellPrice(consumables.consumableById(id))), [17, 17, 30, 22, 25])
 
   // 独立旧版基准：原玩家池过滤后恰好十三项，按原次序、原数值逐次取整。
   const oldEnemy = [

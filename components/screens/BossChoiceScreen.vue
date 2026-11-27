@@ -4,7 +4,7 @@ const store = useGameStore()
 </script>
 
 <template>
-  <view class="screen boss-choice-screen"><view class="boss-content">
+  <view class="screen boss-choice-screen" @touchmove.stop><view class="boss-content">
     <text class="ui-kicker">守关首领已击败</text>
     <view class="boss-seal"><text>♜</text></view>
     <text class="ui-title boss-title">更深处，还是归途？</text>

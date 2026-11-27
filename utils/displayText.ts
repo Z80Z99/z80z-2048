@@ -133,6 +133,8 @@ export function summarizeCard(def: Pick<UpgradeDef, 'effects'>, context?: Displa
 
 export function summarizeConsumable(def: ConsumableDef): SummaryLine[] {
   if (def.cleanse) return [{ text: '移除已选紫卡一层；黑卡本局不可解除', polarity: 'positive' }]
+  // 隐藏道具（泉水）的内容逐瓶决定，饮用前只显示未知。
+  if (def.hidden) return [{ text: '效果未知：回血，或持续数回合的增益／异常状态', polarity: 'positive' }]
   return def.effects.map(effect => ({
     polarity: effect.polarity,
     text: effect.type === 'bonusTurns' ? `多${numberText(effect.value)}步`

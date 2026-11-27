@@ -9,7 +9,7 @@ export function createInitialState(): GameState {
       spawnArmor: 0, goldBoost: 0, xpBoost: 0, baseSpeed: 3,
       equipment: {}, inventory: [], gold: 0, xp: 0, level: 1, xpToNext: 25,
     },
-    upgrades: [], consumableCounts: {},
+    upgrades: [], consumableCounts: {}, springWaters: [],
     route: [], currentNodeId: null, battle: null,
     rewardChoices: [], rewardReason: 'start', rewardQueue: [], rewardRollCount: 0, pendingLevels: 0,
     shopUpgrades: [null, null, null], shopEquipment: [null, null, null],

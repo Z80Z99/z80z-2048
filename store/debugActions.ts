@@ -1,7 +1,9 @@
-import type { GameState, PlayerStats, RoundResult, BattleState, UpgradeDef } from '../types'
+import type { GameState, PlayerStats, RoundResult, BattleState, SpringWaterQuality, SpringWaterRoll, UpgradeDef } from '../types'
 import { ALL_EQUIPMENT, makeEquipId } from '../core/equipment'
 import { ENEMIES } from '../core/enemy'
 import { UPGRADE_POOL } from '../core/upgrade'
+import { rollSpringWater } from '../core/consumables'
+import { getEventCatalog } from '../core/events'
 import { buildShop } from './helpers'
 
 export const DEBUG_ENABLED = typeof __DEV__ !== 'undefined' && __DEV__
@@ -16,6 +18,7 @@ interface DebugContext extends GameState {
   _grantUpgrade(def: UpgradeDef): boolean
   _addEquipment(id: string): string | null
   _addConsumable(id: string, count?: number): boolean
+  _addSpringWater(roll: SpringWaterRoll): boolean
   _resolveKill(battle: BattleState, result: RoundResult, hp: number): void
   saveMetaState(): void
 }
@@ -44,6 +47,19 @@ export const debugActions = {
     if (def) this._grantUpgrade(def)
   }),
   DEBUG_ADD_CONSUMABLE: debugAction(function (id: string) { this._addConsumable(id) }),
+  // 泉水每件都要先抽定隐藏内容；开发模式下按指定品质发一瓶（默认“寻常”）。
+  DEBUG_ADD_SPRING_WATER: debugAction<[quality?: number]>(function (quality = 1) {
+    if (![0, 1, 2].includes(quality)) return
+    this._addSpringWater(rollSpringWater(quality as SpringWaterQuality, this._rng('debug-spring', this.debugActionCount++)))
+  }),
+  // 直达指定奇遇，用于在开发构建里实测事件流程；不改动路线进度。
+  DEBUG_GO_EVENT: debugAction(function (id: string) {
+    const event = getEventCatalog().find(candidate => candidate.id === id)
+    if (!event || this.battle) return
+    this.gameEvent = { ...event, choices: event.choices.map(choice => ({ ...choice })) }
+    this.eventResult = null
+    this.screen = 'event'
+  }),
   DEBUG_UNLOCK_ALL_ENEMIES: debugAction(function () { this.meta.unlockedEnemies = ENEMIES.map(e => e.id) }),
   DEBUG_ADD_KILLS: debugAction(function (amount: number) {
     for (const enemy of ENEMIES) this.meta.enemyKills[enemy.id] = Math.max(0, (this.meta.enemyKills[enemy.id] || 0) + amount)

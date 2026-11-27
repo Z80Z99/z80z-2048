@@ -162,7 +162,10 @@ onLaunch(() => {
 .card-frame { border-left-color: var(--card-color) !important; border-top-color: var(--card-color) !important; }
 
 /* 公共原语：只用类选择器，便于编译进 uni-app / 微信组件。 */
-.screen { width: 100%; min-height: var(--viewport-height); box-sizing: border-box; padding: 32rpx 28rpx calc(152rpx + var(--safe-bottom)); background: var(--bg); }
+/* pages.json 关闭了页面原生滚动（保证棋盘滑动）。屏幕固定为一屏高、由自身滚动；
+   各屏根节点的 @touchmove.stop 让手势不冒泡到框架的页面滚动拦截，手机触摸才能滚动。
+   战斗屏例外：保持原有高度，避免改变棋盘滑动行为。 */
+.screen { width: 100%; height: var(--viewport-height); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; box-sizing: border-box; padding: 32rpx 28rpx calc(152rpx + var(--safe-bottom)); background: var(--bg); }
 .ui-page { width: 100%; max-width: 720px; box-sizing: border-box; margin: 0 auto; }
 .ui-kicker { display: block; color: var(--accent); font-size: 24rpx; font-weight: 700; letter-spacing: 4rpx; }
 .ui-title { display: block; font-size: 46rpx; line-height: 1.3; font-weight: 800; letter-spacing: 2rpx; color: var(--text); }

@@ -33,7 +33,7 @@ function choose(index: number) {
 </script>
 
 <template>
-  <view class="screen event-screen">
+  <view class="screen event-screen" @touchmove.stop>
     <view class="event-content ui-page">
       <view class="event-top"><text class="ui-kicker">地牢奇遇 / S{{ store.stage }}</text><view class="event-resources"><text class="stat-hp">生命 {{ store.effectivePlayer.hp }}/{{ store.effectivePlayer.maxHp }}</text><text class="stat-gold">{{ store.player.gold }} 金币</text></view></view>
       <view class="event-art"><view class="event-ring"><text class="event-icon">{{ store.gameEvent?.icon || '?' }}</text></view><view class="event-rule" /></view>

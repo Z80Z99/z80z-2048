@@ -11,7 +11,7 @@ const bestiary = useModalMotion(useMotionPreference())
 </script>
 
 <template>
-  <view class="screen title-screen">
+  <view class="screen title-screen" @touchmove.stop>
     <view class="title-top"><text class="title-edition">2048 · 地牢冒险</text><button role="button" class="title-theme" @click="store.TOGGLE_THEME()">{{ store.theme === 'dark' ? '浅色模式' : '深色模式' }}</button></view>
     <view class="title-main-content ui-entry">
       <view class="title-gate" aria-hidden="true"><view class="title-gate-inner"><view class="title-rune"><text>2</text><text>4</text><text>8</text><text class="title-rune-bright">16</text></view><view class="title-stair title-stair-one" /><view class="title-stair title-stair-two" /><view class="title-stair title-stair-three" /></view></view>

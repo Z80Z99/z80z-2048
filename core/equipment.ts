@@ -151,6 +151,11 @@ export function equipCost(eq: { rarity: string } | undefined): number {
   return costs[eq?.rarity ?? 'common'] ?? 30
 }
 
+/** 商店回收价：品质价格的一半，向下取整（普通 15 / 稀有 35 / 史诗 60）。 */
+export function equipSellPrice(eq: { rarity: string } | undefined): number {
+  return Math.floor(equipCost(eq) / 2)
+}
+
 export interface EquipBonuses {
   // atk/def 为套装固定值；atkPercent/defPercent、gold/xp 为百分数（如 20 表示 20%）。
   stats: Record<EquipStat | 'atkPercent' | 'defPercent', number>

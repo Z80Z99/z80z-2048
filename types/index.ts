@@ -104,6 +104,8 @@ export interface BattleState {
   lastMergedSum?: number;
   lastMoveDamage?: number;
   baseTurns?: number;
+  /** 泉水等带来的持续状态；缺少视为空。 */
+  timedEffects?: TimedEffect[];
 }
 
 export type CombatAttribute = 'attack' | 'defense' | 'speed';
@@ -254,6 +256,29 @@ export interface ConsumableDef {
   price: number;
   effects: CardEffect[];
   cleanse?: boolean;
+  /** 效果与价值由每件实例决定（见 SpringWaterRoll）：不进商店货架，卡面显示未知。 */
+  hidden?: boolean;
+}
+
+/** 泉水品质：0 寡淡 / 1 寻常 / 2 佳酿；越高效果越强、越值钱。 */
+export type SpringWaterQuality = 0 | 1 | 2;
+
+/** 一瓶泉水的隐藏内容：在治愈之泉结算时抽定并随瓶子保存，饮用或出售前不向玩家展示。 */
+export type SpringWaterRoll =
+  | { kind: 'heal'; quality: SpringWaterQuality; percent: number; sellValue: number }
+  | { kind: 'buff' | 'curse'; quality: SpringWaterQuality; status: string; rounds: number; value: number; sellValue: number };
+
+/** 持续若干回合的临时状态：合并进战斗修饰器，每个回合交界递减，归零移除。 */
+export interface TimedEffect {
+  id: string;
+  /** 简短名称，如“灼泉”，用于战斗中的一行状态标签。 */
+  name: string;
+  /** 完整说明，如“灼泉：每回合结束灼烧，失去 6 点生命，持续 4 回合”。 */
+  label: string;
+  polarity: 'positive' | 'negative';
+  rounds: number;
+  remaining: number;
+  modifiers: Partial<CardModifiers>;
 }
 
 export interface ActiveUpgrade {
@@ -334,6 +359,8 @@ export interface GameState {
   shopEquipment: (string | null)[];
   shopHeals: (string | null)[];
   consumableCounts: Record<string, number>;
+  /** 泉水队列，先进先出；长度恒等于 consumableCounts.spring_water。 */
+  springWaters: SpringWaterRoll[];
   shopConsumables: (string | null)[];
   restUsed: boolean;
   restResult: string | null;

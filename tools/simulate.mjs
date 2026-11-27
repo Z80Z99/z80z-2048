@@ -11,15 +11,17 @@ import { loadProject } from './harness.mjs'
 const pinia = createRequire(import.meta.url)('pinia')
 const { slideGrid } = loadProject('./core/board')
 const { cardById, UPGRADE_POOL, upgradeCost, canRemoveCard } = loadProject('./core/upgrade')
-const { consumableById, CONSUMABLE_POOL } = loadProject('./core/consumables')
+const { consumableById, CONSUMABLE_POOL, springWaterSellExpectation } = loadProject('./core/consumables')
 const { equipmentById, getEffectivePlayer, computeEquipBonuses, equipCost } = loadProject('./core/equipment')
 const { getBattlePreview } = loadProject('./core/battle')
 const { generateRoute } = loadProject('./core/route')
 const { createScopedRng } = loadProject('./core/random')
 const { useGameStore } = loadProject('./store/gameStore')
 
-export const RULE_VERSION = 'sixcolor-v3-flat-defense'
-export const POLICY_VERSION = 2
+// v4：治愈之泉“装瓶带走泉水”（每瓶隐藏内容）、商店回收（半价）、持续数回合的泉水状态。
+export const RULE_VERSION = 'sixcolor-v4-spring-water'
+// 机器人策略 3：泉水按期望售价估值、进店卖掉，不饮用。
+export const POLICY_VERSION = 3
 export const STRATEGIES = ['baseline', 'corner', 'attack', 'defense', 'economy']
 export const DEFAULT_SEED = 12345
 export const BASELINE_DIRECTORY = path.join(import.meta.dirname, 'baselines')
@@ -178,7 +180,7 @@ const choiceHasNegative = choice => choice.outcomes.some(outcome => effectHasNeg
 const expectedNumber = value => typeof value === 'number' ? value : value && Number.isFinite(value.min) && Number.isFinite(value.max) ? (value.min + value.max) / 2 : 0
 function outcomeScore(effect, store, strategy) {
   const weights = POLICY_WEIGHTS[strategy]
-  const known = ['none', 'gold', 'heal', 'gold_heal', 'gold_xp', 'xp', 'maxhp_up', 'drop_equip', 'reforge', 'card_trade', 'heal_curse', 'hp_reduce', 'hp_reduce_pct', 'maxhp_down_pct']
+  const known = ['none', 'gold', 'heal', 'gold_heal', 'gold_xp', 'xp', 'maxhp_up', 'drop_equip', 'reforge', 'card_trade', 'heal_curse', 'hp_reduce', 'hp_reduce_pct', 'maxhp_down_pct', 'spring_water']
   if (!known.includes(effect.type)) return -1000
   const missingHp = () => Math.max(0, store.effectivePlayer.maxHp - store.player.hp)
   const healScore = percent => Math.min(missingHp(), store.effectivePlayer.maxHp * expectedNumber(percent) / 100) * weights.hp
@@ -186,6 +188,8 @@ function outcomeScore(effect, store, strategy) {
   const hpRatio = store.effectivePlayer.maxHp > 0 ? store.player.hp / store.effectivePlayer.maxHp : 1
   let score = -expectedNumber(effect.cost) * 0.5 - expectedNumber(effect.hpCost) * 3 * (1 + Math.max(0, 0.6 - hpRatio) * 4)
   if (effect.type === 'none') return 0
+  // 泉水：机器人不饮用（内容未知），按该品质的期望售价当作商品估值。
+  if (effect.type === 'spring_water') return score + springWaterSellExpectation(effect.quality) * weights.economy
   if (effect.type === 'gold') score += expectedNumber(effect.value) * weights.economy
   else if (effect.type === 'heal') score += healScore(effect.value)
   else if (effect.type === 'xp') score += expectedNumber(effect.value)
@@ -222,6 +226,8 @@ export function pickEventChoice(store, { allowNegativeEvents = false, strategy =
 
 function visitShop(store, act, strategy) {
   if (strategy === 'baseline') return
+  // 机器人把泉水当作商品：不饮用，进店先按各自的隐藏售价全部卖掉。
+  for (let sale = 0; sale < 8 && (store.consumableCounts.spring_water ?? 0) > 0; sale++) act('SELL_CONSUMABLE', ['spring_water'], 'shop')
   for (let purchase = 0; purchase < 8; purchase++) {
     const offers = []
     const reserve = strategy === 'economy' && store.player.hp / store.effectivePlayer.maxHp > 0.5 ? 20 : 0

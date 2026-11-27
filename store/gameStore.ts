@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
-import type { BattleState, CardClass, CardModifiers, GameState, PlayerStats, RewardRequest, RoundResult, UpgradeDef } from '../types'
+import type { BattleState, CardClass, CardModifiers, GameState, PlayerStats, RewardRequest, RoundResult, SpringWaterRoll, UpgradeDef } from '../types'
 import { createRng, createScopedRng } from '../core/random'
 import { initBattle, processTurn, resolveRound, startNewRound, getBattlePreview, getCombinedCardModifiers } from '../core/battle'
 import { generateRoute } from '../core/route'
 import { ENEMIES, getBestiaryId } from '../core/enemy'
-import { ALL_EQUIPMENT, computeEquipBonuses, getEffectivePlayer, rollEquipEffects, equipmentById, makeEquipId, sortInventory, equipCost } from '../core/equipment'
+import { ALL_EQUIPMENT, computeEquipBonuses, getEffectivePlayer, rollEquipEffects, equipmentById, makeEquipId, sortInventory, equipCost, equipSellPrice } from '../core/equipment'
 import type { EquipSlot, SortMode } from '../core/equipment'
 import { pickEvent, resolveEventOutcome, buildEventResult, getEventChoiceDisabledReasonForChoice } from '../core/events'
 import type { EventChoiceContext, EventEffect } from '../core/events'
 import { getMetaUpgrades, UPGRADE_POOL, upgradeCost, cardById, canRemoveCard, validateCard } from '../core/upgrade'
 import { collectCardModifiers, deriveCardPlayer, modifiersFromEffects } from '../core/cardEffects'
-import { consumableById, consumableUseDisabledReason } from '../core/consumables'
+import { consumableById, consumableUseDisabledReason, consumableSellPrice, springWaterToTimedEffect, SPRING_WATER_ID } from '../core/consumables'
 import { createInitialState } from './initialState'
 import { applyMetaUpgrades, rollRewardChoices, buildShop, instantSupplyCost } from './helpers'
 import { debugActions } from './debugActions'
@@ -154,6 +154,12 @@ export const useGameStore = defineStore('game', {
             const target = this.upgrades.find(card => canRemoveCard(card.def, 'cleanse'))?.def.id
             invariant(Boolean(target) && this._removeCardLayer(target!, 'cleanse'), '净化目标在中途消失')
           }
+          break
+        }
+        case 'spring_water': {
+          const roll = eff.springWater as SpringWaterRoll | undefined
+          invariant(Boolean(roll) && Number.isSafeInteger(roll?.sellValue) && (roll?.sellValue ?? 0) > 0, '泉水数据无效')
+          invariant(this._addSpringWater(roll!), '泉水数量溢出')
           break
         }
         // 负金币档：主动支付（paid）走 _spendGold 计入“挥金如土”消费；意外损失只扣金币。
@@ -362,13 +368,24 @@ export const useGameStore = defineStore('game', {
       const purple = this.upgrades.some(card => card.def.cardClass === 'purple' && card.count > 0)
       return consumableUseDisabledReason(def, this.screen, this.battle?.phase, purple)
     },
+    /** 商店回收报价；泉水的售价成交后才揭晓，所以这里不报价。 */
+    shopSellPrice(id: string): number | null {
+      const def = consumableById(id)
+      if (!def || def.hidden || !safeCount(this.consumableCounts[id] ?? 0)) return null
+      return consumableSellPrice(def)
+    },
 
-    USE_CONSUMABLE(id: string, targetCardId?: string) {
+    /** 使用一件道具；泉水返回揭晓文案，其余情况没有返回值。 */
+    USE_CONSUMABLE(id: string, targetCardId?: string): string | undefined {
       if (this.consumableDisabledReason(id)) return
       const def = consumableById(id)!
       if (def.cleanse) {
         const target = targetCardId ?? this.upgrades.find(card => canRemoveCard(card.def, 'cleanse'))?.def.id
         if (!target || !this._removeCardLayer(target, 'cleanse')) return
+        this._removeConsumable(id)
+      } else if (def.hidden) {
+        // 泉水的内容逐瓶决定，使用时才揭晓。
+        return this._useSpringWater() ?? undefined
       } else {
         if (!this.battle || this.battle.phase !== 'playing') return
         const additions = modifiersFromEffects(def.effects)
@@ -382,10 +399,9 @@ export const useGameStore = defineStore('game', {
         }
         const extraTurns = additions.bonusTurns ?? 0
         if (!Number.isSafeInteger(this.battle.maxTurns + extraTurns)) return
+        if (!this._removeConsumable(id)) return
         this.battle = { ...this.battle, [key]: next, maxTurns: this.battle.maxTurns + extraTurns }
       }
-      this.consumableCounts[id]--
-      if (!this.consumableCounts[id]) delete this.consumableCounts[id]
     },
 
     BUY_SHOP_CONSUMABLE(slot: number) {
@@ -457,6 +473,27 @@ export const useGameStore = defineStore('game', {
       if (!this._removeCardLayer(upgradeId, 'shop')) return
       this._spendGold(this.shopRemoveCost)
       this.shopRemoveUsed = true
+    },
+
+    // 商店回收：只在商店屏生效，价格为原价的一半；出售所得直接入账，不计入消费成长。
+    SELL_EQUIPMENT(itemId: string) {
+      if (this.screen !== 'shop' || !itemId) return
+      const index = this.player.inventory.indexOf(itemId)
+      const eq = equipmentById(itemId)
+      // 穿戴中的装备要先卸下才能出售。
+      if (index < 0 || !eq || Object.values(this.player.equipment).includes(itemId)) return
+      this.player.inventory.splice(index, 1)
+      this.player.gold += equipSellPrice(eq)
+    },
+
+    SELL_CONSUMABLE(id: string) {
+      if (this.screen !== 'shop' || !safeCount(this.consumableCounts[id] ?? 0)) return
+      const def = consumableById(id)
+      if (!def) return
+      // 泉水按这一瓶自己的隐藏售价成交；出队与计数由 _removeConsumable 统一处理。
+      const price = def.hidden ? this.springWaters[0]?.sellValue : consumableSellPrice(def)
+      if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0 || !this._removeConsumable(id)) return
+      this.player.gold += price
     },
 
     TOGGLE_THEME() { this.theme = this.theme === 'dark' ? 'light' : 'dark' },
@@ -717,11 +754,47 @@ export const useGameStore = defineStore('game', {
     },
 
     _addConsumable(id: string, count = 1): boolean {
-      if (!consumableById(id) || !safeCount(count)) return false
+      // 隐藏道具每件都要先抽定内容，只能经 _addSpringWater 入包。
+      const def = consumableById(id)
+      if (!def || def.hidden || !safeCount(count)) return false
       const total = (this.consumableCounts[id] ?? 0) + count
       if (!Number.isSafeInteger(total)) return false
       this.consumableCounts[id] = total
       return true
+    },
+
+    /** 取出一件道具并减一；泉水同时出队最早获得的那一瓶。 */
+    _removeConsumable(id: string): boolean {
+      const count = this.consumableCounts[id] ?? 0
+      if (!safeCount(count)) return false
+      if (id === SPRING_WATER_ID) this.springWaters.shift()
+      if (count > 1) this.consumableCounts[id] = count - 1
+      else delete this.consumableCounts[id]
+      return true
+    },
+
+    _addSpringWater(roll: SpringWaterRoll): boolean {
+      const total = (this.consumableCounts[SPRING_WATER_ID] ?? 0) + 1
+      if (!Number.isSafeInteger(total)) return false
+      this.springWaters.push(roll)
+      this.consumableCounts[SPRING_WATER_ID] = total
+      return true
+    },
+
+    /** 饮用最早获得的一瓶泉水：回血立即生效，增益或异常状态持续其标注的回合数。返回揭晓文案。 */
+    _useSpringWater(): string | null {
+      if (!this.battle || this.battle.phase !== 'playing') return null
+      const roll = this.springWaters[0]
+      if (!roll || !this._removeConsumable(SPRING_WATER_ID)) return null
+      if (roll.kind === 'heal') {
+        const before = this.player.hp
+        this._heal(Math.floor(this.effectivePlayer.maxHp * roll.percent / 100))
+        return `回血之泉：回复 ${this.player.hp - before} 点生命`
+      }
+      const timed = springWaterToTimedEffect(roll)
+      if (!timed) return '泉水状态未知'
+      this.battle = { ...this.battle, timedEffects: [...(this.battle.timedEffects ?? []), timed] }
+      return `泉水揭晓：${timed.label}`
     },
 
     _removeCardLayer(id: string, method: 'shop' | 'cleanse'): boolean {

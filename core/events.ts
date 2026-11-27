@@ -1,7 +1,7 @@
 import { ALL_EQUIPMENT, equipmentById, formatEquipStats, makeEquipId } from './equipment'
 import { cardById, cardClassText, cardEffectText, validateCard } from './upgrade'
-import { consumableById, validateConsumable } from './consumables'
-import type { EventEffectMap } from '../types'
+import { consumableById, validateConsumable, rollSpringWater, SPRING_WATER_ID } from './consumables'
+import type { ConsumableDef, EventEffectMap, SpringWaterQuality, SpringWaterRoll } from '../types'
 
 export type OutcomeTone = 'good' | 'mid' | 'bad'
 
@@ -59,6 +59,8 @@ export type ResolvedEventEffect =
     hpCost: number
     removesPurple: number
   }
+  /** 装瓶泉水：结算时抽定这一瓶的隐藏内容；consumableGrants 仅供结果页展示。 */
+  | { type: 'spring_water'; quality: SpringWaterQuality; springWater: SpringWaterRoll; consumableGrants: EventGrant[] }
 
 export interface GameEvent {
   id: string
@@ -145,10 +147,11 @@ const EVENTS: GameEvent[] = [
         o(60, '精神一振', 'good', { type: 'heal', value: 12 }),
         o(30, '微有凉意', 'mid', { type: 'heal', value: 8 }),
         o(10, '无甚感觉', 'mid', { type: 'none' })),
-      pick('装瓶出售泉水',
-        o(45, '卖了个好价钱', 'good', { type: 'gold', value: { min: 15, max: 25 } }),
-        o(40, '正常价钱', 'mid', { type: 'gold', value: { min: 10, max: 14 } }),
-        o(15, '途中洒了', 'bad', { type: 'gold', value: { min: 2, max: 5 } })),
+      // 装瓶：三档档名与色调完全相同——品质、身份与售价都要到饮用或出售时才揭晓。
+      pick('装瓶带走泉水',
+        o(45, '装瓶完成', 'mid', { type: 'spring_water', quality: 2 }),
+        o(40, '装瓶完成', 'mid', { type: 'spring_water', quality: 1 }),
+        o(15, '装瓶完成', 'mid', { type: 'spring_water', quality: 0 })),
     ],
   },
   {
@@ -924,7 +927,7 @@ const EFFECT_FIELDS: Record<string, string[]> = {
   none: [], gold: ['value'], heal: ['value'], hp_reduce: ['value'], maxhp_down: ['value'],
   maxhp_up: ['value'], xp: ['value'], hp_reduce_pct: ['value'], maxhp_down_pct: ['value'],
   heal_curse: ['heal', 'curse_hp'], gold_heal: ['heal', 'gold'], gold_xp: ['gold', 'xp'],
-  drop_equip: [], reforge: [], card_trade: [],
+  drop_equip: [], reforge: [], card_trade: [], spring_water: ['quality'],
 }
 
 function eventCardGrants(effect: Record<string, any>): unknown {
@@ -939,7 +942,9 @@ function validateEventGrants(grants: unknown, consumable: boolean): string | nul
     if (!Number.isSafeInteger(grant.count) || grant.count <= 0) return '事件奖励数量必须为正的安全整数'
     const def = consumable ? consumableById(grant.id) : cardById(grant.id)
     if (!def || def.id !== grant.id) return `事件奖励不存在：${grant.id}`
-    if (consumable ? !validateConsumable(def) : !validateCard(def)) return `事件奖励分类或效果无效：${grant.id}`
+    if (consumable ? !validateConsumable(def as ConsumableDef) : !validateCard(def)) return `事件奖励分类或效果无效：${grant.id}`
+    // 隐藏道具（泉水）每件都要先抽定内容，只能经 spring_water 效果发放。
+    if (consumable && (def as ConsumableDef).hidden) return `事件不能直接发放隐藏道具：${grant.id}`
     const total = (totals.get(grant.id) ?? 0) + grant.count
     if (!Number.isSafeInteger(total)) return `事件奖励累计数量无效：${grant.id}`
     totals.set(grant.id, total)
@@ -997,6 +1002,7 @@ export function getEventChoiceDisabledReason(effect: Record<string, any>, contex
       return `事件百分比无效：${field}`
     }
   }
+  if (effect.type === 'spring_water' && ![0, 1, 2].includes(effect.quality as number)) return '泉水品质无效'
   if (['heal', 'hp_reduce_pct', 'maxhp_down', 'maxhp_down_pct'].includes(effect.type)) {
     const maximum = typeof effect.value === 'number' ? effect.value : effect.value.max
     if (maximum > 100) return '事件生命百分比不能超过 100%'
@@ -1111,6 +1117,7 @@ export function buildEventResult(eff: Record<string, any>): string {
   if (eff.type === 'xp') return `获得 ${eff.value} 经验。`
   if (eff.type === 'gold_heal') return `回复最大生命值（含装备）的 ${eff.heal}%（不超过上限），并获得 ${eff.gold} 金币。`
   if (eff.type === 'gold_xp') return `获得 ${eff.gold} 金币和 ${eff.xp} 经验。`
+  if (eff.type === 'spring_water') return '获得泉水 ×1，已放入背包。瓶中是回血之泉，还是持续数回合的增益或异常状态，要饮用时才揭晓；值多少钱也要商人验货才知道。'
   if (eff.type === 'drop_equip') return `${eff.cost > 0 ? `支付 ${eff.cost} 金币；` : ''}获得 ${describeEquipment(eff.eqId)}。`
   if (eff.type === 'reforge') return `消耗 ${describeEquipment(eff.removeEqId)}；${eff.cost > 0 ? `支付 ${eff.cost} 金币；` : ''}获得 ${eff.gold} 金币和 ${describeEquipment(eff.eqId)}。`
   if (eff.type === 'hp_reduce_pct' || eff.type === 'maxhp_down_pct') {
@@ -1217,6 +1224,14 @@ export function resolveEventEffect(effect: EventEffect, stage: number, rng: () =
     case 'heal_curse': return { type: 'heal_curse', heal: effect.heal, curse_hp: effect.curse_hp }
     case 'gold_heal': return { type: 'gold_heal', heal: effect.heal, gold: rollNumber(effect.gold, rng) }
     case 'gold_xp': return { type: 'gold_xp', gold: rollNumber(effect.gold, rng), xp: rollNumber(effect.xp, rng) }
+    case 'spring_water': {
+      const quality = effect.quality as SpringWaterQuality
+      // 两次抽签都在这里完成：身份与售价随瓶子保存，之后不再掷骰。
+      return {
+        type: 'spring_water', quality, springWater: rollSpringWater(quality, rng),
+        consumableGrants: [{ id: SPRING_WATER_ID, count: 1 }],
+      }
+    }
     case 'drop_equip':
       return { type: 'drop_equip', eqId: effect.eqId ?? rollEquipment(effect.rarity ?? 'common', stage, rng), cost }
     case 'reforge': {

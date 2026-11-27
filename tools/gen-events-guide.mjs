@@ -40,6 +40,7 @@ function effectText(effect) {
     case 'xp': return `获得 ${range(effect.value)} 经验`
     case 'gold_heal': return `回复 ${effect.heal}% 并获得 ${range(effect.gold)} 金币`
     case 'gold_xp': return `获得 ${range(effect.gold)} 金币和 ${range(effect.xp)} 经验`
+    case 'spring_water': return '获得 道具泉水 ×1（效果与售价未知，饮用或出售时才揭晓）'
     case 'drop_equip': return `获得随机${({ common: '普通', rare: '稀有', epic: '史诗' })[effect.rarity]}装备 ×1${effect.cost ? `，支付 ${effect.cost} 金币` : ''}（具体 ID/等级/浮动结算时随机）`
     case 'reforge': return `消耗背包首件未装备普通装备，换随机${({ common: '普通', rare: '稀有', epic: '史诗' })[effect.new_rarity]}装备 ×1 + ${range(effect.sell_price)} 金币`
     case 'card_trade': {

@@ -54,7 +54,8 @@ export function buildShop(
   }
   const healPool = UPGRADE_POOL.filter(card => card.kind === 'instant')
   const shopHeals: (string | null)[] = [healPool.length ? healPool[Math.floor(rng() * healPool.length)].id : null]
-  const supplies = [...CONSUMABLE_POOL]
+  // 隐藏道具（泉水）只经奇遇发放，不进货架；抽签次数不随池的大小变化。
+  const supplies = CONSUMABLE_POOL.filter(def => !def.hidden)
   const shopConsumables: (string | null)[] = []
   for (let i = 0; i < 2 && supplies.length; i++) {
     const index = Math.floor(rng() * supplies.length)

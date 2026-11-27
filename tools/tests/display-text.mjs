@@ -97,15 +97,20 @@ export async function run() {
   assert.match(summarizeEffect(effectOf('gold_lifesteal'), context), /13.79%/)
   assert.equal(JSON.stringify(context), contextBefore)
 
-  assert.equal(CONSUMABLE_POOL.length, 5)
+  assert.equal(CONSUMABLE_POOL.length, 6)
   for (const item of CONSUMABLE_POOL) {
     const frozen = freeze(JSON.parse(JSON.stringify(item)))
     const lines = summarizeConsumable(frozen)
-    assert.equal(lines.length, item.cleanse ? 1 : item.effects.length)
-    if (!item.cleanse) assert.deepEqual(lines.map(line => line.polarity), item.effects.map(effect => effect.polarity))
+    assert.equal(lines.length, item.cleanse || item.hidden ? 1 : item.effects.length)
+    if (!item.cleanse && !item.hidden) assert.deepEqual(lines.map(line => line.polarity), item.effects.map(effect => effect.polarity))
     lines.forEach(line => assert.doesNotMatch(line.text, /评级|系数/))
     assert.ok(durationText(item.duration))
   }
+  // 泉水：卡面永远只显示未知，不泄露身份、强度、回合数或售价。
+  const spring = CONSUMABLE_POOL.find(item => item.hidden)
+  assert.equal(spring.id, 'spring_water')
+  assert.deepEqual(summarizeConsumable(spring), [{ text: '效果未知：回血，或持续数回合的增益／异常状态', polarity: 'positive' }])
+  assert.equal(durationText(spring.duration), '立即生效')
   assert.match(summarizeConsumable(CONSUMABLE_POOL.find(item => item.id === 'charge_potion'))[0].text, /50%.*不影响已有攻击/)
   assert.deepEqual(summarizeConsumable(CONSUMABLE_POOL.find(item => item.id === 'berserk_potion')).map(line => line.text), ['合并获得的攻击增加100%', '受到的敌人攻击伤害增加30%'])
   assert.match(summarizeConsumable(CONSUMABLE_POOL.find(item => item.cleanse))[0].text, /紫卡一层；黑卡本局不可解除/)
