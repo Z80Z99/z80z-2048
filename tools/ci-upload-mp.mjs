@@ -10,6 +10,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
@@ -70,12 +71,24 @@ config.appid = appid
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8')
 
 try {
+  // miniprogram-ci 是 CommonJS 包且没有 exports 字段：不同 Node 版本对 `import()` 的
+  // 命名导出分析结果不同（Node 22 只能拿到 default，Node 24 能拿到命名导出），
+  // 所以按 CJS 直接 require，避免因 runner 的 Node 版本不同而失败。
+  const require = createRequire(import.meta.url)
   let ci
   try {
-    ci = await import('miniprogram-ci')
-  } catch {
-    fail('未安装 miniprogram-ci：运行 npm install --save-dev miniprogram-ci@2')
+    ci = require('miniprogram-ci')
+  } catch (error) {
+    fail(`未安装 miniprogram-ci（${error.message}）：运行 npm ci 或 npm install --save-dev miniprogram-ci@2`)
   }
+  // 兜底：若被 ESM 包装过，接口可能挂在 default 上。
+  if (typeof ci?.Project !== 'function' && typeof ci?.default?.Project === 'function') ci = ci.default
+  const pkgVersion = (() => { try { return require('miniprogram-ci/package.json').version } catch { return '未知' } })()
+  if (typeof ci?.Project !== 'function' || typeof ci?.upload !== 'function') {
+    fail(`miniprogram-ci 接口异常（版本 ${pkgVersion}）：拿不到 Project/upload`)
+  }
+  console.log(`[ci-upload] miniprogram-ci ${pkgVersion}`)
+
   const project = new ci.Project({ appid, type: 'miniProgram', projectPath: outputDir, privateKeyPath: keyPath, ignores: ['node_modules/**/*'] })
   await ci.upload({
     project,

@@ -25,6 +25,20 @@ export async function run() {
   const source = fs.readFileSync(script, 'utf8')
   assert.doesNotMatch(source, /cli\.bat|微信web开发者工具/, 'CI 上传走 miniprogram-ci，不依赖开发者工具')
   assert.match(source, /^import fs from 'node:fs'/m)
+  // miniprogram-ci 是没有 exports 字段的 CJS 包：必须按 CJS require，
+  // 否则 Node 22 的 import() 只给 default，会出现 "Project is not a constructor"。
+  assert.match(source, /createRequire\(import\.meta\.url\)/, 'miniprogram-ci 用 createRequire 加载')
+  assert.doesNotMatch(source, /await import\('miniprogram-ci'\)/, '不要用 import() 取 miniprogram-ci 的命名导出')
+  {
+    const { createRequire } = await import('node:module')
+    const require = createRequire(script)
+    const ci = require('miniprogram-ci')
+    assert.equal(typeof ci.Project, 'function', 'createRequire 能取到 Project 构造器')
+    assert.equal(typeof ci.upload, 'function', 'createRequire 能取到 upload')
+    // 构造 Project 不联网；privateKeyPath 只需存在。
+    const project = new ci.Project({ appid: 'wx0123456789abcdef', type: 'miniProgram', projectPath: outputDir, privateKeyPath: script, ignores: ['node_modules/**/*'] })
+    assert.ok(project.projectPath, 'Project 能成功构造（即上次 CI 失败的那一步）')
+  }
 
   // 缺少 appid：失败且说明原因。
   assert.equal(run({}).code, 1)
