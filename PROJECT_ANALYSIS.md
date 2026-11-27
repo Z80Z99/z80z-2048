@@ -2,7 +2,7 @@
 
 > **本文件的用途**：供所有 AI 代理在执行任何任务前读取，建立对游戏规则、机制、代码结构与开发约定的完整认知。读完本文应能回答"游戏怎么玩、每个系统怎么运作、改某处要动哪些文件"。
 >
-> **效力与时效**：主体保留 2026-11-07 的系统解析；2026-11-12 按当前源码核对 34 个强制事件（113 选项 × 3 档随机 = 339 档）、47 个卡池定义与规则版本 `sixcolor-v3-flat-defense`（新增固定减伤卡组：坚甲/守拙/磨砺之盾/棘盾契约；详见 §5.2、§6 与 §19）。行号引用格式 `文件:行号`，代码继续演进后行号可能漂移——**若文档与代码冲突，一律以代码为准**，并用搜索定位新位置。卡牌数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)，全部事件选项、成本、精确奖励和限制见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。
+> **效力与时效**：主体保留 2026-11-07 的系统解析；2026-11-27 按当前源码核对 34 个强制事件（113 选项 × 3 档随机 = 339 档）、47 个卡池定义与规则版本 `sixcolor-v4-spring-water`（泉水、商店回收、跳过回合结算；v3 新增的固定减伤卡组保留；详见 §3.3、§5.2、§7、§10、§11、§15 与 §19）。行号引用格式 `文件:行号`，代码继续演进后行号可能漂移——**若文档与代码冲突，一律以代码为准**，并用搜索定位新位置。卡牌数值详单见 [SIXCOLOR_RULES.md](./SIXCOLOR_RULES.md)，全部事件选项、成本、精确奖励和限制见 [EVENTS_GUIDE.md](./EVENTS_GUIDE.md)。
 
 ---
 
@@ -56,7 +56,7 @@
 | `npm run build:h5` | `node tools/build.mjs build h5` | H5 正式构建 |
 | `npm run preview:h5` | `node tools/build.mjs preview h5` | 预览服务（默认端口 4173） |
 | `npm run build:mp-weixin` | `node tools/build.mjs build mp-weixin` | 微信构建 + 自动压图 + 包体校验（≤2 MiB） |
-| `npm test` | `node tools/run-tests.mjs` | 31 组测试，必须全绿 |
+| `npm test` | `node tools/run-tests.mjs` | 34 组测试，必须全绿 |
 | `npm run typecheck` | `tsc -p tools/tsconfig.check.json` | 类型检查（0 错误） |
 | `npm run simulate` | `node tools/simulate.mjs` | 固定种子整局模拟 + SHA-256 基线 |
 | `npm run parity` | `node tools/parity.mjs` | 200 种子统计平价 |
@@ -77,7 +77,7 @@
 | `core/equipment.ts` | 345 件装备生成、套装效果（EquipSetEffects）、computeEquipBonuses、getEffectivePlayer | 装备/套装/掉落品质 |
 | `core/enemy.ts` | 76 条图鉴敌人、分层出现、词缀系统（13 条）、无尽生成、每回合成长常量 | 敌人、词缀、难度曲线 |
 | `core/events.ts` | 34 个强制事件（112 选 × 3 档）、15 种效果类型校验、`resolveEventOutcome` 加权抽档、`buildEventResult` 描述生成 | 事件数据、阶段池、三档结果；详见 EVENTS_GUIDE |
-| `core/consumables.ts` | 5 种消耗品定义与使用场景校验 | 消耗品 |
+| `core/consumables.ts` | 6 种道具定义（5 种常规＋隐藏的泉水）、使用场景校验、泉水抽签与回收价 | 消耗品、泉水 |
 | `core/route.ts` | 路线生成（10+1 层、分支连线 makeEnemy 接敌人系统） | 路线结构、敌人分布 |
 | `core/routeLayout.ts` | 地图纯展示坐标（状态着色、层距、抖动） | 地图视觉 |
 | `core/progress.ts` | 升级循环 gainXp | 经验曲线 |
@@ -95,6 +95,7 @@
 | `utils/panelMotion.ts` / `usePanelMotion.ts` | 面板开合状态机（closed→opening→open→closing） | 弹层过渡 |
 | `utils/artwork.ts` | 图标/卡面/场景资源键 | 美术资源键 |
 | `utils/storage.ts` | 局外存档（`z80z_meta`）读写与白名单校验 | 持久化 |
+| `utils/battlePrefs.ts` | 界面偏好读写（`z80z_prefs`，目前只有「跳过每回合结算界面」） | 界面开关的本机保存 |
 | `tools/` | run-tests、harness（TS 转译加载器）、simulate、parity、balance-strategies、build、optimize-mp-art、upload-mp、baselines/（基线 JSON）、tests/（27 个测试） | 测试/构建/发布 |
 
 ---
@@ -141,7 +142,7 @@
 |---|---|---|---|
 | playing | 本回合滑动中 | 回合开始 | SLIDE（方向滑动）、END_TURN_EARLY、使用战斗道具 |
 | round_delay | 步数用尽/提前结束，展示蓄力摘要 | turnsUsed≥maxTurns 或 END_TURN_EARLY | SHOW_ROUND（500ms 定时器自动） |
-| round_end | 双方交战结算展示 | SHOW_ROUND | NEXT_ROUND（开启下一回合） |
+| round_end | 双方交战结算展示 | SHOW_ROUND | NEXT_ROUND（开启下一回合）；界面开关「跳过回合结算」开启时，结算动效后自动 NEXT_ROUND（见 §15） |
 | finish_delay | 敌人死亡/玩家死亡 | resolveRound 判定 | SHOW_BATTLE_RESULT（600ms 定时器） |
 | finished | 结果定格 | SHOW_BATTLE_RESULT | END_BATTLE（领溢出奖励）→ 奖励队列 |
 
@@ -344,7 +345,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 
 ## 7. 消耗品
 
-5 种（`core/consumables.ts`），购买入库、使用扣数量：
+5 种常规道具（`core/consumables.ts`），购买入库、使用扣数量；另有 1 种隐藏道具「泉水」（事件专属，见表后说明）：
 
 | id | 名称 | 价格 | 时效 | 效果 |
 |---|---|---|---|---|
@@ -355,6 +356,17 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 | cleanse_potion | 净化药剂 | 50 | 即时 | 移除一层紫卡 |
 
 **使用场景**：战斗药剂/卷轴只能在 `phase==='playing'` 使用（不耗步数）；净化只能在 route/shop/rest；`eventResult` 展示期间一律禁用（结果页只能离开）。临时效果写进 `battleModifiers`（战斗级）或 `roundModifiers`（回合级），回合/战斗结束清除。
+**泉水（sixcolor-v4，隐藏道具）**：`spring_water` 不进货架，只能由治愈之泉「装瓶带走泉水」获得。每瓶在事件结算时抽定隐藏内容（`rollSpringWater`，抽 2 次），先进先出保存在 `springWaters` 队列，数量与 `consumableCounts.spring_water` 同步；普通发放路径（`_addConsumable`、事件的 `consumableGrants`）拒绝直接发放。三档档名与色调相同，结果页、卡面、禁用原因都不透露内容。
+
+| 品质（权重） | 回血 | 状态持续 | 售价 |
+|---|---|---|---|
+| 佳（45%） | 生命上限 30% | 4 回合 | 24–36 |
+| 中（40%） | 18% | 3 回合 | 12–20 |
+| 差（15%） | 8% | 2 回合 | 4–8 |
+
+身份：回血 45%、增益 27.5%（涌泉 `chargeStart` 6/10/16、泉劲 `mergeCoefficient` 15/25/40%、泉护 `spawnArmor` 0.6/1/1.5）、异常 27.5%（灼泉 `burn` 2/4/6、浊泉 `vulnerability` 12/22/35%、滞泉 `chargeLoss` 15/30/45%，斜杠依次为差/中/佳）。这些键都不消耗随机数，泉水不会打乱战斗内的随机序列。
+
+**使用**（`USE_CONSUMABLE('spring_water')` → `_useSpringWater`）：仅战斗操作阶段。回血立即经 `_heal` 生效；增益或异常写入 `battle.timedEffects`（`TimedEffect`），由 `getCombinedCardModifiers` 汇总，`startNewRound` 每回合递减、归零移除（持续 N 回合＝饮用所在回合与其后 N−1 个回合）。饮用后提示揭晓文案；战斗界面显示名字与剩余回合，完整效果写在「说明」里。**出售**：`SELL_CONSUMABLE` 与普通道具同一流程——商店里点「出售」即成交，按这一瓶的 `sellValue` 入账，成交后的提示才显示卖了多少钱。
 
 ---
 
@@ -466,7 +478,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 
 **既有复用链**：EVENTS 数据（`pick`/`tradeO`/`o` 助手）→ `resolveEventOutcome`（`core/events.ts`）加权抽档 → `resolveEventEffect` 档内结算 → `CHOOSE_EVENT` invariant + 落地 → `eventResult` 展示 → `LEAVE_EVENT` 清理 → `_grantUpgrade`/`_addConsumable`/`_removeCardLayer`/`_heal`。所有事件复用现有效果类型，没有新增战斗效果键。
 
-**15 种效果类型**（EFFECT_FIELDS 白名单，未知 type 在选项校验／resolve 时报“事件效果不受支持”；三档化后 `gamble`/`disarm`/`sprint`/`heal_mixed`/`heal.curse` 分支已摊平为显式档位并剪除）：
+**16 种效果类型**（EFFECT_FIELDS 白名单，未知 type 在选项校验／resolve 时报“事件效果不受支持”；三档化后 `gamble`/`disarm`/`sprint`/`heal_mixed`/`heal.curse` 分支已摊平为显式档位并剪除）：
 
 | type | 字段 | 语义 |
 |---|---|---|
@@ -484,6 +496,7 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 | drop_equip | rarity/cost | 随机品质装备×1（结算时 roll 具体 ID），缓存精确 ID |
 | reforge | sell_price, new_rarity, cost | 消耗背包首件未装备 common → 金币＋新品质装备×1 |
 | card_trade | grants, consumableGrants, cost, hpCost, gold, removesPurple | 精确持续卡／道具数量、紫层净化；缓存用 cardGrants；无确认字段 |
+| spring_water | quality | 装得一瓶泉水（0 差／1 中／2 佳）：档内抽签 2 次定身份与售价，入先进先出队列；三档档名与色调相同，隐藏品质 |
 
 ---
 
@@ -494,6 +507,8 @@ enemyDamage = max(0, floor(totalAttack × attackMultiplier − 敌防) + flatAtt
 - 槽位：强化 3（白/蓝/金加权抽、排除治疗）+ 装备 3（无放回随机，等级 `(stage−1)×2+1+rng×2`）+ 治疗 1（急救包 20 / 大急救包 50）+ 消耗品 2（5 种无放回）。
 - 刷新：首刷 10 金，每次 **+10**（10→20→30…），重建全部槽位；离开重进**不重置**货架/刷新次数/移除标记。
 - 移除强化：30 金，每店限一次，撤一层白/蓝/金/红（正负同撤，不退原价）。
+- 道具位从 5 种常规道具中无放回抽取；**泉水不进货架**，抽签次数不随池大小变化。
+- **回收**（sixcolor-v4）：`SELL_EQUIPMENT(实例ID)` / `SELL_CONSUMABLE(id)` 仅商店屏生效。装备按品质价格的一半（普通 15／稀有 35／史诗 60，`equipSellPrice`），穿戴中的要先卸下；道具按原价一半（17/17/30/22/25，`consumableSellPrice`）；泉水走同一出售流程，按各自的隐藏售价成交，成交后才显示金额。出售所得直接入账，不计入 `runStats.goldSpent`，不会喂给挥金如土。机器人在商店只卖泉水。
 - 卡面只显示图标+名字+价格；**点击卡片弹窗查看完整效果，购买在弹窗内**。
 
 ### 11.2 营地
@@ -558,9 +573,9 @@ doubleGold（套装结构支持）再 ×2。溢出伤害可选 1:1 金币或 2:1
 
 ## 14. 测试与基线基建
 
-### 14.1 31 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
+### 14.1 34 个测试文件（tools/tests/，`run-tests.mjs` 自动发现）
 
-art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、swipe-input、ui-components（SFC 编译+挂载）、ui-feedback、w2-bugfix。
+art-resources（美术资源资产校验）、board-effects（棋盘动效/浮字）、board-rewards（奖励池）、card-domain（卡定义/聚合/派生）、card-events（事件卡交易）、characterization（种子快照）、display-text（效果文案）、equipment-combat（装备+战斗公式）、events-progression（事件结算与无尽进度纯逻辑回归）、events-expansion（三档随机事件字面量契约与真实 Pinia 结算回归：支付/净化/重铸/黑卡/治疗/主动支付统计/代价摘要）、events-forced（无安全出口、全三档零依赖防死锁、禁用原因与机器人选择策略）、gen-events-guide（事件指南生成器纯函数与磁盘一致性）、gen-master-doc（总文档与十份源文档一致性、十部分锚点，行尾不敏感）、map-icons（图标资产）、null-safe-costs、package-size（微信包体统计与门禁边界）、panel-motion、planned-red-core/planned-red-store（红卡体系）、route-branches（路线分支）、route-layout（地图布局）、route-progress（进度文案）、shop-layout（商店网格）、sixcolor-combat（战斗公式全集，含固定减伤、守拙与棘盾反弹）、sixcolor-store（store 流程，含磨砺之盾承伤成长）、storage-validation、store-regressions、screen-scroll（屏幕自滚动与手势不冒泡）、shop-selling（商店回收价与出售动作）、spring-water（泉水抽签边界、隐藏、先进先出、饮用、持续回合与出售）、swipe-input、ui-components（SFC 编译+挂载，含商店回收与泉水验货、跳过回合结算开关的两种状态）、ui-feedback、w2-bugfix。
 
 ### 14.2 harness 原理与写法
 
@@ -582,7 +597,7 @@ art-resources（美术资源资产校验）、board-effects（棋盘动效/浮�
 
 ### 14.4 基线工作流（玩法改动评估，录制需单独批准）
 
-当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v3-flat-defense`**（2026-11-12：新增固定减伤线性通道——坚甲/守拙/磨砺之盾/棘盾契约；更早版本基线保留作对比）。parity／多策略工具从它导入版本。`tools/baselines/` 下所有历史基线（sixcolor-v1-\*、v2 各版本）保留，不覆写。规则版本切换不等于基线已录制，也不是自动 record 的授权。
+当前 `tools/simulate.mjs` 的 `RULE_VERSION` 为 **`sixcolor-v4-spring-water`**（2026-11-27：治愈之泉装瓶泉水、商店回收；机器人 `POLICY_VERSION` 3；更早版本基线保留作对比）。parity／多策略工具从它导入版本。`tools/baselines/` 下所有历史基线（sixcolor-v1-\*、v2 各版本）保留，不覆写。规则版本切换不等于基线已录制，也不是自动 record 的授权。
 
 玩法改动按任务授权做测试与只读验证；缺失新版本基线时先报告缺失，可用 `--report-only` 查看当前实际结果：
 
@@ -600,13 +615,15 @@ node tools/simulate.mjs --update-baseline
 node tools/parity.mjs record
 ```
 
-默认 check 只读，缺失／不匹配会失败；录制写当前版本／配置命名空间，同版本同配置会写既有目标，不能盲目每次规则改动都 record，更不能重录掩盖失败或重复种子不一致。回复说明行为与哈希变化原因、测量口径和未验证项，不把旧通关率改名为新率。**本轮（sixcolor-v3-flat-defense）31组测试、类型/SFC 检查已通过；新版本基线尚未录制，模拟与统计以 `--report-only` 结果如实报告，待差异审阅并批准后单独录制；更早版本基线原样保留。**
+默认 check 只读，缺失／不匹配会失败；录制写当前版本／配置命名空间，同版本同配置会写既有目标，不能盲目每次规则改动都 record，更不能重录掩盖失败或重复种子不一致。回复说明行为与哈希变化原因、测量口径和未验证项，不把旧通关率改名为新率。**本轮（sixcolor-v4-spring-water）34组测试、类型/SFC 检查已通过；新版本基线尚未录制，模拟与统计以 `--report-only` 结果如实报告，待差异审阅并批准后单独录制；更早版本基线原样保留。**
 
 ---
 
 ## 15. UI 架构
 
 - **单页外壳** `pages/index/index.vue`：按 `store.screen` 切 10 个屏幕；悬浮工具栏（规则/装备/强化[战斗]/道具[非战斗]/主题/调试）。
+- **页面滚动**：`pages.json` 关闭了页面原生滚动（保证棋盘滑动）。框架因此在微信端禁用页面滚动，并在 H5 给 `document` 挂一个 `preventDefault` 的 `touchmove` 拦截——只靠 `min-height` 的屏幕在手机上拖不动。现在 `.screen` 固定为一屏高并自身滚动（`App.vue`），各屏根节点带 `@touchmove.stop` 让手势不冒泡到拦截；战斗屏例外，保持自然高度。**新增以 `.screen` 为根的屏幕必须带 `@touchmove.stop`**（`screen-scroll` 测试强制）。
+- **跳过回合结算**：纯界面层开关，位于战斗标题行，状态存本机 `z80z_prefs`（`utils/battlePrefs.ts`，不属于 meta 存档，默认关闭）。开启后 `BattleScreen` 在 500ms 结算动效后直接 `SHOW_ROUND` → `NEXT_ROUND`；`lastRoundResult` 被清空前留存一份，供「上回合记录」按需回看，回看期间在战斗界面内覆盖 `gameInputBlocked` 阻断棋盘与道具栏。不改变 store、随机序列或模拟结果。
 - **弹层模式**：`useModalMotion(reduced)` 返回 `{mounted, closing, open, close, reset, onTransitionEnd}`；宿主写法 = `v-if="x.mounted.value"` + `ui-motion-closing` 类 + `@click.capture/@keydown.capture blockClosing` + `@transitionend`；页面外壳把自身挂载的六个弹层（规则/装备/强化/道具/主题/调试）mounted OR 成全局 `inputBlocked` provide 给棋盘/道具栏阻断输入（各屏幕内部的弹层自行阻断自身交互）。**收起动画期间保留遮罩与阻断**。
 - **棋盘动效**：150ms 移动门 + 280ms 冲击 + 最多 64 装饰节点；浮字"攻击 +X"经 `formatAttackGain` 保留两位小数（浮点尾巴不外露）；减少动态效果时浮字改静态文字（数值反馈不丢失），装饰全部关闭。
 - **reduced-motion 三层**：`prefers-reduced-motion` 媒体查询、`.motion-reduced`（容器类）、`.zcode-motion-reduced`（H5 documentElement 类）。
@@ -672,7 +689,7 @@ events.ts：EFFECT_FIELDS 白名单 → `pick`/`tradeO`/`o` 助手与结算透�
 
 ### 18.6 发版检查单
 
-tests 31/31 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
+tests 34/34 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本先 `--report-only`，基线录制需单独批准）→ `build h5` + `build mp-weixin`（包体 >2MiB 构建失败）→ 4173 浏览器实测（390×844）→ 打包三 zip 到 deliverables → 仅执行用户明确授权的提交／推送／上传动作，回复准确结果和未实测范围。
 
 ---
 
@@ -683,7 +700,8 @@ tests 31/31 → tsc 0 错 → SFC 编译 → simulate/parity（新规则版本�
 - **2026-11-07 前期平衡包（历史实测，不是当前规则的通关率）**（针对“前期玩家数值追不上怪物”的实测3~10倍倒挂）：防御公式÷6→÷3、敌人回合成长前两回合缓冲、stage1/2敌防与boss数值下调（岩石巨人130/28/10、远古巨龙170/44/14）。当时attack策略打过stage1 boss 26/50（52%）、stage2 boss 14/50（28%）、整局胜利8~15/50（改前5）；baseline当时仍全灭。这些样本保留历史口径，不能迁移为 `sixcolor-v2-forced-events-r2` 的通关率，扩充后需独立测量。原目标口径：boss击杀/存活比≤1.5x；stage3+高压是后期曲线设计。
 - **2026-11-09 三档随机事件（sixcolor-v2-random-events，历史实测口径同上）**：34 事件全部改为每选项 3 种随机结果（主题化档名、点选即结算、收获不预告、黑卡免确认）。与前版 `sixcolor-v2-forced-events-r2` 五策略 50+50 对比：baseline 3→2 / 2→2、corner 12→12 / 17→13、attack 15→14 / 19→19、defense 14→12 / 14→11、economy 11→11 / 11→10（checkpoint/holdout 通关数），整体**略变难**（收益事件档位略抠、付费落空档引入），attack/corner/economy 基本持平；200 种子 parity 17 胜（前版 20）、全部 valid、0 invalid slides。三档波动大于前版单点结算，真人体感差异会大于算法差异。
 - **2026-11-10 一致性修复（sixcolor-v2-consistency-fixes，前一版本）**：①浴血狂怒换算修正——`lowHpFury` 参数 6 现按“每损失 10% 生命攻击倍率 +6 个百分点”计（半血单层 +0.30，修正前错误地 +30）；②事件负金币档标记主动支付并经 `_spendGold` 计入“挥金如土”（修正前绕过消费统计），意外损失不计；③选项代价摘要 `summarizeChoiceCost` 由 UI 与文档生成器共用，代价列不再全部显示“无”；④微信包体超 2MiB 构建失败真正生效。新基线待审阅批准后录制。
-- **2026-11-12 固定减伤卡组（sixcolor-v3-flat-defense，当前版本）**：针对“防御的边际收益随防御值平方衰减、防御投资无法与线性攻击竞争”的结构问题，新增固定减伤线性通道与四张卡（坚甲／守拙／磨砺之盾／棘盾契约），卡池 43→47，狂战祭坛 6→7 选项。五策略 50+50 实测（算法策略，非真人）：defense 8 胜（前一版 5）、attack 20（9）、corner 7（12）、economy 4（12）、baseline 0（0）。**未达目的指标**（defense 每 50 局 ≥8，实际 4 和 4）。这批差异不能单独归因于新卡：同一轮还修正了机器人对浴血狂怒的估值权重（`lowHpFury` 60→10，POLICY_VERSION 2），两个因素没有分开测量；新卡进入白卡池也会改变其他白卡的出现率。v3 基线未录制，以上为 `--report-only` 结果。
+- **2026-11-12 固定减伤卡组（sixcolor-v3-flat-defense，前一版本）**：针对“防御的边际收益随防御值平方衰减、防御投资无法与线性攻击竞争”的结构问题，新增固定减伤线性通道与四张卡（坚甲／守拙／磨砺之盾／棘盾契约），卡池 43→47，狂战祭坛 6→7 选项。五策略 50+50 实测（算法策略，非真人）：defense 8 胜（前一版 5）、attack 20（9）、corner 7（12）、economy 4（12）、baseline 0（0）。**未达目的指标**（defense 每 50 局 ≥8，实际 4 和 4）。这批差异不能单独归因于新卡：同一轮还修正了机器人对浴血狂怒的估值权重（`lowHpFury` 60→10，POLICY_VERSION 2），两个因素没有分开测量；新卡进入白卡池也会改变其他白卡的出现率。v3 基线未录制，以上为 `--report-only` 结果。
+- **2026-11-27 泉水、商店回收与跳过结算（sixcolor-v4-spring-water，当前版本）**：①修复商店等屏幕无法滑动（见 §15；H5 触摸与微信端同受影响）；②商店回收：装备与道具半价，泉水按隐藏售价；③治愈之泉「装瓶出售泉水」改为「装瓶带走泉水」；④「跳过回合结算」界面开关。五策略 50+50 实测（算法策略，非真人；机器人策略 3 把泉水当商品：按期望售价估值、进店卖掉、不饮用）：defense 7 胜（v3 为 8）、attack 20（20）、corner 7（7）、economy 4（4）、baseline 0（0），合计 39→38，出售与泉水对机器人经济影响很小。固定种子 12345：baseline 轨迹与 v3 相同；attack 轨迹改变（击杀 7→10，仍止步第 2 阶段）。v4 基线未录制。
 - **无尽模式**：stage≥4 程序生成，数值随 stage 线性放大，没有"通关终点"——平衡数据只覆盖 stage1~3 为主。
 - **局内不自动存档**：刷新/关页即弃局（设计如此）；只有局外 meta 持久化。
 - 浏览器验证基于 H5；微信端共享逻辑但渲染层（skyline/webview 差异）未覆盖。

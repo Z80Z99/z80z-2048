@@ -50,3 +50,4 @@ node node_modules/typescript/bin/tsc -p tools/tsconfig.check.json   # 类型检�
 - 保持既有代码风格：`.ts` 无分号、单引号；`.vue` 2 空格缩进；中文注释/文案
 - git 身份（仓库级已配置）：Z80Z <790200647@qq.com>
 - 游戏平衡数值（成本、伤害公式、经验曲线、掉落率）不随意改动
+- `pages.json` 关闭了页面原生滚动：新增以 `.screen` 为根的屏幕必须带 `@touchmove.stop`，否则手机上拖不动（原因见 PROJECT_ANALYSIS §15）
